@@ -82,4 +82,4 @@ if __name__ == '__main__':
 
     encode = Code()
     print(encode.encode('test@pwd'))
-    print(encode.decode('101097115101257476750141401883855082'))
+    print(encode.decode('101097115101257476712341401883855082'))
