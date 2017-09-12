@@ -81,5 +81,5 @@ class Code(object):
 if __name__ == '__main__':  
 
     encode = Code()
-    print(encode.encode('Admin@007'))
+    print(encode.encode('test@pwd'))
     print(encode.decode('101097115101257476750141401883855082'))
