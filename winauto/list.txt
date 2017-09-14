@@ -1,0 +1,8 @@
+f:\test\Â¼Ïñ1.exe
+f:\test\Â¼Ïñ2.exe
+
+F:\dev\GitHub\catch_data\winauto\list.txt
+F:\dev\GitHub\catch_data\winauto\playauto.py
+F:\dev\GitHub\catch_data\winauto\playautovideo.py
+F:\dev\GitHub\catch_data\winauto\pywinauto.pdf
+F:\dev\GitHub\catch_data\winauto\winauto.py

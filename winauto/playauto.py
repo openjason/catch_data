@@ -19,3 +19,7 @@ about_dlg['确定'].Click()
 #app.32770.OK.click()
 
 app.UntitledNotepad.Edit.type_keys("pywinauto Works!", with_spaces = True)
+
+app.UntitledNotepad.Edit.right_click()
+
+app.UntitledNotepad.Edit.type_keys("u")
