@@ -17,6 +17,7 @@ with open('list.txt','r') as fp:
             app.TPlayForm.right_click()
             app.TPlayForm.type_keys("s")
             app.wait_for_process_exit(timeout=9999)
+            time.sleep(2)
         else:
             break
         
