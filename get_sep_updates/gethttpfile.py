@@ -44,15 +44,20 @@ def getjdbfile(url):
     try:
         f = urllib.request.urlopen(url)
         pos1=url.rfind('/')
-        fname = url[pos1:]
+        fname = url[pos1+1:]
         with open(workdir+fname,'wb') as code:
             code.write(f.read())
+    except:
+        logging.warning("无法下载jdb文件" + url)
+        exit()
+    try:
         md5 = GetFileMd5(workdir + fname)
         md5 = md5.upper()
         return md5
     except:
-        logging.warning("无法下载jdb文件"+url)
-        exit()
+       logging.warning("MD5 失败：" + workdir + fname)
+       exit()
+
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):

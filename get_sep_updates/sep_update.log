@@ -1,12 +1,2 @@
-Thu, 19 Oct 2017 17:12:59 gethttpfile.py[line:81] INFO 下载目标地址：https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sep
-Thu, 19 Oct 2017 17:13:06 gethttpfile.py[line:93] INFO 正在下载文件 : http://definitions.symantec.com/defs/jdb/vd4ea419.jdb
-Thu, 19 Oct 2017 17:16:55 gethttpfile.py[line:96] INFO MD5值 : A667E9E3779BE7A6B32A461E3F2DF561
-Thu, 19 Oct 2017 17:16:55 gethttpfile.py[line:102] INFO Md5 Check...匹配成功...OK
-Thu, 19 Oct 2017 17:16:55 gethttpfile.py[line:81] INFO 下载目标地址：https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=ips
-Thu, 19 Oct 2017 17:16:58 gethttpfile.py[line:93] INFO 正在下载文件 : http://definitions.symantec.com/defs/ips/20171018-011-IPS_IU_SEP.jdb
-Thu, 19 Oct 2017 17:17:06 gethttpfile.py[line:96] INFO MD5值 : 7029FA91FCBD2F556F29327E6E98C92A
-Thu, 19 Oct 2017 17:17:06 gethttpfile.py[line:102] INFO Md5 Check...匹配成功...OK
-Thu, 19 Oct 2017 17:17:06 gethttpfile.py[line:81] INFO 下载目标地址：https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sonar
-Thu, 19 Oct 2017 17:17:08 gethttpfile.py[line:93] INFO 正在下载文件 : http://definitions.symantec.com/defs/sonar/20171012-001-SONAR_IU_SEP.jdb
-Thu, 19 Oct 2017 17:17:14 gethttpfile.py[line:96] INFO MD5值 : 4A28C2C2F1590BE8D02005598F5103E3
-Thu, 19 Oct 2017 17:17:14 gethttpfile.py[line:102] INFO Md5 Check...匹配成功...OK
+Fri, 20 Oct 2017 10:41:34 gethttpfile.py[line:86] INFO 下载目标地址：https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sep
+Fri, 20 Oct 2017 10:41:36 gethttpfile.py[line:98] INFO 正在下载文件 : http://definitions.symantec.com/defs/jdb/vd4ea609.jdb
