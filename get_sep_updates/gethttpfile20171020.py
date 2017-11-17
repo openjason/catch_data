@@ -96,22 +96,16 @@ if __name__ == "__main__":
             if ('http' in link) and (not('core' in link)):
  #               print('正在下载文件 : ',link)
                 logging.info('正在下载文件 : ' + link)
-                retry = 0
-                while retry < 3 :
-                    md5 = getjdbfile(link)
-    #               print ('MD5值 : ',md5)
-                    logging.info('MD5值 : ' + md5)
-                    md5check = False
-                    for md5search in md5file:
-                        if md5 in md5search:
-                            md5check = True
-    #                        print("Md5 Check...匹配成功...OK")
-                            logging.info("Md5 Check...匹配成功...OK")
-                            retry = 3
-                            break
-                    if md5check == False:
-     #                   print("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail")
-                        logging.info("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail....Retry times:"+str(retry))
-                        retry =+1
-                        
-                        
+                md5 = getjdbfile(link)
+#               print ('MD5值 : ',md5)
+                logging.info('MD5值 : ' + md5)
+                md5check = False
+                for md5search in md5file:
+                    if md5 in md5search:
+                        md5check = True
+#                        print("Md5 Check...匹配成功...OK")
+                        logging.info("Md5 Check...匹配成功...OK")
+                        break
+                if md5check == False:
+ #                   print("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail")
+                    logging.info("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail")
