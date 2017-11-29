@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S',
                     filename='sep_update.log',
-                    filemode='w')
+                    filemode='a')
 #################################################################################################
 # 定义一个StreamHandler，将INFO级别或更高的日志信息打印到标准错误，并将其添加到当前的日志处理对象#
 console = logging.StreamHandler()
@@ -37,7 +37,7 @@ def getmd5file(url):
                 rlines.append(rline)
         return rlines
     except:
-        logging.warning('无法下载文件'+url)
+        logging.warning('无法下载md5文件'+url)
         exit()
 
 def getjdbfile(url):
@@ -111,7 +111,7 @@ if __name__ == "__main__":
                             break
                     if md5check == False:
      #                   print("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail")
-                        logging.info("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail....Retry times:"+str(retry))
-                        retry =+1
+                        logging.info("Md5 Check...匹配失败...Fail.Fail.Fail.Fail.Fail.Fail.Fail.Fail....Retry times:"+str(retry+1))
+                        retry = retry + 1
                         
                         
