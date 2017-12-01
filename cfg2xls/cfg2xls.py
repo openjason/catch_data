@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 '''
-根据关键字读取配置文件中相关内容，截取并存放在excel文件相应栏目中
+根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-修改对应文件名，增加收集的路由器信息
+2017-11-29
 '''
 # import os
 import openpyxl
@@ -24,9 +24,17 @@ def save_block_file(blocked_list, block_child_list, fn):
 #            if block_list[i] != 'null':
             fopen.writelines(block_child_list[i])
 
-def save_xls_file(blocked_list, block_child_list, xlsfile):
+def save_xls_file(blocked_list, block_child_list):
     workbook = openpyxl.load_workbook(xlsfile)
+    print(xlsfile)
+    wb = workbook
+    writecell = []
+    cellrow = 2
 
+#Edit sheet "interface" begin
+#    sheet = wb.get_active_sheet()
+#    sheet = wb.set_active_sheet('interface')
+    sheet = wb.get_sheet_by_name('interface')
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
             continue
@@ -44,26 +52,133 @@ def save_xls_file(blocked_list, block_child_list, xlsfile):
             else:
                 tempStr2 = '-'
             interface_alias = tempStr2
-
-            if interface_alias != '-' :
+            if interface_alias != '-' :                 #if have ip address
                 tempList2 = tempList1[1].split()            #ip / netmask
                 if len(tempList2) == 4:
-                    tempStr1 = tempList2[1].strip()
-                    tempStr2 = tempList2[3].strip()
+                    interface_ip = tempList2[1].strip()
+                    interface_netmask = tempList2[3].strip()
             else:
-                tempStr1 = '-'
+                interface_ip = '-'
+                interface_netmask = '-'
+            for i in range(1,len(tempList1)):
+                tempStr1 = tempList1[i].strip()
+                if len(tempStr1) > 7 :
+                    if tempStr1[:7] == 'comment':
+                        interface_comment = tempStr1[8:len(tempStr1)]
+                        break
+                else:
+                    interface_comment = ' '
+            cellcolumn = 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_name
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_alias
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_ip
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_netmask
+            cellcolumn += 1
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
+            cellrow += 1
+# Edit sheet "interface" end
+
+# Edit sheet "route" begin
+    sheet = wb.get_sheet_by_name('route')
+
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+            continue
+
+        tempStr1 = blocked_list[i]
+        if 'routing' == tempStr1[:7]:
+            child_List = block_child_list[i]
+            for j in range(len(child_List)):
+                tempStr2 = child_List[j].strip()
+                if len(tempStr2) > 16 :
+                    if  'policy interface' == tempStr2[:16] :
+                        tempStr3 = child_List[j+1].strip()
+                        tempList3 = tempStr3.split()
+                        route_id = tempList3[1]
+
+                        tempStr3 = child_List[j+2].strip()
+                        tempList3 = tempStr3.split()
+                        route_interface = tempList3[1]
+
+                        tempStr3 = child_List[j+3].strip()
+                        tempList3 = tempStr3.split()
+                        route_metric = tempList3[1]
+
+                        tempStr3 = child_List[j+4].strip()
+                        tempList3 = tempStr3.split()
+                        route_source = tempList3[1]
+
+                        tempStr3 = child_List[j+5].strip()
+                        tempList3 = tempStr3.split()
+                        route_distination = tempList3[1] + tempList3[2]
+
+                        tempStr3 = child_List[j+6].strip()
+                        tempList3 = tempStr3.split()
+                        route_service = tempList3[1]
+
+                        tempStr3 = child_List[j+7].strip()
+                        tempList3 = tempStr3.split()
+                        if len(tempList3) > 2:
+                            route_gateway = tempList3[1] +tempList3[2]
+                        else:
+                            route_gateway = tempList3[1]
+
+                        tempStr3 = child_List[j+8].strip()
+                        tempList3 = tempStr3.split()
+                        route_comment = tempList3[1]
+
+                        print(route_id,route_interface,route_metric,route_source,route_distination,route_service,route_gateway,route_comment)
+
+                    continue
+
+
+            if len(tempList2) == 3:
+                tempStr2 = tempList2[1].strip()
+            else:
                 tempStr2 = '-'
-            interface_ip = tempStr1
-            interface_netmask = tempStr2
+            interface_alias = tempStr2
+            if interface_alias != '-':  # if have ip address
+                tempList2 = tempList1[1].split()  # ip / netmask
+                if len(tempList2) == 4:
+                    interface_ip = tempList2[1].strip()
+                    interface_netmask = tempList2[3].strip()
+            else:
+                interface_ip = '-'
+                interface_netmask = '-'
+            for i in range(1, len(tempList1)):
+                tempStr1 = tempList1[i].strip()
+                if len(tempStr1) > 7:
+                    if tempStr1[:7] == 'comment':
+                        interface_comment = tempStr1[8:len(tempStr1)]
+                        break
+                else:
+                    interface_comment = ' '
+            cellcolumn = 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_name
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_alias
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_ip
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_netmask
+            cellcolumn += 1
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
+            cellrow += 1
+# Edit sheet "route" end
 
-            print(interface_name+':'+interface_alias+interface_ip+';'+ interface_netmask)
-#            tempList1 = tempStr2.split()
-            if tempList1[0] =='ip-assignment':
-                interface_name = tempList1[4]
-                print(interface_name)
+#        print(str(cellrow) + interface_name+':'+interface_alias + interface_ip+';'+ interface_netmask + interface_comment)
 
-    # workbook.save(WorkDir+'cfg_new.xlsx')
-    # workbook.close()
+    workbook.save(WorkDir+'cfg_new.xlsx')
+    workbook.close()
 
 
 
@@ -116,7 +231,7 @@ def get_block(filename, confile_blocked, block_key_str, wfilename):
             confile_block.append(confile_temp)
             confile_temp = []
     save_block_file(confile_blocked, confile_block, wfilename)
-    save_xls_file(confile_blocked, confile_block, xlsfile)
+    save_xls_file(confile_blocked, confile_block)
 
 
 def get_xls_keys(workbook, keyslist):
@@ -134,47 +249,14 @@ def get_xls_keys(workbook, keyslist):
     wb.close()
 
 
-def compare(keyslist, confile_blocked, workbook, cellcolumn):
-    wb = workbook
-    writecell = []
-    sheet = wb.get_active_sheet()
-    cellrow = 1
-    for ci in keyslist:
-        #    print(ci,keyslist.index(ci),len(ci))
-        cellrow = keyslist.index(ci) + 1
-        for tint1 in range(len(ci)):
-            #        keys = keyslist[tint1]
-            print('>', end='')
-            for confile_block in confile_blocked:
-                for tint2 in range(len(confile_block)):
-                    if ci[tint1] in confile_block[tint2]:
-                        writecell.append(confile_block)
-                        break
-
-        if writecell:# print(writecell)
-            sheet.cell(row=cellrow, column=cellcolumn).value = list_to_string(writecell)
-        writecell = []
-
-
 if __name__ == '__main__':
     WorkDir = 'F:\\test\\'
     xlsfile = WorkDir + 'sonicwall.xlsx'
-    workbook = openpyxl.load_workbook(xlsfile)
     filename = 'hw254.cfg'
     wfilename = 'hwblock.txt'
     keyslist = []
 
-    # confile_blocked = []
-    # get_xls_keys(workbook, keyslist)
-    # get_block('hw254.cfg', confile_blocked, hw_block_key_str, 'hwblock.txt')
-    # compare(keyslist, confile_blocked, workbook, 7)
-
     confile_blocked = []
     confile_block = []
-#    get_xls_keys(workbook, keyslist)
     swcfgfile = WorkDir + 'sw.log'
     get_block(swcfgfile, confile_blocked, sn_block_key_str, WorkDir+'sn_block.txt')
-    compare(keyslist, confile_blocked, workbook, 8)
-
-    workbook.save(WorkDir+'cfg_new.xlsx')
-    workbook.close()
