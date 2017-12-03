@@ -2,6 +2,8 @@
 #自动下载并保存在工作目录（变量：workdir）
 #自动对所下载的定义文件（jdb）与官网上md5文件对应的md5值进行校验，并显示结果。
 #urls定义SEP官网上病毒定义等下载的指定页面。
+#author jasonchan
+
 
 import urllib.request
 from html.parser import HTMLParser
