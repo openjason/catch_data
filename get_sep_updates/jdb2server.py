@@ -6,13 +6,14 @@
 # 弹出cd rom，记录日志。
 # author openjc
 
-import os
-
 import logging
 from md5 import GetFileMd5
+from ftplib import FTP  # 引入ftp模块
+import os
 
 CDROMjdbDir = 'E:\\temp\\'
 HDjdbDir = 'D:\\temp\\'
+SepServer = '10.66.1.11'
 
 def jdb_file_ready():
     FileList = []
@@ -83,7 +84,7 @@ def getjdbfile(url):
         logging.warning("MD5 失败：" + workdir + fname)
         exit()
 
-def copyFiles(sourceList,  targetDir):
+def CopyFiles(sourceList,  targetDir):
    for file in sourceList:
        sourceFile = os.path.join(CDROMjdbDir,  file)
        targetFile = os.path.join(targetDir,  file)
@@ -98,14 +99,36 @@ def copyFiles(sourceList,  targetDir):
        else:
            logging.warning("文件大小错误！！！")
 
+def FtpFiles(sourceDir, FtpServer):
+   for file in sourceList:
+       sourceFile = os.path.join(CDROMjdbDir,  file)
+       targetFile = os.path.join(targetDir,  file)
+       try:
+
+           ftp = FTP(FtpServer)  # 设置ftp服务器地址
+           ftp.login('Administrator', 'Admin@007')  # 设置登录账户和密码
+           ftp.retrlines('LIST')  # 列出文件目录
+           ftp.cwd('a')  # 选择操作目录
+           ftp.retrlines('LIST')  # 列出目录文件
+           localfile = 'sourceFile'  # 设定文件位置
+           f = open(localfile, 'rb')  # 打开文件
+           ftp.storbinary('STOR %s' % os.path.basename(localfile), f)  #上传文件
+        except:
+           logging.warning('ftp file error.'+localfile)
+
+       # if (os.path.getsize(targetFile) != os.path.getsize(sourceFile)):
+       #     logging.warning("比对文件大小一致。")
+       # else:
+       #     logging.warning("文件大小错误！！！")
+
 
 if __name__ == "__main__":
 
     jdbFileList = jdb_file_ready()
     print(jdbFileList)
 
-    copyFiles(jdbFileList,HDjdbDir)
-
+    CopyFiles(jdbFileList,HDjdbDir)
+    FtpFiles(HDjdbDir,SepServer)
 
     exit()
     md5file = getmd5file('')
