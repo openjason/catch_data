@@ -4,6 +4,7 @@
 # ftp 指定目录，是否有残余文件，有，记录日志。
 # ftp put 到服务器指定文件夹，文件大小确认，记录日志
 # 弹出cd rom，记录日志。
+#author openjc
 
 import os
 
