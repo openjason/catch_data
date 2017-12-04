@@ -29,12 +29,10 @@ def save_xls_file(blocked_list, block_child_list):
     print(xlsfile)
     wb = workbook
     writecell = []
-    cellrow = 2
 
 #Edit sheet "interface" begin
-#    sheet = wb.get_active_sheet()
-#    sheet = wb.set_active_sheet('interface')
     sheet = wb.get_sheet_by_name('interface')
+    cellrow = 2
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
             continue
@@ -86,7 +84,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 # Edit sheet "route" begin
     sheet = wb.get_sheet_by_name('route')
-
+    cellrow = 2
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
             continue
@@ -116,7 +114,11 @@ def save_xls_file(blocked_list, block_child_list):
 
                         tempStr3 = child_List[j+5].strip()
                         tempList3 = tempStr3.split()
-                        route_distination = tempList3[1] + tempList3[2]
+                        if len(tempList3) > 2:
+#                            route_distination = tempList3[1] + tempList3[2]
+                            route_distination =  tempList3[2]
+                        else:
+                            route_distination = tempList3[1]
 
                         tempStr3 = child_List[j+6].strip()
                         tempList3 = tempStr3.split()
@@ -125,7 +127,7 @@ def save_xls_file(blocked_list, block_child_list):
                         tempStr3 = child_List[j+7].strip()
                         tempList3 = tempStr3.split()
                         if len(tempList3) > 2:
-                            route_gateway = tempList3[1] +tempList3[2]
+                            route_gateway = tempList3[2]
                         else:
                             route_gateway = tempList3[1]
 
@@ -134,51 +136,103 @@ def save_xls_file(blocked_list, block_child_list):
                         route_comment = tempList3[1]
 
                         print(route_id,route_interface,route_metric,route_source,route_distination,route_service,route_gateway,route_comment)
-
-                    continue
-
-
-            if len(tempList2) == 3:
-                tempStr2 = tempList2[1].strip()
-            else:
-                tempStr2 = '-'
-            interface_alias = tempStr2
-            if interface_alias != '-':  # if have ip address
-                tempList2 = tempList1[1].split()  # ip / netmask
-                if len(tempList2) == 4:
-                    interface_ip = tempList2[1].strip()
-                    interface_netmask = tempList2[3].strip()
-            else:
-                interface_ip = '-'
-                interface_netmask = '-'
-            for i in range(1, len(tempList1)):
-                tempStr1 = tempList1[i].strip()
-                if len(tempStr1) > 7:
-                    if tempStr1[:7] == 'comment':
-                        interface_comment = tempStr1[8:len(tempStr1)]
-                        break
-                else:
-                    interface_comment = ' '
-            cellcolumn = 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_name
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_alias
-            cellcolumn += 1
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_ip
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_netmask
-            cellcolumn += 1
-            cellcolumn += 1
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
-            cellrow += 1
+                        cellcolumn = 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_id
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_source
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_distination
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_service
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_gateway
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_interface
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = route_metric
+                        cellcolumn += 1
+#配置文件没找到优先级                        sheet.cell(row=cellrow, column=cellcolumn).value = route_priority
+                        cellrow += 1
 # Edit sheet "route" end
 
 #        print(str(cellrow) + interface_name+':'+interface_alias + interface_ip+';'+ interface_netmask + interface_comment)
 
-    workbook.save(WorkDir+'cfg_new.xlsx')
-    workbook.close()
+# Edit sheet "rule" begin
+    sheet = wb.get_sheet_by_name('rule')
+    cellrow = 2
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
+            continue
+
+        tempStr1 = blocked_list[i]
+        if 'access-rule' == tempStr1[:11] :
+            print(tempStr1)
+
+            rule_name = tempStr1[10:30]
+            tempList1 = block_child_list[i]
+            for rule_child in tempList1:
+                tempStr1 = rule_child.strip()
+                tempList2 = tempStr1.split()
+                if len(tempList2) < 2:
+                    continue
+                if len(tempList2) > 1:
+                    if 'id' == tempList2[0]:
+                        rule_id = tempList2[1]
+                    if 'from' == tempList2[0]:
+                        rule_from = tempList2[1]
+                    if 'to' == tempList2[0]:
+                        rule_to = tempList2[1]
+                    if 'action' == tempList2[0]:
+                        rule_action = tempList2[1]
+                    if 'source' == tempList2[0]:
+                        if 'address' == tempList2[1]:
+                            if len(tempList2)>3:
+                                rule_source_address = ''
+                                for k in range(3,len(tempList2)):
+                                    rule_source_address = rule_source_address + templist2[k]
+                            else:
+                                rule_source_address = tempList2[2]
+                        if 'port' == tempList2[1]:
+                            rule_source_port = tempList2[2]
+                    if 'destination' == tempList2[0]:
+                        if 'address' == tempList2[1]:
+                            if len(tempList2)>3:
+                                rule_destination_address = tempList2[3]
+                            else:
+                                rule_destination_address = tempList2[2]
+
+                    if 'service' == tempList2[0]:
+                        rule_service = tempList2[1]
+
+
+            cellcolumn = 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_id
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_from
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = '>'
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_to
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
+
+            cellrow +=1
+# Edit sheet "rule" end
+    try:
+        workbook.save(WorkDir+'cfg_new.xlsx')
+    except:
+        print("xlsx文件被锁定，无法保存。。。")
+    finally:
+        workbook.close()
 
 
 
