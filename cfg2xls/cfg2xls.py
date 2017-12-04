@@ -189,20 +189,27 @@ def save_xls_file(blocked_list, block_child_list):
                             if len(tempList2)>3:
                                 rule_source_address = ''
                                 for k in range(3,len(tempList2)):
-                                    rule_source_address = rule_source_address + templist2[k]
+                                    rule_source_address = rule_source_address + tempList2[k] + ' '
                             else:
                                 rule_source_address = tempList2[2]
                         if 'port' == tempList2[1]:
                             rule_source_port = tempList2[2]
                     if 'destination' == tempList2[0]:
                         if 'address' == tempList2[1]:
-                            if len(tempList2)>3:
-                                rule_destination_address = tempList2[3]
+                            if len(tempList2) > 3:
+                                rule_destination_address = ''
+                                for k in range(3, len(tempList2)):
+                                    rule_destination_address = rule_destination_address + tempList2[k] + ' '
                             else:
                                 rule_destination_address = tempList2[2]
 
                     if 'service' == tempList2[0]:
-                        rule_service = tempList2[1]
+                        if (len(tempList2)) > 2:
+                            rule_service = ''
+                            for k in range(2, len(tempList2)):
+                                rule_service = rule_service + tempList2[k] + ' '
+                        else:
+                            rule_service = tempList2[1]
 
 
             cellcolumn = 1
@@ -233,6 +240,10 @@ def save_xls_file(blocked_list, block_child_list):
         print("xlsx文件被锁定，无法保存。。。")
     finally:
         workbook.close()
+
+
+def getAddressServiceList():
+    pass
 
 
 
