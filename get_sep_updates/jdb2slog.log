@@ -1,0 +1,11 @@
+Tue, 05 Dec 2017 16:30:42 INFO 复制文件:F:\test\20171127-001-SONAR_IU_SEP.jdb to D:\temp\
+Tue, 05 Dec 2017 16:30:42 INFO Md5 Check...匹配成功...OK:9652693349BF18159A6E5081A1E00243
+Tue, 05 Dec 2017 16:30:42 INFO 复制文件:F:\test\20171204-011-IPS_IU_SEP.jdb to D:\temp\
+Tue, 05 Dec 2017 16:30:42 INFO Md5 Check...匹配成功...OK:9DEC41DD90ED4E250B7587FDBCFC7250
+Tue, 05 Dec 2017 16:30:43 INFO 复制文件:F:\test\vd4f0815.jdb to D:\temp\
+Tue, 05 Dec 2017 16:30:44 INFO Md5 Check...匹配成功...OK:BE152117A4E25978AA2D3FD0863F4038
+Tue, 05 Dec 2017 16:30:44 INFO 226 Successfully transferred "/incoming"
+Tue, 05 Dec 2017 16:30:44 INFO 发送文件到ftp:D:\temp\20171127-001-SONAR_IU_SEP.jdb
+Tue, 05 Dec 2017 16:30:44 INFO 发送文件到ftp:D:\temp\20171204-011-IPS_IU_SEP.jdb
+Tue, 05 Dec 2017 16:30:44 INFO 发送文件到ftp:D:\temp\vd4f0815.jdb
+Tue, 05 Dec 2017 16:30:48 INFO CD Eject Return value:0
