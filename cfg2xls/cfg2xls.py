@@ -24,6 +24,68 @@ def save_block_file(blocked_list, block_child_list, fn):
 #            if block_list[i] != 'null':
             fopen.writelines(block_child_list[i])
 
+def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
+#    ServicePortList = []
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+            continue
+        tempStr1 = blocked_list[i]
+        if 'service-group' == tempStr1[:13]:
+            if 'HSM_service' in Gname:
+                aaa = 2
+
+            if '"' in tempStr1:
+                tempList1 = tempStr1.split('"')
+#                tempGname = '"'+tempList1[1]+'"'
+                tempGname = tempList1[1]
+            else:
+                tempList1 = tempStr1.split()
+#                print (tempList1)
+                tempGname = tempList1[1]
+            if Gname == tempGname:
+                tempList2 = block_child_list[i]
+                for j in range(len(tempList2)):
+                    tempStr2 = tempList2[j].strip()
+                    if 'service-object' == tempStr2[:14]:
+                        tempGetSObject = tempStr2[15:len(tempStr2)]
+                        ServicePortList.append(getServiceList(blocked_list, block_child_list,tempGetSObject))
+                    if 'service-group' == tempStr2[:13]:
+                        tempGetSObject = tempStr2[14:len(tempStr2)]
+                        tempGetSObject = tempGetSObject.strip()
+
+                        if tempGetSObject == 'Ping':
+                            tempList3 = ['Ping']
+
+                        if tempGetSObject == 'ICMP':
+                            tempList3 = ['ICMP']
+                        else:
+                            tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
+                        for tempInt1 in range(len(tempList3)):
+                            ServicePortList.append(tempList3[tempInt1])
+
+    return ServicePortList
+
+def getServiceList(blocked_list, block_child_list,sname):
+    ServicePort = ''
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+            continue
+        tempStr1 = blocked_list[i]
+        if 'service-object' == tempStr1[:14]:
+            if sname == tempStr1[15:15+len(sname)]:
+#                print(sname)
+#            StrPos = tempStr1.find(sname)
+#            if StrPos > 0 :
+                ServicePort = tempStr1[15 + len(sname)+1:len(tempStr1)]
+                break
+    return ServicePort
+
+def getAddressList(blocked_list, block_child_list,aname):
+    AddressList = []
+
+    return ServiceList
+
+
 def save_xls_file(blocked_list, block_child_list):
     workbook = openpyxl.load_workbook(xlsfile)
     print(xlsfile)
@@ -168,6 +230,8 @@ def save_xls_file(blocked_list, block_child_list):
         if 'access-rule' == tempStr1[:11] :
             print(tempStr1)
 
+            rule_service_port = ''
+
             rule_name = tempStr1[10:30]
             tempList1 = block_child_list[i]
             for rule_child in tempList1:
@@ -194,6 +258,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_source_address = tempList2[2]
                         if 'port' == tempList2[1]:
                             rule_source_port = tempList2[2]
+                        rule_source_address = rule_source_address.strip()
                     if 'destination' == tempList2[0]:
                         if 'address' == tempList2[1]:
                             if len(tempList2) > 3:
@@ -202,14 +267,25 @@ def save_xls_file(blocked_list, block_child_list):
                                     rule_destination_address = rule_destination_address + tempList2[k] + ' '
                             else:
                                 rule_destination_address = tempList2[2]
+                        rule_destination_address = rule_destination_address.strip()
 
                     if 'service' == tempList2[0]:
-                        if (len(tempList2)) > 2:
+                        if (len(tempList2)) <3:
+                            rule_service = tempList2[1]
+                            rule_service = rule_service.strip()
+                        else:
                             rule_service = ''
                             for k in range(2, len(tempList2)):
                                 rule_service = rule_service + tempList2[k] + ' '
-                        else:
-                            rule_service = tempList2[1]
+                            rule_service = rule_service.strip()
+                            if tempList2[1] == 'name':
+                                rule_service_port = getServiceList(blocked_list, block_child_list, rule_service)
+                            if tempList2[1] == 'group':
+                                ServicePortList = []
+                                rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
+                                for tempInt1 in range(len(rule_service_port_list)):
+                                    print(rule_service_port_list)
+                                    rule_service_port = rule_service_port + rule_service_port_list[tempInt1]
 
 
             cellcolumn = 1
@@ -229,6 +305,7 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
             cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_port
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
@@ -240,12 +317,6 @@ def save_xls_file(blocked_list, block_child_list):
         print("xlsx文件被锁定，无法保存。。。")
     finally:
         workbook.close()
-
-
-def getAddressServiceList():
-    pass
-
-
 
 
 def get_first_word(str):
@@ -292,7 +363,7 @@ def get_block(filename, confile_blocked, block_key_str, wfilename):
             confile_temp.append('\n'+ lineStr)
 #            confile_temp.append('\n')
         if space1 > 0 and space2 == 0:
-            confile_temp.append(lineStr)
+            confile_temp.append('\n'+ lineStr)
             confile_block.append(confile_temp)
             confile_temp = []
     save_block_file(confile_blocked, confile_block, wfilename)

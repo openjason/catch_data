@@ -12,7 +12,7 @@ import os
 import ctypes
 import configparser
 import hashlib
-import shutil
+import time
 
 cf = configparser.ConfigParser()
 cf.read("jdb2s.conf")
@@ -113,9 +113,8 @@ def FtpFiles(sourceList, FtpServer):
         ftp.login(ftpuser, ftppass)  # 设置登录账户和密码
         ftp.cwd(SepSerDir)  # 选择操作目录
     except:
-        logging.warning('can not connect to ftp server...')
-        ftp.close()
-        exit()
+        logging.warning('can not connect to ftp server...请检查ftp服务器可用，用户密码正确')
+        exit(1)
     logging.info(ftp.retrlines('LIST'))
     for filename in sourceList:
        sourceFile = os.path.join(HDjdbDir,  filename)
@@ -158,3 +157,4 @@ if __name__ == "__main__":
     CopyFiles(jdbFileList,HDjdbDir)
     FtpFiles(jdbFileList,SepServer)
     logging.info('CD Eject Return value:'+str(cdrom_eject()))
+    time.sleep(30)
