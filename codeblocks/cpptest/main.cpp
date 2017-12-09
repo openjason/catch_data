@@ -11,7 +11,6 @@
 
 using namespace std;
 
-
 // Replace with your own
 #define NAME_IN_SERVICES TEXT("codeblocksMyService")
 #define MY_SERVICE_DESC TEXT("Replace with a description of your service.")
