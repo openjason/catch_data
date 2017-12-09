@@ -7,13 +7,6 @@ author:jason chan
 # import os
 import openpyxl
 
-hw_block_key_str = ['#', 'ip address-set', 'nat server', 'interface', 'ip route-static',
-                    'rule name', 'nat address-group', 'ip service-set']
-
-sn_block_key_str = ['zone', 'address-object', 'address-group', 'service-object', 'service-group',
-                    'interface', 'policy', 'access-rule', 'log category']
-
-
 def save_block_file(blocked_list, block_child_list, fn):
     with open(fn, 'w') as fopen:
         for i in range(len(blocked_list)):
@@ -26,13 +19,19 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
 #    ServicePortList = []
+    if Gname == 'ICMP' or Gname == 'Ping':
+        return ['ICMP']
+
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
             continue
         tempStr1 = blocked_list[i]
         if 'service-group' == tempStr1[:13]:
-            if 'HSM_service' in Gname:
-                aaa = 2
+            if '"' in Gname:
+                Gname = Gname[1:len(Gname)-1]
+
+            if '5000_21' in Gname:
+                aa = 2
 
             if '"' in tempStr1:
                 tempList1 = tempStr1.split('"')
@@ -53,15 +52,9 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
                         tempGetSObject = tempStr2[14:len(tempStr2)]
                         tempGetSObject = tempGetSObject.strip()
 
-                        if tempGetSObject == 'Ping':
-                            tempList3 = ['Ping']
-
-                        if tempGetSObject == 'ICMP':
-                            tempList3 = ['ICMP']
-                        else:
-                            tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
-                        for tempInt1 in range(len(tempList3)):
-                            ServicePortList.append(tempList3[tempInt1])
+                        tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
+#                        for tempInt1 in range(len(tempList3)):
+#                            ServicePortList.append(tempList3[tempInt1])
 
     return ServicePortList
 
@@ -72,7 +65,7 @@ def getServiceList(blocked_list, block_child_list,sname):
             continue
         tempStr1 = blocked_list[i]
         if 'service-object' == tempStr1[:14]:
-            if sname == tempStr1[15:15+len(sname)]:
+            if sname == tempStr1[15:15+len(sname)] and tempStr1[15+len(sname):15+len(sname)+1]== ' ':
 #                print(sname)
 #            StrPos = tempStr1.find(sname)
 #            if StrPos > 0 :
@@ -333,7 +326,7 @@ def list_to_string(rawlist):
     return tstr
 
 
-def get_block(filename, confile_blocked, block_key_str, wfilename):
+def get_block(filename, confile_blocked, wfilename):
     confile_raw = []
     confile_temp = []
     fpline = ''
@@ -395,4 +388,4 @@ if __name__ == '__main__':
     confile_blocked = []
     confile_block = []
     swcfgfile = WorkDir + 'sw.log'
-    get_block(swcfgfile, confile_blocked, sn_block_key_str, WorkDir+'sn_block.txt')
+    get_block(swcfgfile, confile_blocked, WorkDir+'sn_block.txt')
