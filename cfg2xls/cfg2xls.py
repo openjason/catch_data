@@ -17,6 +17,45 @@ def save_block_file(blocked_list, block_child_list, fn):
 #            if block_list[i] != 'null':
             fopen.writelines(block_child_list[i])
 
+def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
+    address_g_list = []
+#     if Aname == 'ICMP' or Aname == 'Ping':
+#         return ['ICMP']
+
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+            continue
+        tempStr1 = blocked_list[i]
+        if 'address-group' == tempStr1[:13]:
+            if '"' in Aname:
+                Aname = Aname[1:len(Aname)-1]
+
+            if '"' in tempStr1:
+                tempList1 = tempStr1.split('"')
+#                tempGname = '"'+tempList1[1]+'"'
+                tempAname = tempList1[1]
+            else:
+                tempList1 = tempStr1.split()
+#                print (tempList1)
+                tempAname = tempList1[1]
+            if Aname == tempAname:
+                tempList2 = block_child_list[i]
+                for j in range(len(tempList2)):
+                    tempStr2 = tempList2[j].strip()
+                    if 'address-object' == tempStr2[:14]:
+                        tempGetSObject = tempStr2[15+5:len(tempStr2)]
+                        AddressGroupList.append(getAddressList(blocked_list, block_child_list,tempGetSObject))
+                    if 'address-group' == tempStr2[:13]:
+                        tempGetSObject = tempStr2[14:len(tempStr2)]
+                        tempGetSObject = tempGetSObject.strip()
+                        tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,AddressGroupList)
+#                        for tempInt1 in range(len(tempList3)):
+#                            AddressGroupList.append(tempList3[tempInt1])
+                break
+    return AddressGroupList
+
+
+
 def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
 #    ServicePortList = []
     if Gname == 'ICMP' or Gname == 'Ping':
@@ -29,9 +68,6 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
         if 'service-group' == tempStr1[:13]:
             if '"' in Gname:
                 Gname = Gname[1:len(Gname)-1]
-
-            if '5000_21' in Gname:
-                aa = 2
 
             if '"' in tempStr1:
                 tempList1 = tempStr1.split('"')
@@ -55,7 +91,6 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
 #                        for tempInt1 in range(len(tempList3)):
 #                            ServicePortList.append(tempList3[tempInt1])
-
     return ServicePortList
 
 def getServiceList(blocked_list, block_child_list,sname):
@@ -66,17 +101,24 @@ def getServiceList(blocked_list, block_child_list,sname):
         tempStr1 = blocked_list[i]
         if 'service-object' == tempStr1[:14]:
             if sname == tempStr1[15:15+len(sname)] and tempStr1[15+len(sname):15+len(sname)+1]== ' ':
-#                print(sname)
-#            StrPos = tempStr1.find(sname)
-#            if StrPos > 0 :
                 ServicePort = tempStr1[15 + len(sname)+1:len(tempStr1)]
                 break
     return ServicePort
 
 def getAddressList(blocked_list, block_child_list,aname):
-    AddressList = []
+    address_detail = ''
+    if aname =='any':
+        return ' '
 
-    return ServiceList
+    for i in range(len(blocked_list)):
+        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+            continue
+        tempStr1 = blocked_list[i]
+        if 'address-object' == tempStr1[:14]:
+            if aname == tempStr1[20:20+len(aname)] and tempStr1[20+len(aname):21+len(aname)]== ' ':
+                address_detail = tempStr1[21 + len(aname):len(tempStr1)]
+                break
+    return address_detail
 
 
 def save_xls_file(blocked_list, block_child_list):
@@ -190,7 +232,7 @@ def save_xls_file(blocked_list, block_child_list):
                         tempList3 = tempStr3.split()
                         route_comment = tempList3[1]
 
-                        print(route_id,route_interface,route_metric,route_source,route_distination,route_service,route_gateway,route_comment)
+#                        print(route_id,route_interface,route_metric,route_source,route_distination,route_service,route_gateway,route_comment)
                         cellcolumn = 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = route_id
                         cellcolumn += 1
@@ -221,10 +263,12 @@ def save_xls_file(blocked_list, block_child_list):
 
         tempStr1 = blocked_list[i]
         if 'access-rule' == tempStr1[:11] :
-            print(tempStr1)
+#            print(tempStr1)
 
             rule_service_port = ''
-
+            rule_address_detail= ''
+            rule_destination_detail = ''
+            rule_destination_list = []
             rule_name = tempStr1[10:30]
             tempList1 = block_child_list[i]
             for rule_child in tempList1:
@@ -247,6 +291,17 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_source_address = ''
                                 for k in range(3,len(tempList2)):
                                     rule_source_address = rule_source_address + tempList2[k] + ' '
+                                rule_source_address = rule_source_address.strip()
+                                if tempList2[2] == 'name':
+                                    rule_address_detail = getAddressList(blocked_list, block_child_list, rule_source_address)
+
+                                if tempList2[2] == 'group':
+                                    gList_temp = []
+                                    gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
+
+                                    for tempInt1 in range(len(gList_temp)):
+                                        rule_address_detail = rule_destination_detail + gList_temp[tempInt1]
+
                             else:
                                 rule_source_address = tempList2[2]
                         if 'port' == tempList2[1]:
@@ -258,6 +313,20 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_destination_address = ''
                                 for k in range(3, len(tempList2)):
                                     rule_destination_address = rule_destination_address + tempList2[k] + ' '
+
+                                rule_destination_address = rule_destination_address.strip()
+                                if tempList2[2] == 'name':
+                                    rule_destination_list = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                                if tempList2[2] == 'group':
+                                    gList_temp = []
+                                    gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
+
+                                    for tempInt1 in range(len(gList_temp)):
+                                        rule_destination_detail = rule_destination_detail + gList_temp[tempInt1]
+
+#                                    rule_destination_detail = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
+
+
                             else:
                                 rule_destination_address = tempList2[2]
                         rule_destination_address = rule_destination_address.strip()
@@ -277,7 +346,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 ServicePortList = []
                                 rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
                                 for tempInt1 in range(len(rule_service_port_list)):
-                                    print(rule_service_port_list)
+#                                    print(rule_service_port_list)
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1]
 
 
@@ -292,9 +361,11 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
             cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_address_detail
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
             cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
             cellcolumn += 1
