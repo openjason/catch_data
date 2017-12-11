@@ -19,16 +19,19 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
     address_g_list = []
-#     if Aname == 'ICMP' or Aname == 'Ping':
-#         return ['ICMP']
+    if '&' in Aname :
+        a= 0
+    if '"' in Aname:
+        Aname = Aname[1:len(Aname) - 1]
 
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
             continue
         tempStr1 = blocked_list[i]
         if 'address-group' == tempStr1[:13]:
-            if '"' in Aname:
-                Aname = Aname[1:len(Aname)-1]
+
+            if '200.40' in tempStr1:
+                a = 0
 
             if '"' in tempStr1:
                 tempList1 = tempStr1.split('"')
@@ -37,7 +40,7 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
             else:
                 tempList1 = tempStr1.split()
 #                print (tempList1)
-                tempAname = tempList1[1]
+                tempAname = tempList1[2]
             if Aname == tempAname:
                 tempList2 = block_child_list[i]
                 for j in range(len(tempList2)):
@@ -60,6 +63,8 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
 #    ServicePortList = []
     if Gname == 'ICMP' or Gname == 'Ping':
         return ['ICMP']
+
+
 
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -292,6 +297,10 @@ def save_xls_file(blocked_list, block_child_list):
                                 for k in range(3,len(tempList2)):
                                     rule_source_address = rule_source_address + tempList2[k] + ' '
                                 rule_source_address = rule_source_address.strip()
+####
+                                if '&' in rule_source_address:
+                                    aa = 0
+####
                                 if tempList2[2] == 'name':
                                     rule_address_detail = getAddressList(blocked_list, block_child_list, rule_source_address)
 
@@ -300,7 +309,7 @@ def save_xls_file(blocked_list, block_child_list):
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
-                                        rule_address_detail = rule_destination_detail + gList_temp[tempInt1]
+                                        rule_address_detail = rule_address_detail + gList_temp[tempInt1]
 
                             else:
                                 rule_source_address = tempList2[2]
