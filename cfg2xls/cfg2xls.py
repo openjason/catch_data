@@ -379,7 +379,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
                                 for tempInt1 in range(len(rule_service_port_list)):
 #                                    print(rule_service_port_list)
-                                    rule_service_port = rule_service_port + rule_service_port_list[tempInt1]
+                                    rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
 
 
             cellcolumn = 1
@@ -406,7 +406,7 @@ def save_xls_file(blocked_list, block_child_list):
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
 #keep or not
-            if rule_from == rule_to:
+            if rule_from == rule_to or rule_from== 'VPN':
                 pass
             else:
                 cellrow +=1
