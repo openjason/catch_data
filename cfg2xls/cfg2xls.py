@@ -7,6 +7,29 @@ author:jason chan
 # import os
 import openpyxl
 
+def fix_address_string(add_str):
+    tmp_list = add_str.split()
+    if len(tmp_list)< 3:
+        return add_str
+    if 'host' == tmp_list[0]:
+        fix_addr_str = tmp_list[0] + ' ' + tmp_list[1] + '/32'
+        return fix_addr_str
+
+    if 'range' == tmp_list[0]:
+        fix_addr_str = tmp_list[0] + ' ' + tmp_list[1] + '-' + tmp_list[2]
+        return fix_addr_str
+
+    if 'network' == tmp_list[0]:
+        if '255.255.255.0' == tmp_list [2]:
+            netmaskstr = '/24'
+        else:
+            netmaskstr = tmp_list [2]
+        fix_addr_str = tmp_list[0] +' '+ tmp_list[1] + netmaskstr
+    else:
+        fix_addr_str = add_str
+    return fix_addr_str
+
+
 def save_block_file(blocked_list, block_child_list, fn):
     with open(fn, 'w') as fopen:
         for i in range(len(blocked_list)):
@@ -303,7 +326,7 @@ def save_xls_file(blocked_list, block_child_list):
 ####
                                 if tempList2[2] == 'name':
                                     rule_address_detail = getAddressList(blocked_list, block_child_list, rule_source_address)
-
+                                    rule_address_detail = fix_address_string(rule_address_detail)
                                 if tempList2[2] == 'group':
                                     gList_temp = []
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
@@ -325,6 +348,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_destination_address = rule_destination_address.strip()
                                 if tempList2[2] == 'name':
                                     rule_destination_detail = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                                    rule_destination_detail = fix_address_string(rule_destination_detail)
                                 if tempList2[2] == 'group':
                                     gList_temp = []
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
@@ -381,7 +405,14 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
-            cellrow +=1
+#keep or not
+            if rule_from == rule_to:
+                pass
+            else:
+                cellrow +=1
+
+
+
 # Edit sheet "rule" end
     try:
         workbook.save(WorkDir+'cfg_new.xlsx')
