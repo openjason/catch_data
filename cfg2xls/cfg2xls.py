@@ -46,7 +46,7 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
                         tempGetSObject = tempStr2[15+5:len(tempStr2)]
                         AddressGroupList.append(getAddressList(blocked_list, block_child_list,tempGetSObject))
                     if 'address-group' == tempStr2[:13]:
-                        tempGetSObject = tempStr2[14:len(tempStr2)]
+                        tempGetSObject = tempStr2[14+5:len(tempStr2)]
                         tempGetSObject = tempGetSObject.strip()
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,AddressGroupList)
 #                        for tempInt1 in range(len(tempList3)):
@@ -313,13 +313,12 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_destination_address = ''
                                 for k in range(3, len(tempList2)):
                                     rule_destination_address = rule_destination_address + tempList2[k] + ' '
-
                                 rule_destination_address = rule_destination_address.strip()
                                 if tempList2[2] == 'name':
-                                    rule_destination_list = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                                    rule_destination_detail = getAddressList(blocked_list, block_child_list, rule_destination_address)
                                 if tempList2[2] == 'group':
                                     gList_temp = []
-                                    gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
+                                    gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
                                         rule_destination_detail = rule_destination_detail + gList_temp[tempInt1]
