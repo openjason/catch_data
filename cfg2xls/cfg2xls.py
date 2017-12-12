@@ -405,8 +405,11 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
+
 #keep or not
-            if rule_from == rule_to or rule_from== 'VPN':
+            if rule_from == rule_to or rule_from== 'VPN'or \
+            (rule_source_address =='any' and rule_destination_address=='any' and rule_service == 'any') or \
+            rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"':
                 pass
             else:
                 cellrow +=1
