@@ -1,6 +1,4 @@
 #Example of TensorFlow libary
-<<<<<<< HEAD
-
 import tensorflow as tf
 
 # first, create a TensorFlow constant
@@ -30,7 +28,6 @@ with tf.Session() as sess:
 b = tf.placeholder(tf.float32, [None, 1], name='b')
 
 a_out = sess.run(a, feed_dict={b: np.arange(0, 10)[:, np.newaxis]})
-=======
 import tensorflow as tf
 
 a = tf.placeholder(tf.float32)
@@ -43,4 +40,3 @@ sess = tf.Session
 bingding = {a:1.5,b:2.5}
 c = sess.run(add,feed_dict = bingding)
 print (c)
->>>>>>> 4da214c8ba1ccc3a9c46f48aec7c7ca994fb9aa0
