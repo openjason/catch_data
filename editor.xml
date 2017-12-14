@@ -1,6 +1,7 @@
 <application>
-  <component name="TodoConfiguration">
-    <pattern pattern="\btodo\b.*" />
-    <pattern pattern="\bfixme\b.*" />
+  <component name="DefaultFont">
+    <option name="FONT_SIZE" value="14" />
+    <option name="FONT_FAMILY" value="Consolas" />
+    <option name="LINE_SPACING" value="1.1" />
   </component>
 </application>
