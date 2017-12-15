@@ -441,8 +441,6 @@ def save_xls_file(blocked_list, block_child_list):
                 cellrow +=1
 
 
-
-
 # Edit sheet "rule" end
     try:
         workbook.save(WorkDir+'cfg_new.xlsx')
