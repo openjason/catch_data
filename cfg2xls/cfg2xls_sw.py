@@ -151,6 +151,7 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 def save_xls_file(blocked_list, block_child_list):
     workbook = openpyxl.load_workbook(xlsfile)
+
     print(xlsfile)
     wb = workbook
     writecell = []
@@ -332,7 +333,7 @@ def save_xls_file(blocked_list, block_child_list):
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
-                                        rule_address_detail = rule_address_detail + gList_temp[tempInt1]
+                                        rule_address_detail = rule_address_detail + gList_temp[tempInt1] + '\n'
 
                             else:
                                 rule_source_address = tempList2[2]
@@ -354,7 +355,7 @@ def save_xls_file(blocked_list, block_child_list):
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
-                                        rule_destination_detail = rule_destination_detail + gList_temp[tempInt1]
+                                        rule_destination_detail = rule_destination_detail + gList_temp[tempInt1] + '\n'
 
 #                                    rule_destination_detail = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
 
@@ -382,37 +383,63 @@ def save_xls_file(blocked_list, block_child_list):
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
 
 
-            cellcolumn = 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_id
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_from
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = '>'
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_to
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_address_detail
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_port
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
-
-
-#keep or not
-            if rule_from == rule_to or rule_from== 'VPN'or \
-            (rule_source_address =='any' and rule_destination_address=='any' and rule_service == 'any') or \
-            rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"':
+            if rule_from == rule_to or rule_from == 'VPN' or \
+                    (rule_source_address == 'any' and rule_destination_address == 'any' and rule_service == 'any') or \
+                    rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"':
                 pass
             else:
+
+                cellcolumn = 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_id
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_from
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = '>'
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_to
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
+                cellcolumn += 1
+
+                row_diaplay = rule_address_detail.split('\n')
+                rule_source_address_row = len(row_diaplay)
+                # if len(row_diaplay) >1:
+                #     for i in range(len(row_diaplay)):
+                #         sheet.cell(row=cellrow + rule_source_address_row, column=cellcolumn).value = row_diaplay[i]
+                #         rule_source_address_row +=1
+                # else:
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_address_detail
+
+                cellcolumn += 1
+
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
+                cellcolumn += 1
+
+
+                row_diaplay = rule_destination_detail.split('\n')
+                rule_destination_address_row = len(row_diaplay)
+                # if len(row_diaplay) > 1:
+                #     for i in range(len(row_diaplay)):
+                #         sheet.cell(row=cellrow + rule_destination_address_row, column=cellcolumn).value = row_diaplay[i]
+                #         rule_destination_address_row += 1
+                # else:
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
+
+
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_port
+                cellcolumn += 1
+                sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
+
+                if rule_source_address_row > rule_destination_address_row :
+                    sheet.row_dimensions[cellrow].height = 20 * rule_source_address_row
+                else :
+                    sheet.row_dimensions[cellrow].height = 20 * rule_destination_address_row
+
                 cellrow +=1
+
 
 
 
