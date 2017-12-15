@@ -152,12 +152,14 @@ def getAddressList(blocked_list, block_child_list,aname):
 def save_xls_file(blocked_list, block_child_list):
 #    workbook = xlwt.load_workbook(xlsfile)
     workbook = xlwt.Workbook()
+
 #    print(xlsfile)
-    wb = workbook
+    sheet = workbook.add_sheet(u'interface', cell_overwrite_ok=True)  # 创建sheet
+
     writecell = []
 
     #Edit sheet "interface" begin
-    sheet = wb.get_sheet_by_name('interface')
+#    sheet = wb.get_sheet_by_name('interface')
     cellrow = 2
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
@@ -193,22 +195,27 @@ def save_xls_file(blocked_list, block_child_list):
                 else:
                     interface_comment = ' '
             cellcolumn = 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_name
+            sheet.write(cellrow, cellcolumn, interface_name)
             cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_alias
-            cellcolumn += 1
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_ip
-            cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_netmask
+            sheet.write(cellrow, cellcolumn,interface_alias)
             cellcolumn += 1
             cellcolumn += 1
+            sheet.write(cellrow, cellcolumn, interface_ip)
             cellcolumn += 1
-            sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
+            sheet.write(cellrow, cellcolumn,interface_netmask)
+            cellcolumn += 1
+            cellcolumn += 1
+            cellcolumn += 1
+            sheet.write(cellrow, cellcolumn,interface_comment)
             cellrow += 1
     # Edit sheet "interface" end
 
-    # Edit sheet "route" begin
+
+    workbook.save(WorkDir + 'cfg_new.xls')
+    exit()
+
+# Edit sheet "route" begin
+
     sheet = wb.get_sheet_by_name('route')
     cellrow = 2
     for i in range(len(blocked_list)):
@@ -489,7 +496,7 @@ def get_xls_keys(workbook, keyslist):
 
 
 if __name__ == '__main__':
-    WorkDir = 'F:\\test\\'
+    WorkDir = 'E:\\test\\'
     xlsfile = WorkDir + 'sonicwall.xls'
     filename = 'hw254.cfg'
     wfilename = 'hwblock.txt'
