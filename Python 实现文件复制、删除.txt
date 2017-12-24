@@ -1,23 +1,19 @@
-Python ÊµÏÖÎÄ¼ş¸´ÖÆ¡¢É¾³ı
-    ÓÃpythonÊµÏÖÁËÒ»¸öĞ¡ĞÍµÄ×Ô¶¯·¢°æ±¾µÄ¹¤¾ß¡£Õâ¸ö¡°×Ô¶¯·¢°æ±¾¡±ÓĞµãĞé£¬ Ö»ÊÇ¼òµ¥µØ°Ñdebug Ä¿Â¼ÏÂµÄÅäÖÃÎÄ¼ş¸´ÖÆµ½Ö¸¶¨Ä¿Â¼£¬°ÑReleaseÏÂµÄÉú³ÉÎÄ¼ş¸´ÖÆµ½Í¬Ò»Ö¸¶¨£¬¹ıÂËµô²»ĞèÒªµÄÎÄ¼ş¼Ğ(.svn)£¬È»ºóÔÙÍùÕâ¸öÖ¸¶¨Ä¿Â¼Ìí¼Ó¼¸¸öÌØ¶¨µÄÎÄ¼ş¡£
+ï»¿Python å®ç°æ–‡ä»¶å¤åˆ¶ã€åˆ é™¤
+    ç”¨pythonå®ç°äº†ä¸€ä¸ªå°å‹çš„è‡ªåŠ¨å‘ç‰ˆæœ¬çš„å·¥å…·ã€‚è¿™ä¸ªâ€œè‡ªåŠ¨å‘ç‰ˆæœ¬â€æœ‰ç‚¹è™šï¼Œ åªæ˜¯ç®€å•åœ°æŠŠdebug ç›®å½•ä¸‹çš„é…ç½®æ–‡ä»¶å¤åˆ¶åˆ°æŒ‡å®šç›®å½•ï¼ŒæŠŠReleaseä¸‹çš„ç”Ÿæˆæ–‡ä»¶å¤åˆ¶åˆ°åŒä¸€æŒ‡å®šï¼Œè¿‡æ»¤æ‰ä¸éœ€è¦çš„æ–‡ä»¶å¤¹(.svn)ï¼Œç„¶åå†å¾€è¿™ä¸ªæŒ‡å®šç›®å½•æ·»åŠ å‡ ä¸ªç‰¹å®šçš„æ–‡ä»¶ã€‚
 
-    Õâ¸öÊÇÎÒµÄµÚÒ»¸öpythonĞ¡³ÌĞò¡£
+    è¿™ä¸ªæ˜¯æˆ‘çš„ç¬¬ä¸€ä¸ªpythonå°ç¨‹åºã€‚
 
-    ÏÂÃæ¾ÍÀ´¿´Æä´úÂëµÄÊµÏÖ¡£
+    ä¸‹é¢å°±æ¥çœ‹å…¶ä»£ç çš„å®ç°ã€‚
 
-Ê×ÏÈ²åÈë±ØÒªµÄ¿â£º
+é¦–å…ˆæ’å…¥å¿…è¦çš„åº“ï¼š
+import os
+import os.path
+import shutil
+import time,  datetime
 
- 
 
-1 import os 
-2 import os.path 
-3 import shutil 
-4 import time,  datetime
- 
+ç„¶åå°±æ˜¯ä¸€å¤§å †åŠŸèƒ½å‡½æ•°ã€‚ç¬¬ä¸€ä¸ªå°±æ˜¯æŠŠæŸä¸€ç›®å½•ä¸‹çš„æ‰€æœ‰æ–‡ä»¶å¤åˆ¶åˆ°æŒ‡å®šç›®å½•ä¸­ï¼š
 
-È»ºó¾ÍÊÇÒ»´ó¶Ñ¹¦ÄÜº¯Êı¡£µÚÒ»¸ö¾ÍÊÇ°ÑÄ³Ò»Ä¿Â¼ÏÂµÄËùÓĞÎÄ¼ş¸´ÖÆµ½Ö¸¶¨Ä¿Â¼ÖĞ£º
-
- 
 def copyFiles(sourceDir,  targetDir): 
    if sourceDir.find(".svn") > 0: 
        return 
@@ -33,95 +29,70 @@ def copyFiles(sourceDir,  targetDir):
            First_Directory = False 
            copyFiles(sourceFile, targetFile)
 
+åˆ é™¤ä¸€çº§ç›®å½•ä¸‹çš„æ‰€æœ‰æ–‡ä»¶ï¼š
+
+def removeFileInFirstDir(targetDir):
+    for file in os.listdir(targetDir):
+        targetFile = os.path.join(targetDir,  file)
+        if os.path.isfile(targetFile):
+            os.remove(targetFile)
 
 
-É¾³ıÒ»¼¶Ä¿Â¼ÏÂµÄËùÓĞÎÄ¼ş£º
+å¤åˆ¶ä¸€çº§ç›®å½•ä¸‹çš„æ‰€æœ‰æ–‡ä»¶åˆ°æŒ‡å®šç›®å½•ï¼š
 
+def coverFiles(sourceDir,  targetDir):
+        for file in os.listdir(sourceDir):
+            sourceFile = os.path.join(sourceDir,  file)
+            targetFile = os.path.join(targetDir,  file)
+            #cover the files
+            if os.path.isfile(sourceFile):
+                open(targetFile, "wb").write(open(sourceFile, "rb").read())
+
+å¤åˆ¶æŒ‡å®šæ–‡ä»¶åˆ°ç›®å½•ï¼š
+
+def moveFileto(sourceDir,  targetDir):
+    shutil.copy(sourceDir,  targetDir)
+
+å¾€æŒ‡å®šç›®å½•å†™æ–‡æœ¬æ–‡ä»¶ï¼š
+
+def writeVersionInfo(targetDir):
+    open(targetDir, "wb").write("Revison:")
  
 
-1 def removeFileInFirstDir(targetDir): 
-2     for file in os.listdir(targetDir): 
-3         targetFile = os.path.join(targetDir,  file) 
-4         if os.path.isfile(targetFile): 
-5             os.remove(targetFile)
- 
+è¿”å›å½“å‰çš„æ—¥æœŸï¼Œä»¥ä¾¿åœ¨åˆ›å»ºæŒ‡å®šç›®å½•çš„æ—¶å€™ç”¨ï¼š
 
-¸´ÖÆÒ»¼¶Ä¿Â¼ÏÂµÄËùÓĞÎÄ¼şµ½Ö¸¶¨Ä¿Â¼£º
+def getCurTime():
+    nowTime = time.localtime()
+    year = str(nowTime.tm_year)
+    month = str(nowTime.tm_mon)
+    if len(month) < 2:
+        month = '0' + month
+    day =  str(nowTime.tm_yday)
+    if len(day) < 2:
+        day = '0' + day
+    return (year + '-' + month + '-' + day)
 
- 
 
-¸´ÖÆ´úÂë
-1 def coverFiles(sourceDir,  targetDir): 
-2         for file in os.listdir(sourceDir): 
-3             sourceFile = os.path.join(sourceDir,  file) 
-4             targetFile = os.path.join(targetDir,  file) 
-5             #cover the files 
-6             if os.path.isfile(sourceFile): 
-7                 open(targetFile, "wb").write(open(sourceFile, "rb").read())
-¸´ÖÆ´úÂë
- 
+ç„¶åå°±æ˜¯ä¸»å‡½æ•°çš„å®ç°äº†ï¼š
 
-¸´ÖÆÖ¸¶¨ÎÄ¼şµ½Ä¿Â¼£º
+if  __name__ =="__main__":
+    print "Start(S) or Quilt(Q) \n"
+    flag = True
+    while (flag):
+        answer = raw_input()
+        if  'Q' == answer:
+            flag = False
+        elif 'S'== answer :
+            formatTime = getCurTime()
+            targetFoldername = "Build " + formatTime + "-01"
+            Target_File_Path += targetFoldername
 
- 
-
-1 def moveFileto(sourceDir,  targetDir): 
-2     shutil.copy(sourceDir,  targetDir)
- 
-
-ÍùÖ¸¶¨Ä¿Â¼Ğ´ÎÄ±¾ÎÄ¼ş£º
-
- 
-
-1 def writeVersionInfo(targetDir): 
-2     open(targetDir, "wb").write("Revison:")
- 
-
-·µ»Øµ±Ç°µÄÈÕÆÚ£¬ÒÔ±ãÔÚ´´½¨Ö¸¶¨Ä¿Â¼µÄÊ±ºòÓÃ£º
-
- 
-
-¸´ÖÆ´úÂë
- 1 def getCurTime(): 
- 2     nowTime = time.localtime() 
- 3     year = str(nowTime.tm_year) 
- 4     month = str(nowTime.tm_mon) 
- 5     if len(month) < 2: 
- 6         month = '0' + month 
- 7     day =  str(nowTime.tm_yday) 
- 8     if len(day) < 2: 
- 9         day = '0' + day 
-10     return (year + '-' + month + '-' + day)
-¸´ÖÆ´úÂë
- 
-
-È»ºó¾ÍÊÇÖ÷º¯ÊıµÄÊµÏÖÁË£º
-
- 
-
-¸´ÖÆ´úÂë
- 1 if  __name__ =="__main__": 
- 2     print "Start(S) or Quilt(Q) \n" 
- 3     flag = True 
- 4     while (flag): 
- 5         answer = raw_input() 
- 6         if  'Q' == answer: 
- 7             flag = False 
- 8         elif 'S'== answer : 
- 9             formatTime = getCurTime() 
-10             targetFoldername = "Build " + formatTime + "-01" 
-11             Target_File_Path += targetFoldername
-12 
-13             copyFiles(Debug_File_Path,   Target_File_Path) 
-14             removeFileInFirstDir(Target_File_Path) 
-15             coverFiles(Release_File_Path,  Target_File_Path) 
-16             moveFileto(Firebird_File_Path,  Target_File_Path) 
-17             moveFileto(AssistantGui_File_Path,  Target_File_Path) 
-18             writeVersionInfo(Target_File_Path+"\\ReadMe.txt") 
-19             print "all sucess" 
-20         else: 
-21             print "not the correct command"
-¸´ÖÆ´úÂë
- 
-
-    ¸Ğ¾õÊÇ¹ûÈ»¼òµ¥£¬ ²»¹ı¼òµ¥µÄÔ­ÒòÊÇÒòÎª¿âº¯Êı·á¸»£¬ÓïÑÔ»ù±¾ÌØĞÔµÄ¼òµ¥ÕæÃ»¸Ğ¾õ³öÀ´¡£
+            copyFiles(Debug_File_Path,   Target_File_Path)
+            removeFileInFirstDir(Target_File_Path)
+            coverFiles(Release_File_Path,  Target_File_Path)
+            moveFileto(Firebird_File_Path,  Target_File_Path)
+            moveFileto(AssistantGui_File_Path,  Target_File_Path)
+            writeVersionInfo(Target_File_Path+"\\ReadMe.txt")
+            print "all sucess"
+        else:
+            print "not the correct command"
