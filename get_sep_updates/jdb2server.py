@@ -52,11 +52,35 @@ def cdrom_eject():
     return val
 
 def jdb_file_ready():
+    global CDROMjdbDir
     FileList = []
-    if not os.path.exists(CDROMjdbDir):
+    source_dir = CDROMjdbDir
+    if not os.path.exists(source_dir):
+        print('无法打开'+source_dir)
+        CDROMjdbDir = 'none'
+
+    source_dir = 'E:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    source_dir = 'F:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    source_dir = 'G:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    if CDROMjdbDir == 'none':
         print("无法打开CDROM SEP 文件夹。\n程序退出。")
         exit()
-    print("CDROM is Ready.")
+    print("JDB file is Ready."+CDROMjdbDir)
     have_jdb_file = False
     for i in os.listdir(CDROMjdbDir):
         if i.find(".jdb") > 0 :
@@ -157,23 +181,19 @@ def cleardir(str):
 
 
 if __name__ == "__main__":
-    # jdbFileList = jdb_file_ready()
-    # print(jdbFileList)
-    # cleardir(HDjdbDir)
-    # CopyFiles(jdbFileList,HDjdbDir)
-    # FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
-    # FtpFiles(jdbFileList, SepServer2,ftpuser2,ftppass2)
-    # logging.info('CD Eject Return value:'+str(cdrom_eject()))
-    # time.sleep(30)
-    try:
-        cleardir = CDROMjdbDir[:len(CDROMjdbDir) - 1]
-        print("clearDir:"+cleardir + "old")
-        cleardir(cleardir+"old")
-        os.rmdir(cleardir+"old")
-    except:
-        print("except")
-    try:
-        print("renameDir:" + cleardir + "old")
-        os.rename(CDROMjdbDir[:len(CDROMjdbDir)-1],CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
-    except:
-        a = 1
+    jdbFileList = jdb_file_ready()
+    print(jdbFileList)
+    cleardir(HDjdbDir)
+    CopyFiles(jdbFileList,HDjdbDir)
+    FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
+    FtpFiles(jdbFileList, SepServer2,ftpuser2,ftppass2)
+
+    cleardir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+
+    if os.path.exists(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old'):
+        os.rmdir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+        time.sleep(5)
+    os.rename(CDROMjdbDir,CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+
+    logging.info('CD Eject Return value:'+str(cdrom_eject()))
+    time.sleep(20)
