@@ -5,6 +5,7 @@
 # ftp put 到服务器指定文件夹，文件大小确认，记录日志
 # 弹出cd rom，记录日志。
 # author openjc
+# 2017-12-12
 
 import logging
 from ftplib import FTP  # 引入ftp模块
@@ -24,6 +25,12 @@ SepServer = cf.get("jdb", "SepServer")
 SepSerDir = cf.get("jdb", "SepSerDir")
 ftpuser = cf.get("jdb", "ftpuser")
 ftppass = cf.get("jdb", "ftppass")
+
+SepServer2 = cf.get("jdb", "SepServer2")
+SepSerDir2 = cf.get("jdb", "SepSerDir2")
+ftpuser2 = cf.get("jdb", "ftpuser2")
+ftppass2 = cf.get("jdb", "ftppass2")
+
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
@@ -107,13 +114,13 @@ def CopyFiles(sourceList,  targetDir):
         else:
              logging.warning("Md5 Check...匹配失败:"+md5)
 
-def FtpFiles(sourceList, FtpServer):
+def FtpFiles(sourceList, inftpserver,inftpuser,inftppass):
     try:
-        ftp = FTP(FtpServer)  # 设置ftp服务器地址
-        ftp.login(ftpuser, ftppass)  # 设置登录账户和密码
+        ftp = FTP(inftpserver)  # 设置ftp服务器地址
+        ftp.login(inftpuser, inftppass)  # 设置登录账户和密码
         ftp.cwd(SepSerDir)  # 选择操作目录
     except:
-        logging.warning('can not connect to ftp server...请检查ftp服务器可用，用户密码正确')
+        logging.warning('can not connect to ftp server...'+inftpserver+'请检查ftp服务器可用，用户密码正确')
         exit(1)
     logging.info(ftp.retrlines('LIST'))
     for filename in sourceList:
@@ -121,11 +128,11 @@ def FtpFiles(sourceList, FtpServer):
 #       targetFile = os.path.join(FtpServer,  filename)
        try:
            f = open(sourceFile, 'rb')  # 打开文件
-           logging.info('发送文件到ftp:'+sourceFile)
+           logging.info('发送文件到'+inftpserver+'ftp:'+sourceFile)
            ftp.storbinary('STOR %s' % os.path.basename(filename), f)  #上传文件
            f.close()
        except:
-           logging.warning('ftp发送错误...'+sourceFile)
+           logging.warning('ftp'+inftpserver+'发送错误...'+sourceFile)
     ftp.close()
        #文件上传后，sep立即进行解压处理，上传后大小比对，出错
 
@@ -150,11 +157,23 @@ def cleardir(str):
 
 
 if __name__ == "__main__":
-
-    jdbFileList = jdb_file_ready()
-    print(jdbFileList)
-    cleardir(HDjdbDir)
-    CopyFiles(jdbFileList,HDjdbDir)
-    FtpFiles(jdbFileList,SepServer)
-    logging.info('CD Eject Return value:'+str(cdrom_eject()))
-    time.sleep(30)
+    # jdbFileList = jdb_file_ready()
+    # print(jdbFileList)
+    # cleardir(HDjdbDir)
+    # CopyFiles(jdbFileList,HDjdbDir)
+    # FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
+    # FtpFiles(jdbFileList, SepServer2,ftpuser2,ftppass2)
+    # logging.info('CD Eject Return value:'+str(cdrom_eject()))
+    # time.sleep(30)
+    try:
+        cleardir = CDROMjdbDir[:len(CDROMjdbDir) - 1]
+        print("clearDir:"+cleardir + "old")
+        cleardir(cleardir+"old")
+        os.rmdir(cleardir+"old")
+    except:
+        print("except")
+    try:
+        print("renameDir:" + cleardir + "old")
+        os.rename(CDROMjdbDir[:len(CDROMjdbDir)-1],CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+    except:
+        a = 1
