@@ -5,7 +5,8 @@
 # ftp put 到服务器指定文件夹，文件大小确认，记录日志
 # 弹出cd rom，记录日志。
 # author openjc
-# 2017-12-12
+# 2017-12-25
+# 启用多源更新，E:\jdb 或 F:\jdb 或 G:\jdb 有适用的文件都会ftp到服务器。
 
 import logging
 from ftplib import FTP  # 引入ftp模块
@@ -14,6 +15,21 @@ import ctypes
 import configparser
 import hashlib
 import time
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename='jdb2slog.log',
+                    filemode='a')
+#################################################################################################
+# 定义一个StreamHandler，将INFO级别或更高的日志信息打印到标准错误，并将其添加到当前的日志处理对象#
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
+
+#################################################################################################
 
 cf = configparser.ConfigParser()
 cf.read("jdb2s.conf")
@@ -31,21 +47,6 @@ SepSerDir2 = cf.get("jdb", "SepSerDir2")
 ftpuser2 = cf.get("jdb", "ftpuser2")
 ftppass2 = cf.get("jdb", "ftppass2")
 
-
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    filename='jdb2slog.log',
-                    filemode='a')
-#################################################################################################
-# 定义一个StreamHandler，将INFO级别或更高的日志信息打印到标准错误，并将其添加到当前的日志处理对象#
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
-
-#################################################################################################
 
 def cdrom_eject():
     val = ctypes.windll.WINMM.mciSendStringW(u"set cdaudio door open", None, 0, None)
