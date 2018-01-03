@@ -123,11 +123,11 @@ def CopyFiles(sourceList,  targetDir):
         sourceFile = os.path.join(CDROMjdbDir,  file)
         targetFile = os.path.join(targetDir,  file)
         try:
-           open(targetFile, "wb").write(open(sourceFile, "rb").read())
-           logging.info ("复制文件:"+sourceFile+ " to " + targetDir)
+            open(targetFile, "wb").write(open(sourceFile, "rb").read())
+            logging.info ("复制文件:"+sourceFile+ " to " + targetDir)
 
         except:
-           logging.info('copy file error.')
+            logging.info('copy file error.')
 
         md5 = GetFileMd5(targetFile)
         md5check = False
@@ -135,9 +135,9 @@ def CopyFiles(sourceList,  targetDir):
             if md5 in md5search:
                 md5check = True
         if md5check:
-             logging.info("Md5 Check...匹配成功...OK:"+md5)
+            logging.info("Md5 Check...匹配成功...OK:"+md5)
         else:
-             logging.warning("Md5 Check...匹配失败:"+md5)
+            logging.warning("Md5 Check...匹配失败:"+md5)
 
 def FtpFiles(sourceList, inftpserver,inftpuser,inftppass):
     try:
@@ -149,17 +149,17 @@ def FtpFiles(sourceList, inftpserver,inftpuser,inftppass):
         exit(1)
     logging.info(ftp.retrlines('LIST'))
     for filename in sourceList:
-       sourceFile = os.path.join(HDjdbDir,  filename)
-#       targetFile = os.path.join(FtpServer,  filename)
-       try:
-           f = open(sourceFile, 'rb')  # 打开文件
-           logging.info('发送文件到'+inftpserver+'ftp:'+sourceFile)
-           ftp.storbinary('STOR %s' % os.path.basename(filename), f)  #上传文件
-           f.close()
-       except:
-           logging.warning('ftp'+inftpserver+'发送错误...'+sourceFile)
+        sourceFile = os.path.join(HDjdbDir,  filename)
+        #       targetFile = os.path.join(FtpServer,  filename)
+        try:
+            f = open(sourceFile, 'rb')  # 打开文件
+            logging.info('发送文件到'+inftpserver+'ftp:'+sourceFile)
+            ftp.storbinary('STOR %s' % os.path.basename(filename), f)  #上传文件
+            f.close()
+        except:
+            logging.warning('ftp'+inftpserver+'发送错误...'+sourceFile)
     ftp.close()
-       #文件上传后，sep立即进行解压处理，上传后大小比对，出错
+    #文件上传后，sep立即进行解压处理，上传后大小比对，出错
 
 def cleardir(str):
     # 删除符合条件的文件夹（含文件夹内的子文件夹和文件）
@@ -192,9 +192,15 @@ if __name__ == "__main__":
     cleardir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
 
     if os.path.exists(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old'):
-        os.rmdir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+        try:
+            os.rmdir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+        except:
+            logging.warning(CDROMjdbDir+'文件夹rmdir命令出错。')
         time.sleep(5)
-    os.rename(CDROMjdbDir,CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+    try:
+        os.rename(CDROMjdbDir,CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+    except:
+        logging.warning(CDROMjdbDir+'文件夹重命令出错。')
 
     logging.info('CD Eject Return value:'+str(cdrom_eject()))
     time.sleep(20)
