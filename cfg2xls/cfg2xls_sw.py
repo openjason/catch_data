@@ -7,7 +7,22 @@ author:jason chan
 # import os
 import openpyxl
 
+import re
+
+def judge_legal_ip(one_str):
+    '''''
+    正则匹配方法
+    判断一个字符串是否是合法IP地址
+    '''
+    compile_ip = re.compile('^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
+    if compile_ip.match(one_str):
+        return True
+    else:
+        return False
+
 def fix_address_string(add_str):
+    return add_str
+#停用
     tmp_list = add_str.split()
     if len(tmp_list)< 3:
         return add_str
@@ -144,9 +159,17 @@ def getAddressList(blocked_list, block_child_list,aname):
         tempStr1 = blocked_list[i]
         if 'address-object' == tempStr1[:14]:
             if aname == tempStr1[20:20+len(aname)] and tempStr1[20+len(aname):21+len(aname)]== ' ':
-                address_detail = tempStr1[21 + len(aname):len(tempStr1)]
+                try:
+                    first_space = tempStr1[21 + len(aname):len(tempStr1)].index(' ')
+                except:
+                    first_space = 0
+                address_detail = tempStr1[21+1 + len(aname)+first_space:len(tempStr1)]
                 break
-    return address_detail
+    # if judge_legal_ip(aname):
+    #     return 'host'+address_detail
+    # else:
+    #     return aname + address_detail
+    return aname +":"+ address_detail
 
 
 def save_xls_file(blocked_list, block_child_list):
