@@ -85,11 +85,36 @@ def jdb_file_ready():
     have_jdb_file = False
     for i in os.listdir(CDROMjdbDir):
         if i.find(".jdb") > 0 :
+            _fullname_s = os.path.join(CDROMjdbDir,i)
+            _fullname_t = os.path.join(HDjdbDir, i)
+            print(_fullname_s)
+            if os.path.exists(_fullname_t):
+                print(_fullname_t)
+                md5_s = GetFileMd5(_fullname_s)
+                md5_t = GetFileMd5(_fullname_t)
+                if md5_s == md5_t:
+                    print('File:'+i + '已存在，MD5：'+md5_s)
+                    continue
             have_jdb_file = True
             FileList.append(i)
 
     if not have_jdb_file :
-        print("CDROM SEP文件夹没有发现*.jdb升级文件。\n程序退出。")
+        print("CDROM SEP文件夹没有发现新的*.jdb升级文件。\n程序退出。")
+        exit()
+    return FileList
+
+
+def jdb_HDfile_ready():
+    FileList = []
+
+    source_dir = 'D:\jdb'
+    have_jdb_file = False
+    for i in os.listdir(source_dir):
+        if i.find(".jdb") > 0 :
+            have_jdb_file = True
+            FileList.append(i)
+    if not have_jdb_file :
+        print("d:jdb文件夹没有发现新的*.jdb升级文件。\n程序退出。")
         exit()
     return FileList
 
@@ -186,6 +211,9 @@ if __name__ == "__main__":
     print(jdbFileList)
     cleardir(HDjdbDir)
     CopyFiles(jdbFileList,HDjdbDir)
+
+    jdbFileList = jdb_HDfile_ready()
+
     FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
     FtpFiles(jdbFileList, SepServer2,ftpuser2,ftppass2)
 
@@ -201,6 +229,6 @@ if __name__ == "__main__":
         os.rename(CDROMjdbDir,CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
     except:
         logging.warning(CDROMjdbDir+'文件夹重命令出错。')
-
-    logging.info('CD Eject Return value:'+str(cdrom_eject()))
-    time.sleep(20)
+    time.sleep(10)
+    #logging.info('CD Eject Return value:'+str(cdrom_eject()))
+    #注意，弹出的CDROM在约10分钟后会自动关上，所以不能以CDROM最终状态判断脚本是否已执行
