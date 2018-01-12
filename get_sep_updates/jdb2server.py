@@ -7,6 +7,7 @@
 # author openjc
 # 2017-12-25
 # 启用多源更新，E:\jdb 或 F:\jdb 或 G:\jdb 有适用的文件都会ftp到服务器。
+# 启用临时文件，ftp完成后再更名。
 
 import logging
 from ftplib import FTP  # 引入ftp模块
@@ -173,13 +174,16 @@ def FtpFiles(sourceList, inftpserver,inftpuser,inftppass):
         logging.warning('can not connect to ftp server...'+inftpserver+'请检查ftp服务器可用，用户密码正确')
         exit(1)
     logging.info(ftp.retrlines('LIST'))
+    time.sleep(1)
     for filename in sourceList:
         sourceFile = os.path.join(HDjdbDir,  filename)
         #       targetFile = os.path.join(FtpServer,  filename)
         try:
             f = open(sourceFile, 'rb')  # 打开文件
             logging.info('发送文件到'+inftpserver+'ftp:'+sourceFile)
-            ftp.storbinary('STOR %s' % os.path.basename(filename), f)  #上传文件
+            ftp.storbinary('STOR %s' % os.path.basename(filename)+'.err', f)  #上传文件
+            time.sleep(2)
+            ftp.rename(os.path.basename(filename)+'.err',os.path.basename(filename))
             f.close()
         except:
             logging.warning('ftp'+inftpserver+'发送错误...'+sourceFile)
@@ -215,7 +219,7 @@ if __name__ == "__main__":
     jdbFileList = jdb_HDfile_ready()
 
     FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
-    FtpFiles(jdbFileList, SepServer2,ftpuser2,ftppass2)
+    FtpFiles(jdbFileList,SepServer2,ftpuser2,ftppass2)
 
     cleardir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
 
