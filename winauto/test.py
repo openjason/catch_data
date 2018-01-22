@@ -24,8 +24,11 @@ def getprocess(list):
         log = NOW+'  No Process!\n'
         f.write(log)
 
-def amain():
+def main():
     while(1):
         getprocess(getallporcesses())
         f.flush()
         time.sleep(10)
+
+if __name__ == '__main__':
+    main()
