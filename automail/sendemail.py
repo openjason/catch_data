@@ -12,8 +12,8 @@ import time
 SMTP_SERVER = "smtp.163.com"
 SMTP_SERVER = "mail.eastcompeace.com"
 WORK_DIR = "e:\\test\\"
-SMTP_USER = "ng@eastcompeace.com"
-SMTP_PWD = "9"
+SMTP_USER = "sdd@eastcompeace.com"
+SMTP_PWD = "asd19"
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
@@ -37,7 +37,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name):
     xxx,
         你好，这是一个测试邮件，
         附件："""
-    html = html + str(files[0])+','+ str(files[1])
+    html = html + ";".join(files)
     html = html +"""
     请不要拦截我的邮件。MIMEText(content,_subtype='html',_charset='gb2312') 
     """
@@ -52,11 +52,12 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name):
         msg.attach(attachment)
 
     server = smtplib.SMTP(SMTP_SERVER, 25)
-    server.starttls()
+#    server.starttls()
     server.login(SMTP_USER, SMTP_PWD)
     mailbody = msg.as_string()
 
-    server.sendmail(SMTP_USER, toaddr, mailbody)
+    server.sendmail(SMTP_USER, toaddr + ccaddr, mailbody) #send mail to & cc email address
+    logging.info(SMTP_USER + "发送邮件："+"to:"+";".join(toaddr))
     server.quit()
 
 def get_customer_file_list(folder,wildard):
