@@ -1,25 +1,59 @@
-#include <iostream>
-
-
-
 // Windows Service main application
 // Add your code where necessary to create your own windows service application.
 
 #include <windows.h>
 #include <stdio.h>
 
-
-using namespace std;
-
 // Replace with your own
-#define NAME_IN_SERVICES TEXT("codeblocksMyService")
+#define NAME_IN_SERVICES TEXT("MyService")
 #define MY_SERVICE_DESC TEXT("Replace with a description of your service.")
-#define DAEMON_EXE_NAME "C:\\The\\Full\\Path\\to\\MyDaemon.exe"
+#define DAEMON_EXE_NAME "E:\\test\\MyDaemon.cmd"
+
+#include "RcLogInfo.h"
+
+
 
 // Some global vars
 SERVICE_STATUS          gStatus;
 SERVICE_STATUS_HANDLE   gStatusHandle;
 HANDLE                  ghStopEvent = NULL;
+
+RcLogInfo rl;
+timeb aTime;
+
+RcLogInfo::RcLogInfo(void)
+{
+    m_pfLogFile = NULL;
+    memset(m_cInfo,NULL,sizeof(m_cInfo));
+}
+
+RcLogInfo::~RcLogInfo(void)
+{
+    if (NULL != m_pfLogFile)
+    {
+        fclose(m_pfLogFile);
+        m_pfLogFile = NULL;
+    }
+}
+
+int RcLogInfo::SetLogFile(FILE *pfLogFile)
+{
+    m_pfLogFile=pfLogFile;
+    return 0;
+}
+
+int RcLogInfo::WriteLogInfo(const char *pInfo)
+{
+    if(NULL != m_pfLogFile)
+    {
+        fprintf(m_pfLogFile,"%s",pInfo);
+        fflush(m_pfLogFile);
+        return 0;
+    }
+    return 1;
+
+
+}
 
 void InstallService() {
   SC_HANDLE hSCMgr;
@@ -109,7 +143,7 @@ void WINAPI CtrlHandler( DWORD CtrlCmd ) {
 
     case SERVICE_CONTROL_INTERROGATE:
       // Add here the necessary code to query the daemon
-      break;
+     break;
   }
 
   MySetServiceStatus(gStatus.dwCurrentState, NO_ERROR, 0);
@@ -135,6 +169,7 @@ int Run( char * Command ) {
 
 void InitService() {
   // printf in this function will not work when running from SCM
+  int i;
 
   gStatusHandle = RegisterServiceCtrlHandler(NAME_IN_SERVICES, CtrlHandler);
   if (! gStatusHandle) {
@@ -161,7 +196,13 @@ void InitService() {
   // If initialization fails, call MySetServiceStatus with SERVICE_STOPPED.
 
   // The following is a generic code. Replace with your own.
+  for (i=1;i<10;i++){
+  sprintf(rl.m_cInfo,"%s run \n",ctime(&(aTime.time)));
+  rl.WriteLogInfo(rl.m_cInfo);
+  Sleep(5000);
+
   Run(DAEMON_EXE_NAME);
+}
   // end of daemon initialization
 
   MySetServiceStatus(SERVICE_RUNNING, NO_ERROR, 0);
@@ -182,6 +223,44 @@ SERVICE_TABLE_ENTRY DispatchTable[] = {
 };
 
 int main( int c, char * arg[] ) {
+
+    char cPath[MAX_PATH];
+    memset(cPath,0,MAX_PATH);
+    if (!GetModuleFileName(NULL,cPath,MAX_PATH))
+    {
+        return false;
+    }
+    char *FileName = cPath + strlen(cPath)-1;
+    while(*FileName !='\\')
+    {
+        --FileName;
+    }
+    *FileName = '\0';
+    char cFileName[MAX_PATH]={'\0'};
+    sprintf(cFileName,"%s\\%s",cPath,"TestLog.log");
+
+    FILE *m_pfLogFile=NULL;
+    if(NULL != m_pfLogFile)
+    {
+        fclose(m_pfLogFile);
+    }
+    m_pfLogFile = fopen(cFileName,"at+");
+    if(NULL == m_pfLogFile)
+    {
+        return 1;
+    }
+
+
+    rl.SetLogFile(m_pfLogFile);
+
+    ftime(&aTime);
+    sprintf(rl.m_cInfo,"%s run \n",ctime(&(aTime.time)));
+//    sprintf(rl.m_cInfo,"%s  塰佩。。。。。。。.%ld ms\n",ctime(&(aTime.time)),aTime.millitm);
+    rl.WriteLogInfo(rl.m_cInfo);
+
+
+
+//=========================set log end
   if (c > 2) {
     printf("Usage: servicio [ install | uninstall ]\n");
     return 1;
@@ -199,6 +278,8 @@ int main( int c, char * arg[] ) {
 
   if (! StartServiceCtrlDispatcher(DispatchTable))
     printf("StartServiceCtrlDispatcher failed\n");
+    sprintf(rl.m_cInfo,"%s  StartServiceCtrlDispatcher failed",ctime(&(aTime.time)),aTime.millitm);
+    rl.WriteLogInfo(rl.m_cInfo);
 
   return 0;
 }
