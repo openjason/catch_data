@@ -8,41 +8,81 @@ import os
 import configparser
 import re
 import time
+from filecmp import dircmp
 
-SMTP_SERVER = "smtp.163.com"
-SMTP_SERVER = "mail.eastcompeace.com"
-WORK_DIR = "e:\\test\\"
-SMTP_USER = "sdd@eastcompeace.com"
-SMTP_PWD = "asd19"
+SMTP_SERVER = ""
+WORK_DIR = ""
+SMTP_USER = ""
+SMTP_PWD = "none"
+
+long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
+folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+
+cf = configparser.ConfigParser()
+try:
+    cf.read('conf.ini', encoding="utf-8-sig")
+    customer_total = int (cf.get("Common", "total"))
+    from_email_addr = cf.get("Common", "from_email_addr")
+    SMTP_SERVER = cf.get("Common", "SMTP_SERVER")
+    WORK_DIR = cf.get("Common", "WORK_DIR")
+    SMTP_USER = cf.get("Common", "SMTP_USER")
+    SMTP_PWD = cf.get("Common", "SMTP_PWD")
+
+except:
+    logging.warning('无法打开文件 file d:\\automail\\conf.ini 或设置错误.')
+    exit(2)
+customer_name = []
+customer_folder = []
+customer_wildcard = []
+customer_toaddr = []
+customer_ccaddr = []
+customer_subject = []
+for i in range(1,customer_total+1):
+    try:
+        cfstr = 'Customer' + str(i)
+        customer_name.append(cf.get(cfstr,'name'))
+        customer_folder.append(cf.get(cfstr,'folder'))
+        customer_wildcard.append(cf.get(cfstr,'wildcard'))
+        customer_toaddr.append(cf.get(cfstr,'to_email_addr'))
+        customer_ccaddr.append(cf.get(cfstr,'cc_email_addr'))
+        customer_subject.append(cf.get(cfstr,'subject'))
+    except:
+        logging.warning("conf.ini 配置有误，位置:"+cfstr)
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S',
-                    filename='automail.log',
+                    filename = os.path.join(WORK_DIR,'automail.log'),
                     filemode='a')
 
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
 
-def send_email(dir_path,files,toaddr,ccaddr,c_name):
+def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
 
+    c_subject = c_subject.replace("YYYY-MM-DD",long_date)
+    logging.info("Subject:"+c_subject)
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
     msg['From'] = SMTP_USER
-    msg['Subject'] = "test for python send email to customer:" + c_name
+    msg['Subject'] = c_subject
+    html = ""
+    template_file_name = WORK_DIR+"template\\"+c_name+".template"
+    try:
+        with open(template_file_name,"r",encoding="utf-8") as t_f:
+            for temp_line in t_f:
+                html = html + temp_line
+    except:
+        html = '无正文内容'
 
-    html = """\
-    xxx,
-        你好，这是一个测试邮件，
-        附件："""
-    html = html + ";".join(files)
-    html = html +"""
-    请不要拦截我的邮件。MIMEText(content,_subtype='html',_charset='gb2312') 
-    """
+    html = html.replace("YYYY-MM-DD",long_date)
+    html = html.replace("ATTACHMENT","、".join(files))
+    print(html)
+
     body = MIMEText(html, 'plain')
-#    body = MIMEText(text_body, 'plain')
+    #    body = MIMEText(text_body, 'plain')
     msg.attach(body)  # add message body (text or html)
 
     for f in files:  # add files to the message
@@ -50,14 +90,12 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name):
         attachment = MIMEApplication(open(file_path, "rb").read())
         attachment.add_header('Content-Disposition','attachment', filename=f)
         msg.attach(attachment)
-
     server = smtplib.SMTP(SMTP_SERVER, 25)
-#    server.starttls()
     server.login(SMTP_USER, SMTP_PWD)
     mailbody = msg.as_string()
 
     server.sendmail(SMTP_USER, toaddr + ccaddr, mailbody) #send mail to & cc email address
-    logging.info(SMTP_USER + "发送邮件："+"to:"+";".join(toaddr))
+    logging.info(c_name + ":发送邮件："+"to:"+";".join(toaddr)+" ;附件："+";".join(files))
     server.quit()
 
 def get_customer_file_list(folder,wildard):
@@ -92,43 +130,18 @@ def get_customer_mail_list(toaddr):
     return _mail_list
 
 if __name__ == '__main__':
-
-    cf = configparser.ConfigParser()
-    try:
-        cf.read('conf.ini', encoding="utf-8-sig")
-        customer_total = int (cf.get("Customer", "total"))
-        from_email_addr = cf.get("Customer", "from_email_addr")
-        from_email_addr_mm = cf.get("Customer", "mm")
-    except:
-        logging.warning('无法打开文件 file d:\\automail\\conf.ini 或设置错误.')
-        exit(2)
-    customer_name = []
-    customer_folder = []
-    customer_wildcard = []
-    customer_toaddr = []
-    customer_ccaddr = []
-    for i in range(1,customer_total+1):
-        try:
-            cfstr = 'Customer' + str(i)
-            customer_name.append(cf.get(cfstr,'name'))
-            customer_folder.append(cf.get(cfstr,'folder'))
-            customer_wildcard.append(cf.get(cfstr,'wildcard'))
-            customer_toaddr.append(cf.get(cfstr,'to_email_addr'))
-            customer_ccaddr.append(cf.get(cfstr,'cc_email_addr'))
-        except:
-            logging.warning("conf.ini 配置有误，位置:"+cfstr)
-#    print (customer_name)
-#    print (customer_toaddr)
     for i in range(customer_total):
         folder_list = customer_folder[i]
         c_name = customer_name[i]
-        file_list = get_customer_file_list(customer_folder[i],customer_wildcard[i])
-        print((file_list))
+        file_list = get_customer_file_list(folder_list,customer_wildcard[i])
+
         if len(file_list) > 0:
             tomail_list = get_customer_mail_list(customer_toaddr[i])
             ccmail_list = get_customer_mail_list(customer_ccaddr[i])
-            print(tomail_list,ccmail_list)
-            print (folder_list)
-            send_email(folder_list,file_list,tomail_list,ccmail_list,c_name)
-            logging.info("sending mail....."+c_name)
-            time.sleep(5)
+            c_subject = customer_subject[i]
+            print (folder_list,file_list,tomail_list,ccmail_list,c_name,c_subject)
+
+            send_email(folder_list,file_list,tomail_list,ccmail_list,c_name,c_subject)
+            logging.info("正在发送邮件..."+c_name)
+            time.sleep(3)
+

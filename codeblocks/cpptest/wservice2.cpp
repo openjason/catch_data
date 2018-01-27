@@ -1,63 +1,8 @@
 // Windows Service main application
 // Add your code where necessary to create your own windows service application.
-/*
-sc create SERVICE_NAME binPath= FULL_PATH_TO_EXE_FILE
-To uninstall it:
-
-sc delete SERVICE_NAME
-To control your service - start it, stop it or query its status - use commands:
-
-sc start SERVICE_NAME
-sc stop SERVICE_NAME
-sc query SERVICE_NAME
-*/
 
 #include <windows.h>
 #include <stdio.h>
-
-#include "RcLogInfo.h"
-
-// Some global vars
-SERVICE_STATUS          gStatus;
-SERVICE_STATUS_HANDLE   gStatusHandle;
-HANDLE                  ghStopEvent = NULL;
-
-RcLogInfo rl;
-timeb aTime;
-
-RcLogInfo::RcLogInfo(void)
-{
-    m_pfLogFile = NULL;
-    memset(m_cInfo,NULL,sizeof(m_cInfo));
-}
-
-RcLogInfo::~RcLogInfo(void)
-{
-    if (NULL != m_pfLogFile)
-    {
-        fclose(m_pfLogFile);
-        m_pfLogFile = NULL;
-    }
-}
-
-int RcLogInfo::SetLogFile(FILE *pfLogFile)
-{
-    m_pfLogFile=pfLogFile;
-    return 0;
-}
-
-int RcLogInfo::WriteLogInfo(const char *pInfo)
-{
-    if(NULL != m_pfLogFile)
-    {
-        fprintf(m_pfLogFile,"%s",pInfo);
-        fflush(m_pfLogFile);
-        return 0;
-    }
-    return 1;
-
-
-}
 
 // Replace with your own
 #define NAME_IN_SERVICES TEXT("AMService")
@@ -137,11 +82,16 @@ void ReportProgressStatus(DWORD state, DWORD checkPoint, DWORD waitHint)
 }
 
 
+
+
+
+
+
 // Main function to be executed as entire service code.
 void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {
     // Must be called at start.
-    g_ServiceStatusHandle = RegisterServiceCtrlHandlerEx("aSERVICENAME", &HandlerEx, NULL);
+    g_ServiceStatusHandle = RegisterServiceCtrlHandlerEx(_T("SERVICE NAME"), &HandlerEx, NULL);
 
     // Startup code.
     ReportStatus(SERVICE_START_PENDING);
@@ -153,14 +103,10 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
     /* Main service code
     Loop, do some work, block if nothing to do,
     wait or poll for g_StopEvent... */
-    while (WaitForSingleObject(g_StopEvent, 4000) != WAIT_OBJECT_0)
+    while (WaitForSingleObject(g_StopEvent, 3000) != WAIT_OBJECT_0)
     {
-        // This sample service does "BEEP!" every 4 seconds.
-        //Beep(1000, 100);
-        ftime(&aTime);
-        sprintf(rl.m_cInfo,"%s am running..",ctime(&(aTime.time)));
-        rl.WriteLogInfo(rl.m_cInfo);
-    WinExec("c:\\windows\\notepad.exe",SW_NORMAL);
+        // This sample service does "BEEP!" every 3 seconds.
+        Beep(1000, 100);
     }
 
     ReportStatus(SERVICE_STOP_PENDING);
@@ -173,44 +119,8 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 // Standard console application entry point.
 int main(int argc, char **argv)
 {
-    char cPath[MAX_PATH];
-    memset(cPath,0,MAX_PATH);
-    if (!GetModuleFileName(NULL,cPath,MAX_PATH))
-    {
-        return false;
-    }
-    char *FileName = cPath + strlen(cPath)-1;
-    while(*FileName !='\\')
-    {
-        --FileName;
-    }
-    *FileName = '\0';
-    char cFileName[MAX_PATH]={'\0'};
-    sprintf(cFileName,"%s\\%s",cPath,"TestLog.log");
-
-    FILE *m_pfLogFile=NULL;
-    if(NULL != m_pfLogFile)
-    {
-        fclose(m_pfLogFile);
-    }
-    m_pfLogFile = fopen(cFileName,"at+");
-    if(NULL == m_pfLogFile)
-    {
-        return 1;
-    }
-
-
-    rl.SetLogFile(m_pfLogFile);
-
-    ftime(&aTime);
-    sprintf(rl.m_cInfo,"%s am start...",ctime(&(aTime.time)));
-    rl.WriteLogInfo(rl.m_cInfo);
-
-
-
-
     SERVICE_TABLE_ENTRY serviceTable[] = {
-        { "", &ServiceMain },
+        { _T(""), &ServiceMain },
         { NULL, NULL }
     };
 
