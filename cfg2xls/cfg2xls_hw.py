@@ -5,7 +5,8 @@ author:jason chan
 2017-11-29
 '''
 # import os
-import openpyxl
+#import openpyxl
+import xlwt
 
 def fix_address_string(add_str):
     tmp_list = add_str.split()
@@ -28,7 +29,6 @@ def fix_address_string(add_str):
     else:
         fix_addr_str = add_str
     return fix_addr_str
-
 
 def save_block_file(blocked_list, block_child_list, fn):
     with open(fn, 'w') as fopen:
@@ -150,8 +150,9 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 
 def save_xls_file(blocked_list, block_child_list):
-    workbook = openpyxl.load_workbook(xlsfile)
-    print(xlsfile)
+#    workbook = xlwt.load_workbook(xlsfile)
+    workbook = xlwt.Workbook()
+#    print(xlsfile)
     wb = workbook
     writecell = []
 
@@ -333,7 +334,6 @@ def save_xls_file(blocked_list, block_child_list):
 
                                     for tempInt1 in range(len(gList_temp)):
                                         rule_address_detail = rule_address_detail + gList_temp[tempInt1]
-
                             else:
                                 rule_source_address = tempList2[2]
                         if 'port' == tempList2[1]:
@@ -415,7 +415,7 @@ def save_xls_file(blocked_list, block_child_list):
 
     # Edit sheet "rule" end
     try:
-        workbook.save(WorkDir+'cfg_new.xlsx')
+        workbook.save(WorkDir+'cfg_new.xls')
     except:
         print("xlsx文件被锁定，无法保存。。。")
     finally:
@@ -489,8 +489,8 @@ def get_xls_keys(workbook, keyslist):
 
 
 if __name__ == '__main__':
-    WorkDir = 'F:\\test\\'
-    xlsfile = WorkDir + 'sonicwall.xlsx'
+    WorkDir = 'E:\\test\\'
+    xlsfile = WorkDir + 'sonicwall.xls'
     filename = 'hw254.cfg'
     wfilename = 'hwblock.txt'
     keyslist = []

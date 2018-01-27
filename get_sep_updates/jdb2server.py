@@ -5,6 +5,9 @@
 # ftp put 到服务器指定文件夹，文件大小确认，记录日志
 # 弹出cd rom，记录日志。
 # author openjc
+# 2017-12-25
+# 启用多源更新，E:\jdb 或 F:\jdb 或 G:\jdb 有适用的文件都会ftp到服务器。
+# 启用临时文件，ftp完成后再更名。
 
 import logging
 from ftplib import FTP  # 引入ftp模块
@@ -13,17 +16,6 @@ import ctypes
 import configparser
 import hashlib
 import time
-
-cf = configparser.ConfigParser()
-cf.read("jdb2s.conf")
-secs = cf.sections()
-
-CDROMjdbDir = cf.get("jdb", "CDROMjdbDir")
-HDjdbDir = cf.get("jdb", "HDjdbDir")
-SepServer = cf.get("jdb", "SepServer")
-SepSerDir = cf.get("jdb", "SepSerDir")
-ftpuser = cf.get("jdb", "ftpuser")
-ftppass = cf.get("jdb", "ftppass")
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
@@ -40,24 +32,90 @@ logging.getLogger('').addHandler(console)
 
 #################################################################################################
 
+cf = configparser.ConfigParser()
+cf.read("jdb2s.conf")
+secs = cf.sections()
+
+CDROMjdbDir = cf.get("jdb", "CDROMjdbDir")
+HDjdbDir = cf.get("jdb", "HDjdbDir")
+SepServer = cf.get("jdb", "SepServer")
+SepSerDir = cf.get("jdb", "SepSerDir")
+ftpuser = cf.get("jdb", "ftpuser")
+ftppass = cf.get("jdb", "ftppass")
+
+SepServer2 = cf.get("jdb", "SepServer2")
+SepSerDir2 = cf.get("jdb", "SepSerDir2")
+ftpuser2 = cf.get("jdb", "ftpuser2")
+ftppass2 = cf.get("jdb", "ftppass2")
+
+
 def cdrom_eject():
     val = ctypes.windll.WINMM.mciSendStringW(u"set cdaudio door open", None, 0, None)
     return val
 
 def jdb_file_ready():
+    global CDROMjdbDir
     FileList = []
-    if not os.path.exists(CDROMjdbDir):
+    source_dir = CDROMjdbDir
+    if not os.path.exists(source_dir):
+        print('无法打开'+source_dir)
+        CDROMjdbDir = 'none'
+
+    source_dir = 'E:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    source_dir = 'F:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    source_dir = 'G:\jdb'
+    if not os.path.exists(source_dir):
+        print('无法打开' + source_dir)
+    else:
+        CDROMjdbDir = source_dir
+
+    if CDROMjdbDir == 'none':
         print("无法打开CDROM SEP 文件夹。\n程序退出。")
         exit()
-    print("CDROM is Ready.")
+    print("JDB file is Ready."+CDROMjdbDir)
     have_jdb_file = False
     for i in os.listdir(CDROMjdbDir):
         if i.find(".jdb") > 0 :
+            _fullname_s = os.path.join(CDROMjdbDir,i)
+            _fullname_t = os.path.join(HDjdbDir, i)
+            print(_fullname_s)
+            if os.path.exists(_fullname_t):
+                print(_fullname_t)
+                md5_s = GetFileMd5(_fullname_s)
+                md5_t = GetFileMd5(_fullname_t)
+                if md5_s == md5_t:
+                    print('File:'+i + '已存在，MD5：'+md5_s)
+                    continue
             have_jdb_file = True
             FileList.append(i)
 
     if not have_jdb_file :
-        print("CDROM SEP文件夹没有发现*.jdb升级文件。\n程序退出。")
+        print("CDROM SEP文件夹没有发现新的*.jdb升级文件。\n程序退出。")
+        exit()
+    return FileList
+
+
+def jdb_HDfile_ready():
+    FileList = []
+
+    source_dir = 'D:\jdb'
+    have_jdb_file = False
+    for i in os.listdir(source_dir):
+        if i.find(".jdb") > 0 :
+            have_jdb_file = True
+            FileList.append(i)
+    if not have_jdb_file :
+        print("d:jdb文件夹没有发现新的*.jdb升级文件。\n程序退出。")
         exit()
     return FileList
 
@@ -91,11 +149,11 @@ def CopyFiles(sourceList,  targetDir):
         sourceFile = os.path.join(CDROMjdbDir,  file)
         targetFile = os.path.join(targetDir,  file)
         try:
-           open(targetFile, "wb").write(open(sourceFile, "rb").read())
-           logging.info ("复制文件:"+sourceFile+ " to " + targetDir)
+            open(targetFile, "wb").write(open(sourceFile, "rb").read())
+            logging.info ("复制文件:"+sourceFile+ " to " + targetDir)
 
         except:
-           logging.info('copy file error.')
+            logging.info('copy file error.')
 
         md5 = GetFileMd5(targetFile)
         md5check = False
@@ -103,31 +161,34 @@ def CopyFiles(sourceList,  targetDir):
             if md5 in md5search:
                 md5check = True
         if md5check:
-             logging.info("Md5 Check...匹配成功...OK:"+md5)
+            logging.info("Md5 Check...匹配成功...OK:"+md5)
         else:
-             logging.warning("Md5 Check...匹配失败:"+md5)
+            logging.warning("Md5 Check...匹配失败:"+md5)
 
-def FtpFiles(sourceList, FtpServer):
+def FtpFiles(sourceList, inftpserver,inftpuser,inftppass):
     try:
-        ftp = FTP(FtpServer)  # 设置ftp服务器地址
-        ftp.login(ftpuser, ftppass)  # 设置登录账户和密码
+        ftp = FTP(inftpserver)  # 设置ftp服务器地址
+        ftp.login(inftpuser, inftppass)  # 设置登录账户和密码
         ftp.cwd(SepSerDir)  # 选择操作目录
     except:
-        logging.warning('can not connect to ftp server...请检查ftp服务器可用，用户密码正确')
+        logging.warning('can not connect to ftp server...'+inftpserver+'请检查ftp服务器可用，用户密码正确')
         exit(1)
     logging.info(ftp.retrlines('LIST'))
+    time.sleep(1)
     for filename in sourceList:
-       sourceFile = os.path.join(HDjdbDir,  filename)
-#       targetFile = os.path.join(FtpServer,  filename)
-       try:
-           f = open(sourceFile, 'rb')  # 打开文件
-           logging.info('发送文件到ftp:'+sourceFile)
-           ftp.storbinary('STOR %s' % os.path.basename(filename), f)  #上传文件
-           f.close()
-       except:
-           logging.warning('ftp发送错误...'+sourceFile)
+        sourceFile = os.path.join(HDjdbDir,  filename)
+        #       targetFile = os.path.join(FtpServer,  filename)
+        try:
+            f = open(sourceFile, 'rb')  # 打开文件
+            logging.info('发送文件到'+inftpserver+'ftp:'+sourceFile)
+            ftp.storbinary('STOR %s' % os.path.basename(filename)+'.err', f)  #上传文件
+            time.sleep(2)
+            ftp.rename(os.path.basename(filename)+'.err',os.path.basename(filename))
+            f.close()
+        except:
+            logging.warning('ftp'+inftpserver+'发送错误...'+sourceFile)
     ftp.close()
-       #文件上传后，sep立即进行解压处理，上传后大小比对，出错
+    #文件上传后，sep立即进行解压处理，上传后大小比对，出错
 
 def cleardir(str):
     # 删除符合条件的文件夹（含文件夹内的子文件夹和文件）
@@ -150,11 +211,28 @@ def cleardir(str):
 
 
 if __name__ == "__main__":
-
     jdbFileList = jdb_file_ready()
     print(jdbFileList)
     cleardir(HDjdbDir)
     CopyFiles(jdbFileList,HDjdbDir)
-    FtpFiles(jdbFileList,SepServer)
-    logging.info('CD Eject Return value:'+str(cdrom_eject()))
-    time.sleep(30)
+
+    jdbFileList = jdb_HDfile_ready()
+
+    FtpFiles(jdbFileList,SepServer,ftpuser,ftppass)
+    FtpFiles(jdbFileList,SepServer2,ftpuser2,ftppass2)
+
+    cleardir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+
+    if os.path.exists(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old'):
+        try:
+            os.rmdir(CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+        except:
+            logging.warning(CDROMjdbDir+'文件夹rmdir命令出错。')
+        time.sleep(5)
+    try:
+        os.rename(CDROMjdbDir,CDROMjdbDir[:len(CDROMjdbDir)-1]+'old')
+    except:
+        logging.warning(CDROMjdbDir+'文件夹重命令出错。')
+    time.sleep(10)
+    #logging.info('CD Eject Return value:'+str(cdrom_eject()))
+    #注意，弹出的CDROM在约10分钟后会自动关上，所以不能以CDROM最终状态判断脚本是否已执行

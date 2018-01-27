@@ -9,7 +9,21 @@ import urllib.request
 from html.parser import HTMLParser
 
 import logging
-from md5 import GetFileMd5
+import hashlib
+import os
+import datetime
+
+def GetFileMd5(filepath):
+    if not os.path.isfile(filepath):
+        print('no file open.')
+        return
+    myhash = hashlib.md5()
+    with open(filepath,'rb') as f:
+        myhash.update(f.read())
+    return  myhash.hexdigest()
+
+
+
 
 workdir = 'f:\\test\\'
 
