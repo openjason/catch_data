@@ -457,7 +457,6 @@ class PythonService(win32serviceutil.ServiceFramework):
     def removed(self, str):
         # 删除符合条件的文件夹（含文件夹内的子文件夹和文件）
         # 没有对文件及文件夹锁定情况进行判断。
-
         self.rootdir = str
 
         for parent, dirnames, filenames in os.walk(self.rootdir, False):

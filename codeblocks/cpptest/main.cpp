@@ -1,9 +1,11 @@
 // Windows Service main application
 // Add your code where necessary to create your own windows service application.
-/*
+/* returncode = WinExec("automail.exe",SW_NORMAL);
+   returncode > 31 表示正常 call 起 程序，否则调用外部程序出错。
+
 sc create SERVICE_NAME binPath= FULL_PATH_TO_EXE_FILE
 To uninstall it:
-
+注意这里的格式，“=”后面是必须空一格的，否则会出现错误。
 sc delete SERVICE_NAME
 To control your service - start it, stop it or query its status - use commands:
 
@@ -60,9 +62,7 @@ int RcLogInfo::WriteLogInfo(const char *pInfo)
 }
 
 // Replace with your own
-#define NAME_IN_SERVICES TEXT("AMService")
-#define MY_SERVICE_DESC TEXT("AutoMailService.work OK.")
-#define DAEMON_EXE_NAME "C:\\test\\notepad.exe"
+
 SERVICE_STATUS_HANDLE g_ServiceStatusHandle;
 HANDLE g_StopEvent;
 DWORD g_CurrentState = 0;
@@ -140,8 +140,9 @@ void ReportProgressStatus(DWORD state, DWORD checkPoint, DWORD waitHint)
 // Main function to be executed as entire service code.
 void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {
+    int returncode;
     // Must be called at start.
-    g_ServiceStatusHandle = RegisterServiceCtrlHandlerEx("aSERVICENAME", &HandlerEx, NULL);
+    g_ServiceStatusHandle = RegisterServiceCtrlHandlerEx("autoservice", &HandlerEx, NULL);
 
     // Startup code.
     ReportStatus(SERVICE_START_PENDING);
@@ -153,14 +154,17 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
     /* Main service code
     Loop, do some work, block if nothing to do,
     wait or poll for g_StopEvent... */
-    while (WaitForSingleObject(g_StopEvent, 4000) != WAIT_OBJECT_0)
+    while (WaitForSingleObject(g_StopEvent, 60000 * 5) != WAIT_OBJECT_0)
     {
         // This sample service does "BEEP!" every 4 seconds.
         //Beep(1000, 100);
+//    Save all unsaved data etc., but do it quickly.
+//        returncode = WinExec("c:\\automail\\automail.exe",SW_NORMAL);
+        returncode = WinExec("automail.exe",SW_NORMAL);
+
         ftime(&aTime);
-        sprintf(rl.m_cInfo,"%s am running..",ctime(&(aTime.time)));
+        sprintf(rl.m_cInfo,"AutoMail running...rc=%d :%s",returncode,ctime(&(aTime.time)));
         rl.WriteLogInfo(rl.m_cInfo);
-    WinExec("c:\\windows\\notepad.exe",SW_NORMAL);
     }
 
     ReportStatus(SERVICE_STOP_PENDING);
@@ -186,7 +190,7 @@ int main(int argc, char **argv)
     }
     *FileName = '\0';
     char cFileName[MAX_PATH]={'\0'};
-    sprintf(cFileName,"%s\\%s",cPath,"TestLog.log");
+    sprintf(cFileName,"%s\\%s",cPath,"autoservice.log");
 
     FILE *m_pfLogFile=NULL;
     if(NULL != m_pfLogFile)
@@ -203,10 +207,8 @@ int main(int argc, char **argv)
     rl.SetLogFile(m_pfLogFile);
 
     ftime(&aTime);
-    sprintf(rl.m_cInfo,"%s am start...",ctime(&(aTime.time)));
+    sprintf(rl.m_cInfo,"AutoMailService starting.run command every 5 minute..%s",ctime(&(aTime.time)));
     rl.WriteLogInfo(rl.m_cInfo);
-
-
 
 
     SERVICE_TABLE_ENTRY serviceTable[] = {

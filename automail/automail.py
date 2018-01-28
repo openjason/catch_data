@@ -7,7 +7,7 @@ import logging
 import os
 import configparser
 import re
-import time
+import time,datetime
 from filecmp import dircmp
 import socket
 
@@ -20,8 +20,16 @@ long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
+cf_file = 'c:\\automail\\automail.ini'
+if not os.path.isfile(cf_file):
+    cf_file = 'd:\\automail\\automail.ini'
+    if not os.path.isfile(cf_file):
+        cf_file = 'e:\\automail\\automail.ini'
+        if not os.path.isfile(cf_file):
+            logging.critical('无法打开配置文件：automail.ini ')
+            exit(2)
 try:
-    cf.read('conf.ini', encoding="utf-8-sig")
+    cf.read(cf_file, encoding="utf-8-sig")
     customer_total = int (cf.get("Common", "total"))
     from_email_addr = cf.get("Common", "from_email_addr")
     SMTP_SERVER = cf.get("Common", "SMTP_SERVER")
@@ -30,7 +38,7 @@ try:
     SMTP_PWD = cf.get("Common", "SMTP_PWD")
 
 except:
-    logging.warning('无法打开文件 file d:\\automail\\conf.ini 或设置错误.')
+    logging.warning('无法打开文件 automail.ini 或设置错误.')
     exit(2)
 customer_name = []
 customer_folder = []
@@ -93,7 +101,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
         attachment = MIMEApplication(open(file_path, "rb").read())
         attachment.add_header('Content-Disposition','attachment', filename=f)
         msg.attach(attachment)
-    logging.info ("附件共" + str(len(files)) + "个，最后一个文件名："+ file_path)
+    logging.info ("附件共" + str(len(files)) + "个，其中有文件名："+ file_path)
 
 #    return 2
 #if enable return, then program will not send email...
@@ -172,26 +180,104 @@ def check_smtp_server(ipaddr,port):
         sock.close()
         return False
 
+def check_server_auth():
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, 25)
+        server.login(SMTP_USER, SMTP_PWD)
+        server.quit()
+        return True
+    except:
+        return False
+
 def mail_server_ok():
     delay_time = 1
-    while not check_smtp_server(SMTP_SERVER,25):
-        logging.critical("无法连接SMTP服务器：" + SMTP_SERVER+"........"+str(delay_time * delay_time)+" 秒后重试")
-        time.sleep(delay_time * delay_time)
+    while not check_server_auth():
+        logging.critical("无法连上邮件服务器 或 用户认证失败：" + SMTP_SERVER+"... ... "+str(delay_time * 10)+" 秒后重试")
+        time.sleep(delay_time * 10)
         if delay_time < 4:
             delay_time += 1
+        else:
+            logging.critical("无法连上 SMTP 服务器 或 用户认证失败：程序退出...")
+            exit(3)
     else:
         logging.info("连接SMTP服务器OK: " + SMTP_SERVER)
-    exit(0)
 
+def clear_files(dir):
+    rootdir = dir
+    for parent, dirnames, filenames in os.walk(rootdir, False):
+        for name in filenames:
+            logging.info("清理文件, 文件名为："+parent + '\\'+ name)
+            try:
+                os.remove(os.path.join(parent, name))
+            except:
+                logging.warning("清理文件失败文件名为：" + parent + '\\' + name)
+
+def erase_dir(dir):
+    # 删除符合条件的文件夹
+    rootdir = dir
+    logging.info("清理文件夹："+rootdir )
+    for parent, dirnames, filenames in os.walk(rootdir, False):
+        for name in filenames:
+            try:
+                os.remove(os.path.join(parent, name))
+            except:
+                logging.warning("清理文件失败文件名：" + parent + '\\' + name)
+        for name in dirnames:
+            erase_dir(os.path.join(parent, name))
+    try:
+        os.rmdir(rootdir)
+    except:
+        logging.warning("删除文件出错："+ rootdir)
+
+
+def clear_expire_folder():
+    rootdir = WORK_DIR + "sent"
+    def getDirList(p):
+#        p = str(p)
+        if p == "":
+            return []
+        p = p.replace("/", "\\")
+        if p[-1] != "\\":
+            p = p + "\\"
+        a = os.listdir(p)
+        b = [x for x in a if os.path.isdir(p + x)]
+        return b
+
+    def is_valid_date(str):
+        '''判断是否是一个有效的日期字符串'''
+        tString = str
+        if len(tString) < 8:
+            return False
+        tString = str[:8]
+        try:
+            datetime.datetime.strptime(tString, "%Y%m%d")
+            return True
+        except:
+            return False
+    def is_expire(str):
+        '''判断是否是 过期'''
+        #    currdate = time.strftime('%Y%m%d',time.localtime(time.time()))
+        currdate = datetime.date.today()
+        checkdate = datetime.date(int(str[:4]), int(str[4:6]), int(str[6:8]))
+        interval = currdate - checkdate
+        rint = interval.days
+        return rint
+
+    dirlists = getDirList(rootdir)
+    for cef_foldername in dirlists:
+        if is_valid_date(cef_foldername):
+            if int(is_expire(cef_foldername)) > 14:  # 文件夹名字 是否 与当前日期相差14天以上
+                erase_dir(rootdir + '\\' + cef_foldername)
 
 if __name__ == '__main__':
-    mail_server_ok()
+    clear_expire_folder()
     for i in range(customer_total):
         folder_list = customer_folder[i]
         c_name = customer_name[i]
         file_list = get_customer_file_list(folder_list,customer_wildcard[i])
 
         if len(file_list) > 0:
+            mail_server_ok()        #检查网络是否可用
             limit_times = 1
             while limit_times < 9:
                 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -201,11 +287,12 @@ if __name__ == '__main__':
                     logging.warning("拷贝文件夹出错...")
                     continue
                 if check_diff_files(customer_folder[i],prepare_folder) == False:
-                    logging.info("拷贝文件夹与原文件夹一致,已比对次数:" + str(limit_times))
-                    time.sleep(limit_times * limit_times)
+                    logging.info("拷贝文件夹与原文件夹一致.")
+                    clear_files(customer_folder[i])
                     break
                 else:
                     logging.warning("拷贝文件夹与原文件夹不一致次数:" + str(limit_times))
+                    time.sleep(limit_times * 10)
                 limit_times +=1
 
             file_list = get_customer_file_list(prepare_folder,customer_wildcard[i])
