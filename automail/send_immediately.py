@@ -19,6 +19,14 @@ long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
+cf_file = 'c:\\automail\\automail.ini'
+if not os.path.isfile(cf_file):
+    cf_file = 'd:\\automail\\automail.ini'
+    if not os.path.isfile(cf_file):
+        cf_file = 'e:\\automail\\automail.ini'
+        if not os.path.isfile(cf_file):
+            logging.critical('无法打开配置文件：automail.ini ')
+            exit(2)
 try:
     cf.read('conf.ini', encoding="utf-8-sig")
     customer_total = int (cf.get("Common", "total"))

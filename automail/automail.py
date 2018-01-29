@@ -1,4 +1,5 @@
 # -*- coding: UTF-8 -*-
+# 版本：2018-01-29
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -206,22 +207,24 @@ def clear_files(dir):
     rootdir = dir
     for parent, dirnames, filenames in os.walk(rootdir, False):
         for name in filenames:
-            logging.info("清理文件, 文件名为："+parent + '\\'+ name)
+            logging.info("移动文件, 文件名为："+parent + '\\'+ name)
             try:
                 os.remove(os.path.join(parent, name))
             except:
-                logging.warning("清理文件失败文件名为：" + parent + '\\' + name)
+                logging.warning("移动文件失败文件名为：" + parent + '\\' + name)
+                return False
+    return True
 
 def erase_dir(dir):
     # 删除符合条件的文件夹
     rootdir = dir
-    logging.info("清理文件夹："+rootdir )
+    logging.info("删除文件夹："+rootdir )
     for parent, dirnames, filenames in os.walk(rootdir, False):
         for name in filenames:
             try:
                 os.remove(os.path.join(parent, name))
             except:
-                logging.warning("清理文件失败文件名：" + parent + '\\' + name)
+                logging.warning("删除文件失败文件名：" + parent + '\\' + name)
         for name in dirnames:
             erase_dir(os.path.join(parent, name))
     try:
@@ -278,23 +281,27 @@ if __name__ == '__main__':
 
         if len(file_list) > 0:
             mail_server_ok()        #检查网络是否可用
-            limit_times = 1
-            while limit_times < 9:
+            limit_times = 0
+            while limit_times < 4:
+                limit_times += 1
                 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
                 prepare_folder = WORK_DIR+"sent\\" + folder_prefix+customer_name[i]
                 os.mkdir(prepare_folder)
                 if prepare_files(customer_folder[i],prepare_folder) == False:
                     logging.warning("拷贝文件夹出错...")
-                    continue
                 if check_diff_files(customer_folder[i],prepare_folder) == False:
                     logging.info("拷贝文件夹与原文件夹一致.")
-                    clear_files(customer_folder[i])
-                    break
+                    if clear_files(customer_folder[i]):
+                        break
+                    else:
+                        logging.warning("清空文件夹失败，重试次数:" + str(limit_times))
                 else:
                     logging.warning("拷贝文件夹与原文件夹不一致次数:" + str(limit_times))
-                    time.sleep(limit_times * 10)
-                limit_times +=1
-
+#                    time.sleep(limit_times * 10)
+                    time.sleep(limit_times )
+            if limit_times > 2:
+                logging.warning("文件夹复制或文件比对重试多次后失败，此客户邮件发送暂停，重试次数:" + str(limit_times))
+                continue
             file_list = get_customer_file_list(prepare_folder,customer_wildcard[i])
 
             tomail_list = get_customer_mail_list(customer_toaddr[i])

@@ -207,7 +207,7 @@ int main(int argc, char **argv)
     rl.SetLogFile(m_pfLogFile);
 
     ftime(&aTime);
-    sprintf(rl.m_cInfo,"AutoMailService starting.run command every 5 minute..%s",ctime(&(aTime.time)));
+    sprintf(rl.m_cInfo,"AutoMailService starting...run command every 5 minute..%s",ctime(&(aTime.time)));
     rl.WriteLogInfo(rl.m_cInfo);
 
 
