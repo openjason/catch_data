@@ -28,7 +28,7 @@ if not os.path.isfile(cf_file):
             logging.critical('无法打开配置文件：automail.ini ')
             exit(2)
 try:
-    cf.read('conf.ini', encoding="utf-8-sig")
+    cf.read(cf_file, encoding="utf-8-sig")
     customer_total = int (cf.get("Common", "total"))
     from_email_addr = cf.get("Common", "from_email_addr")
     SMTP_SERVER = cf.get("Common", "SMTP_SERVER")

@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-01-29
+# 版本：2018-01-30
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -282,24 +282,25 @@ if __name__ == '__main__':
         if len(file_list) > 0:
             mail_server_ok()        #检查网络是否可用
             limit_times = 0
-            while limit_times < 4:
+            while limit_times < 5:
                 limit_times += 1
                 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
                 prepare_folder = WORK_DIR+"sent\\" + folder_prefix+customer_name[i]
                 os.mkdir(prepare_folder)
                 if prepare_files(customer_folder[i],prepare_folder) == False:
                     logging.warning("拷贝文件夹出错...")
-                if check_diff_files(customer_folder[i],prepare_folder) == False:
-                    logging.info("拷贝文件夹与原文件夹一致.")
-                    if clear_files(customer_folder[i]):
-                        break
-                    else:
-                        logging.warning("清空文件夹失败，重试次数:" + str(limit_times))
+                    time.sleep(limit_times * 10)
                 else:
-                    logging.warning("拷贝文件夹与原文件夹不一致次数:" + str(limit_times))
-#                    time.sleep(limit_times * 10)
-                    time.sleep(limit_times )
-            if limit_times > 2:
+                    if check_diff_files(customer_folder[i],prepare_folder) == False:
+                        logging.info("拷贝文件夹与原文件夹一致.")
+                        if clear_files(customer_folder[i]):
+                            break
+                        else:
+                            logging.warning("清空文件夹失败，重试次数:" + str(limit_times))
+                    else:
+                        logging.warning("拷贝文件夹与原文件夹不一致次数:" + str(limit_times))
+                        time.sleep(limit_times * 10)
+            if limit_times == 5 :
                 logging.warning("文件夹复制或文件比对重试多次后失败，此客户邮件发送暂停，重试次数:" + str(limit_times))
                 continue
             file_list = get_customer_file_list(prepare_folder,customer_wildcard[i])
