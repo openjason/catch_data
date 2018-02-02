@@ -398,6 +398,8 @@ def save_xls_file(blocked_list, block_child_list):
                             if tempList2[1] == 'group':
                                 ServicePortList = []
                                 rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
+#add 2018
+                                rule_service_port_list.sort()
                                 for tempInt1 in range(len(rule_service_port_list)):
 #                                    print(rule_service_port_list)
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
@@ -460,7 +462,6 @@ def save_xls_file(blocked_list, block_child_list):
 
                 cellrow +=1
 
-
 # Edit sheet "rule" end
     try:
         workbook.save(WorkDir+'cfg_new.xlsx')
@@ -469,6 +470,20 @@ def save_xls_file(blocked_list, block_child_list):
     finally:
         workbook.close()
 
+def format_service_list(s_list)
+    f_list = ''
+    for tempInt1 in range(len(s_list)):
+            tmpStr1 = s_list(tempInt1)
+            tmpList1 = tmpStr1.split()
+            last_str1 = ""
+            if len(tmpList1) == 3:
+                last_str1 = tmpList1[0]
+                if tmpList1[1] == tmpList1[2]:
+
+
+        rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
+
+    return f_list
 
 def get_first_word(str):
     tstr1 = str.lstrip(' ')

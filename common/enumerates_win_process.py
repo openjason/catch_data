@@ -12,6 +12,19 @@ email ekoome@yahoo.com
 license GPL
 """
 from ctypes import *
+import logging
+
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S',
+                    filename = ('test.log'),
+                    filemode='a')
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger('').addHandler(console)
+
 
 # PSAPI.DLL
 psapi = windll.psapi
@@ -30,7 +43,6 @@ def EnumProcesses():
     PROCESS_QUERY_INFORMATION = 0x0400
     PROCESS_VM_READ = 0x0010
     process_list = []
-
     # Call Enumprocesses to get hold of process id's
     psapi.EnumProcesses(byref(lpidProcess),
                         cb,
@@ -66,3 +78,5 @@ def EnumProcesses():
 if __name__ == '__main__':
     p_list = EnumProcesses()
     print (p_list)
+    for i in p_list:
+        logging.info(i)

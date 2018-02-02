@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-01-30
+# 版本：2018-02-02
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -11,6 +11,7 @@ import re
 import time,datetime
 from filecmp import dircmp
 import socket
+from ctypes import *
 
 SMTP_SERVER = ""
 WORK_DIR = ""
@@ -71,6 +72,61 @@ logging.basicConfig(level=logging.DEBUG,
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 logging.getLogger('').addHandler(console)
+
+psapi = windll.psapi
+kernel = windll.kernel32
+
+def EnumProcesses(process_name):
+    arr = c_ulong * 256
+    lpidProcess = arr()
+    cb = sizeof(lpidProcess)
+    cbNeeded = c_ulong()
+    hModule = c_ulong()
+    count = c_ulong()
+    modname = c_buffer(30)
+    PROCESS_QUERY_INFORMATION = 0x0400
+    PROCESS_VM_READ = 0x0010
+    process_list = []
+    # Call Enumprocesses to get hold of process id's
+    psapi.EnumProcesses(byref(lpidProcess),
+                        cb,
+                        byref(cbNeeded))
+
+    # Number of processes returned
+    nReturned = int(cbNeeded.value / sizeof(c_ulong()))
+
+    pidProcess = [i for i in lpidProcess][:nReturned]
+
+    for pid in pidProcess:
+
+        # Get handle to the process based on PID
+        hProcess = kernel.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+                                      False, pid)
+        if hProcess:
+            psapi.EnumProcessModules(hProcess, byref(hModule), sizeof(hModule), byref(count))
+            psapi.GetModuleBaseNameA(hProcess, hModule.value, modname, sizeof(modname))
+            tem_str1 = [i for i in modname if i != b'\x00']
+            j=''
+            for i in range(len(tem_str1)):
+                j = j + (tem_str1[i].decode())
+#            print (j)
+            process_list.append(j)
+
+            # -- Clean up
+            for i in range(modname._length_):
+                modname[i] = b'\x00'
+
+            kernel.CloseHandle(hProcess)
+    p_count = 0
+    for i in range(len(process_list)):
+        if process_name == process_list[i]:
+            p_count += 1
+#            logging.info(str(process_name)+str(i))
+    logging.info("Version: 20180202 "+str(p_count))
+    if p_count > 2 :
+        return True
+    else:
+        return False
 
 def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     c_subject = c_subject.replace("YYYY-MM-DD",long_date)
@@ -235,44 +291,26 @@ def erase_dir(dir):
 
 def clear_expire_folder():
     rootdir = WORK_DIR + "sent"
-    def getDirList(p):
-#        p = str(p)
-        if p == "":
-            return []
-        p = p.replace("/", "\\")
-        if p[-1] != "\\":
-            p = p + "\\"
-        a = os.listdir(p)
-        b = [x for x in a if os.path.isdir(p + x)]
-        return b
-
-    def is_valid_date(str):
-        '''判断是否是一个有效的日期字符串'''
-        tString = str
-        if len(tString) < 8:
-            return False
-        tString = str[:8]
+    def is_expire(str):
         try:
-            datetime.datetime.strptime(tString, "%Y%m%d")
-            return True
+            currdate = datetime.date.today()
+            checkdate = datetime.date(int(str[:4]), int(str[4:6]), int(str[6:8]))
         except:
             return False
-    def is_expire(str):
-        '''判断是否是 过期'''
-        #    currdate = time.strftime('%Y%m%d',time.localtime(time.time()))
-        currdate = datetime.date.today()
-        checkdate = datetime.date(int(str[:4]), int(str[4:6]), int(str[6:8]))
-        interval = currdate - checkdate
-        rint = interval.days
-        return rint
-
-    dirlists = getDirList(rootdir)
+        interval = (currdate - checkdate).days
+        if interval > 14:
+            return True
+        else:
+            return False
+    dirlists = os.listdir(rootdir)
     for cef_foldername in dirlists:
-        if is_valid_date(cef_foldername):
-            if int(is_expire(cef_foldername)) > 14:  # 文件夹名字 是否 与当前日期相差14天以上
-                erase_dir(rootdir + '\\' + cef_foldername)
+        if is_expire(cef_foldername):
+            erase_dir(rootdir + '\\' + cef_foldername)
 
 if __name__ == '__main__':
+    if EnumProcesses('automail.exe') :
+        logging.warning('automail.exe is running ,请不要重复运行. Exit().')
+        exit(4)
     clear_expire_folder()
     for i in range(customer_total):
         folder_list = customer_folder[i]
