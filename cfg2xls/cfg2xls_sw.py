@@ -174,7 +174,7 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 def save_xls_file(blocked_list, block_child_list):
     workbook = openpyxl.load_workbook(xlsfile)
-
+    vaild_counter = 1
     print(xlsfile)
     wb = workbook
     writecell = []
@@ -403,7 +403,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 for tempInt1 in range(len(rule_service_port_list)):
 #                                    print(rule_service_port_list)
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
-
+            format_rule_str = format_service_list(rule_service_port)
 
             if rule_from == rule_to or rule_from == 'VPN' or \
                     (rule_source_address == 'any' and rule_destination_address == 'any' and rule_service == 'any') or \
@@ -413,6 +413,8 @@ def save_xls_file(blocked_list, block_child_list):
 
                 cellcolumn = 1
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_id
+                sheet.cell(row=cellrow, column=cellcolumn).value = vaild_counter
+                vaild_counter +=1
                 cellcolumn += 1
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_from
                 cellcolumn += 1
@@ -447,11 +449,11 @@ def save_xls_file(blocked_list, block_child_list):
                 # else:
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
 
-
                 cellcolumn += 1
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
                 cellcolumn += 1
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_port
+                sheet.cell(row=cellrow, column=cellcolumn).value = format_rule_str
                 cellcolumn += 1
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
@@ -470,26 +472,37 @@ def save_xls_file(blocked_list, block_child_list):
     finally:
         workbook.close()
 
-def format_service_list(s_list)
-    f_list = ''
-    for tempInt1 in range(len(s_list)):
-            tmpStr1 = s_list(tempInt1)
-            tmpList1 = tmpStr1.split()
-            last_str1 = ""
-            if len(tmpList1) == 3:
-                last_str1 = tmpList1[0]
-                if tmpList1[1] == tmpList1[2]:
-
-
-        rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
-
-    return f_list
+def format_service_list(s_list):
+    if s_list == "":
+        return ""
+    f_service_str = ''
+    last_str1 = ""
+    tmpList1 = s_list.split('\n')
+    for tempInt1 in range(len(tmpList1)):
+            tmp_str2 = tmpList1[tempInt1]
+            tmpList2 = tmp_str2.split()
+            if len(tmpList2) == 3:
+                if last_str1 != tmpList2[0]:
+                    if last_str1 == "":
+                        f_service_str = tmpList2[0]
+                    else:
+                        f_service_str = f_service_str + "\n" +tmpList2[0]
+                    last_str1 = tmpList2[0]
+                    if tmpList2[1] == tmpList2[2]:
+                        f_service_str = f_service_str + " " + tmpList2[1]
+                    else:
+                        f_service_str = f_service_str + " " + tmpList2[1]+"-" + tmpList2[2]
+                else:
+                    if tmpList2[1] == tmpList2[2]:
+                        f_service_str = f_service_str + "、" + tmpList2[1]
+                    else:
+                        f_service_str = f_service_str + "、" + tmpList2[1]+"-" + tmpList2[2]
+    return f_service_str
 
 def get_first_word(str):
     tstr1 = str.lstrip(' ')
     tlist = tstr1.split(' ')
     return tlist[0]
-
 
 def list_to_string(rawlist):
     tstr = ''
