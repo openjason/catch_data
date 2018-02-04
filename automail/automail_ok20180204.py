@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-05
+# 版本：2018-02-02
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -48,9 +48,6 @@ customer_wildcard = []
 customer_toaddr = []
 customer_ccaddr = []
 customer_subject = []
-customer_dircom1 = []
-customer_dircom2 = []
-
 for i in range(1,customer_total+1):
     try:
         cfstr = 'Customer' + str(i)
@@ -60,10 +57,8 @@ for i in range(1,customer_total+1):
         customer_toaddr.append(cf.get(cfstr,'to_email_addr'))
         customer_ccaddr.append(cf.get(cfstr,'cc_email_addr'))
         customer_subject.append(cf.get(cfstr,'subject'))
-        customer_dircom1.append(cf.get(cfstr, 'dircom1'))
-        customer_dircom2.append(cf.get(cfstr, 'dircom2'))
     except:
-        logging.warning("conf.ini 配置有误，参数:"+cfstr)
+        logging.warning("conf.ini 配置有误，位置:"+cfstr)
 #    print (customer_name)
 #    print (customer_toaddr)
 
@@ -127,7 +122,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180205 "+str(p_count))
+    logging.info("Version: 20180202 "+str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -177,19 +172,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     logging.info(c_name + ":发送邮件："+"to:"+";".join(toaddr)+" ;附件："+";".join(files))
     server.quit()
 
-def dir_compare_diff(dir_com1,dir_com2,folder):
-    dcmp = dircmp(dir_com1, dir_com2)
-    is_diff = False
-    if len(dcmp.diff_files)>0:
-        is_diff = True
-        logging.info ("diff_file:" + ";".join(dcmp.diff_files))
-    if len(dcmp.left_only)>0:
-        is_diff = True
-        logging.info ("source_only:" + ";".join(dcmp.left_only))
-    return is_diff
-    return True
-
-def get_customer_file_list(folder,wildard,dir_com1,dir_com2):
+def get_customer_file_list(folder,wildard):
     _filelist = []
     source_dir = folder
     have_file = False
@@ -197,19 +180,17 @@ def get_customer_file_list(folder,wildard,dir_com1,dir_com2):
     if not os.path.exists(folder):
         logging.warning("文件夹不存在："+ folder)
         return _filelist
-    if dir_compare_diff(dir_com1,dir_com2,folder):
-        for i in range(len(_wildcard)):
-            _wcard = _wildcard[i]
-            _wcard = _wcard.replace('*','')
-            for j in os.listdir(source_dir):
-                if j.find(_wcard) > 0 :
-                    have_file = True
-                    if not(j in _filelist):
-                        _filelist.append(j)
-        if not have_file :
-            logging.info("没有匹配文件_folder:"+source_dir+"  "+wildard)
+    for i in range(len(_wildcard)):
+        _wcard = _wildcard[i]
+        _wcard = _wcard.replace('*','')
+        for j in os.listdir(source_dir):
+            if j.find(_wcard) > 0 :
+                have_file = True
+                if not(j in _filelist):
+                    _filelist.append(j)
+    if not have_file :
+        logging.info("没有匹配文件_folder:"+source_dir+"  "+wildard)
     return _filelist
-
 
 def get_customer_mail_list(toaddr):
     _mail_list =[]
@@ -326,62 +307,7 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
-def main_compare(dir1,dir2):
-    holderlist = []
-
-    def compareme(dir1, dir2):  # 递归获取更新项函数
-        dircomp = dircmp(dir1, dir2)
-        only_in_one = dircomp.left_only  # 源目录新文件或目录
-        diff_in_one = dircomp.diff_files  # 不匹配文件，源目录文件已发生变化
-        dirpath = os.path.abspath(dir1)  # 定义源目录绝对路径
-
-        # 将更新文件或目录追加到holderlist
-        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in only_in_one]
-        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in diff_in_one]
-        if len(dircomp.common_dirs) > 0:  # 判断是否存在相同子目录，以便递归
-            for item in dircomp.common_dirs:  # 递归子目录
-                compareme(os.path.abspath(os.path.join(dir1, item)), os.path.abspath(os.path.join(dir2, item)))
-        return holderlist
-
-    source_files = compareme(dir1, dir2)  # 对比源目录与备份目录
-    dir1 = os.path.abspath(dir1)  # 取绝对路径后，后面不会自动加上'/'
-
-    if not dir2.endswith('/'):
-        dir2 = dir2 + '/'  # 备份目录路径加'/'
-
-    dir2 = os.path.abspath(dir2)
-    destination_files = []
-    createdir_bool = False
-
-    for item in source_files:  # 遍历返回的差异文件或目录清单
-        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
-        destination_files.append(destination_dir)
-        if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
-            if not os.path.exists(destination_dir):
-                os.makedirs(destination_dir)
-                createdir_bool = True  # 再次调用copareme函数标记
-    if createdir_bool:  # 重新调用compareme函数，重新遍历新创建目录的内容
-        destination_files = []
-        source_files = []
-        source_files = compareme(dir1, dir2)  # 调用compareme函数
-        for item in source_files:  # 获取源目录差异路径清单，对应替换成备份目录
-            destination_dir = re.sub(dir1, dir2, item)
-            destination_files.append(destination_dir)
-
-    print('update item:')
-    print(source_files)  # 输出更新项列表清单
-    copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
-    for item in copy_pair:
-        if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
-            pass
-            #shutil.copyfile(item[0], item[1])
-
-
-
-
 if __name__ == '__main__':
-    main_compare("e:\\automail","e:\\test")
-    exit(0)
     if EnumProcesses('automail.exe') :
         logging.warning('automail.exe is running ,请不要重复运行. Exit().')
         exit(4)
@@ -389,10 +315,7 @@ if __name__ == '__main__':
     for i in range(customer_total):
         folder_list = customer_folder[i]
         c_name = customer_name[i]
-        dir_com1 = customer_dircom1[i]
-        dir_com2 = customer_dircom2[i]
-
-        file_list = get_customer_file_list(folder_list,customer_wildcard[i],dir_com1,dir_com2)
+        file_list = get_customer_file_list(folder_list,customer_wildcard[i])
 
         if len(file_list) > 0:
             mail_server_ok()        #检查网络是否可用

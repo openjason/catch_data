@@ -17,12 +17,24 @@ sc query SERVICE_NAME
 #include <windows.h>
 #include <stdio.h>
 
+#include"tlhelp32.h"
 #include "RcLogInfo.h"
 
 // Some global vars
+
+// Replace with your own
+
+SERVICE_STATUS_HANDLE g_ServiceStatusHandle;
+HANDLE g_StopEvent;
+DWORD g_CurrentState = 0;
+bool g_SystemShutdown = false;
+
+
 SERVICE_STATUS          gStatus;
 SERVICE_STATUS_HANDLE   gStatusHandle;
 HANDLE                  ghStopEvent = NULL;
+
+
 
 RcLogInfo rl;
 timeb aTime;
@@ -57,16 +69,50 @@ int RcLogInfo::WriteLogInfo(const char *pInfo)
         return 0;
     }
     return 1;
-
-
 }
 
-// Replace with your own
+bool IsProcessRun(char *pName)
+    {
+        HANDLE hProcessSnap;
+        HANDLE hProcess;
+        PROCESSENTRY32 pe32;
+        DWORD dwPriorityClass;
 
-SERVICE_STATUS_HANDLE g_ServiceStatusHandle;
-HANDLE g_StopEvent;
-DWORD g_CurrentState = 0;
-bool g_SystemShutdown = false;
+        bool bFind = false;
+        // Take a snapshot of all processes in the system.
+        hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (hProcessSnap == INVALID_HANDLE_VALUE)
+        {
+            return false;
+        }
+        // Set the size of the structure before using it.
+        pe32.dwSize = sizeof(PROCESSENTRY32);
+
+        // Retrieve information about the first process,
+        // and exit if unsuccessful
+        if (!Process32First(hProcessSnap, &pe32))
+        {
+            CloseHandle(hProcessSnap);          // clean the snapshot object
+            return false;
+        }
+
+        // Now walk the snapshot of processes, and
+        // display information about each process in turn
+        do
+        {
+            // Retrieve the priority class.
+            dwPriorityClass = 0;
+            if (::strstr(pe32.szExeFile, pName) != NULL)
+            {
+                bFind = true;
+                break;
+            }
+        } while (Process32Next(hProcessSnap, &pe32));
+
+        CloseHandle(hProcessSnap);
+        return bFind;
+}
+
 
 
 void ReportStatus(DWORD state)
@@ -141,6 +187,7 @@ void ReportProgressStatus(DWORD state, DWORD checkPoint, DWORD waitHint)
 void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {
     int returncode;
+    char isexist;
     // Must be called at start.
     g_ServiceStatusHandle = RegisterServiceCtrlHandlerEx("autoservice", &HandlerEx, NULL);
 
@@ -160,10 +207,20 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
         //Beep(1000, 100);
 //    Save all unsaved data etc., but do it quickly.
 //        returncode = WinExec("c:\\automail\\automail.exe",SW_NORMAL);
+
+        if (IsProcessRun("automail.exe"))
+            //printf("automail.exe is running...");
+            isexist = 'T';
+        else
+            //printf("automail.exe is not run...");
+            isexist = 'F';
+
+
         returncode = WinExec("automail.exe",SW_NORMAL);
 
+
         ftime(&aTime);
-        sprintf(rl.m_cInfo,"AutoMail running...rc=%d :%s",returncode,ctime(&(aTime.time)));
+        sprintf(rl.m_cInfo,"invoke automail... exist(%c),rc=%d :%s",isexist,returncode,ctime(&(aTime.time)));
         rl.WriteLogInfo(rl.m_cInfo);
     }
 
@@ -175,8 +232,12 @@ void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
     ReportStatus(SERVICE_STOPPED);
 }
 // Standard console application entry point.
+
+
+
 int main(int argc, char **argv)
 {
+
     char cPath[MAX_PATH];
     memset(cPath,0,MAX_PATH);
     if (!GetModuleFileName(NULL,cPath,MAX_PATH))
@@ -207,7 +268,7 @@ int main(int argc, char **argv)
     rl.SetLogFile(m_pfLogFile);
 
     ftime(&aTime);
-    sprintf(rl.m_cInfo,"AutoMailService starting...run command every 5 minute..%s",ctime(&(aTime.time)));
+    sprintf(rl.m_cInfo,"AMService starting...invoke automail every 5 minute..%s",ctime(&(aTime.time)));
     rl.WriteLogInfo(rl.m_cInfo);
 
 

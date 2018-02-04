@@ -6,3 +6,5 @@
 *.exe
 *.obj
 .gitignore
+*.depend
+*.layout
