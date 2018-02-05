@@ -12,6 +12,7 @@ import time,datetime
 from filecmp import dircmp
 import socket
 from ctypes import *
+import shutil
 
 SMTP_SERVER = ""
 WORK_DIR = ""
@@ -326,7 +327,7 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
-def main_compare(dir1,dir2):
+def main_compare(dir1,dir2,dir2_diff):
     holderlist = []
 
     def compareme(dir1, dir2):  # 递归获取更新项函数
@@ -354,7 +355,8 @@ def main_compare(dir1,dir2):
     createdir_bool = False
 
     for item in source_files:  # 遍历返回的差异文件或目录清单
-        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
+#        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
+        destination_dir = item.replace(dir1,dir2)
         destination_files.append(destination_dir)
         if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
             if not os.path.exists(destination_dir):
@@ -365,7 +367,8 @@ def main_compare(dir1,dir2):
         source_files = []
         source_files = compareme(dir1, dir2)  # 调用compareme函数
         for item in source_files:  # 获取源目录差异路径清单，对应替换成备份目录
-            destination_dir = re.sub(dir1, dir2, item)
+#            destination_dir = re.sub(dir1, dir2, item)
+            destination_dir = item.replace(dir1, dir2)
             destination_files.append(destination_dir)
 
     print('update item:')
@@ -373,15 +376,13 @@ def main_compare(dir1,dir2):
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
-            pass
-            #shutil.copyfile(item[0], item[1])
+            shutil.copyfile(item[0], item[1])
+            shutil.copyfile(item[0], os.path.join(dir2_diff,os.path.basename(item[0]))
 
 
 
 
 if __name__ == '__main__':
-    main_compare("e:\\automail","e:\\test")
-    exit(0)
     if EnumProcesses('automail.exe') :
         logging.warning('automail.exe is running ,请不要重复运行. Exit().')
         exit(4)
@@ -392,6 +393,8 @@ if __name__ == '__main__':
         dir_com1 = customer_dircom1[i]
         dir_com2 = customer_dircom2[i]
 
+        main_compare(dir_com1,dir_com2,folder_list)
+        exit(0)
         file_list = get_customer_file_list(folder_list,customer_wildcard[i],dir_com1,dir_com2)
 
         if len(file_list) > 0:
