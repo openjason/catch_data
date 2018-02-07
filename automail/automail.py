@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-05
+# 版本：2018-02-08
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -112,7 +112,7 @@ def EnumProcesses(process_name):
             tem_str1 = [i for i in modname if i != b'\x00']
             j=''
             for i in range(len(tem_str1)):
-                j = j + (tem_str1[i].decode())
+                j = j + (tem_str1[i].decode('utf-8', 'ignore'))
 #            print (j)
             process_list.append(j)
 
@@ -126,7 +126,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180205 "+str(p_count))
+    logging.info("Version: 20180208 "+str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -188,7 +188,7 @@ def dir_compare_diff(dir_com1,dir_com2,folder):
     return is_diff
     return True
 
-def get_customer_file_list(folder,wildard,dir_com1,dir_com2):
+def get_customer_file_list(folder,wildard):
     _filelist = []
     source_dir = folder
     have_file = False
@@ -196,7 +196,8 @@ def get_customer_file_list(folder,wildard,dir_com1,dir_com2):
     if not os.path.exists(folder):
         logging.warning("文件夹不存在："+ folder)
         return _filelist
-    if dir_compare_diff(dir_com1,dir_com2,folder):
+#    if dir_compare_diff(dir_com1,dir_com2,folder):
+    if True:
         for i in range(len(_wildcard)):
             _wcard = _wildcard[i]
             _wcard = _wcard.replace('*','')
@@ -325,7 +326,7 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
-def clear_compare_right_side(dir2,dir1):
+def clear_compare_right_side(dir1,dir2):
     holderlist = []
 
     def compareme(dir1, dir2):  # 递归获取更新项函数
@@ -358,7 +359,10 @@ def clear_compare_right_side(dir2,dir1):
         destination_files.append(destination_dir)
         if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
             if not os.path.exists(destination_dir):
+                destination_dir = item.replace(dir2, dir1)
+                logging.info("dist文件夹删除：" + destination_dir)
                 shutil.rmtree(destination_dir)
+
                 createdir_bool = True  # 再次调用copareme函数标记
     if createdir_bool:  # 重新调用compareme函数，重新遍历新创建目录的内容
         destination_files = []
@@ -373,6 +377,7 @@ def clear_compare_right_side(dir2,dir1):
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
+            logging.info("dist文件删除："+ item[0])
             os.remove(item[0])
 
 
@@ -442,9 +447,11 @@ if __name__ == '__main__':
         source_dir = customer_sourcedir[i]
         dest_dir = customer_destdir[i]
 
+        clear_compare_right_side(dest_dir,source_dir)
         main_compare(source_dir,dest_dir,folder_list)
-        exit(0)
-        file_list = get_customer_file_list(folder_list,customer_wildcard[i],dir_com1,dir_com2)
+        exit()
+
+        file_list = get_customer_file_list(folder_list, customer_wildcard[i])
 
         if len(file_list) > 0:
             mail_server_ok()        #检查网络是否可用
@@ -481,3 +488,4 @@ if __name__ == '__main__':
             send_email(prepare_folder,file_list,tomail_list,ccmail_list,c_name,c_subject)
             logging.info("sending mail....."+c_name)
             time.sleep(3)
+
