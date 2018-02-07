@@ -49,8 +49,8 @@ customer_wildcard = []
 customer_toaddr = []
 customer_ccaddr = []
 customer_subject = []
-customer_dircom1 = []
-customer_dircom2 = []
+customer_sourcedir = []
+customer_destdir = []
 
 for i in range(1,customer_total+1):
     try:
@@ -61,12 +61,10 @@ for i in range(1,customer_total+1):
         customer_toaddr.append(cf.get(cfstr,'to_email_addr'))
         customer_ccaddr.append(cf.get(cfstr,'cc_email_addr'))
         customer_subject.append(cf.get(cfstr,'subject'))
-        customer_dircom1.append(cf.get(cfstr, 'dircom1'))
-        customer_dircom2.append(cf.get(cfstr, 'dircom2'))
+        customer_sourcedir.append(cf.get(cfstr,'sourcedir'))
+        customer_destdir.append(cf.get(cfstr, 'destdir'))
     except:
         logging.warning("conf.ini 配置有误，参数:"+cfstr)
-#    print (customer_name)
-#    print (customer_toaddr)
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -327,12 +325,66 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
+def clear_compare_right_side(dir2,dir1):
+    holderlist = []
+
+    def compareme(dir1, dir2):  # 递归获取更新项函数
+        dircomp = dircmp(dir1, dir2)
+        only_in_one = dircomp.left_only  # 源目录新文件或目录
+        diff_in_one = dircomp.diff_files  # 不匹配文件，源目录文件已发生变化
+        dirpath = os.path.abspath(dir1)  # 定义源目录绝对路径
+
+        # 将更新文件或目录追加到holderlist
+        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in only_in_one]
+#        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in diff_in_one]
+        if len(dircomp.common_dirs) > 0:  # 判断是否存在相同子目录，以便递归
+            for item in dircomp.common_dirs:  # 递归子目录
+                compareme(os.path.abspath(os.path.join(dir1, item)), os.path.abspath(os.path.join(dir2, item)))
+        return holderlist
+
+    source_files = compareme(dir1, dir2)  # 对比源目录与备份目录
+    dir1 = os.path.abspath(dir1)  # 取绝对路径后，后面不会自动加上'/'
+
+    if not dir2.endswith('/'):
+        dir2 = dir2 + '/'  # 备份目录路径加'/'
+
+    dir2 = os.path.abspath(dir2)
+    destination_files = []
+    createdir_bool = False
+
+    for item in source_files:  # 遍历返回的差异文件或目录清单
+#        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
+        destination_dir = item.replace(dir1,dir2)
+        destination_files.append(destination_dir)
+        if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
+            if not os.path.exists(destination_dir):
+                shutil.rmtree(destination_dir)
+                createdir_bool = True  # 再次调用copareme函数标记
+    if createdir_bool:  # 重新调用compareme函数，重新遍历新创建目录的内容
+        destination_files = []
+        source_files = []
+        source_files = compareme(dir1, dir2)  # 调用compareme函数
+        for item in source_files:  # 获取源目录差异路径清单，对应替换成备份目录
+#            destination_dir = re.sub(dir1, dir2, item)
+            destination_dir = item.replace(dir1, dir2)
+            destination_files.append(destination_dir)
+    print('update item:')
+    print(source_files)  # 输出更新项列表清单
+    copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
+    for item in copy_pair:
+        if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
+            os.remove(item[0])
+
+
+
+
 def main_compare(dir1,dir2,dir2_diff):
     holderlist = []
 
     def compareme(dir1, dir2):  # 递归获取更新项函数
         dircomp = dircmp(dir1, dir2)
         only_in_one = dircomp.left_only  # 源目录新文件或目录
+#        only_in_right = dircomp.right_only
         diff_in_one = dircomp.diff_files  # 不匹配文件，源目录文件已发生变化
         dirpath = os.path.abspath(dir1)  # 定义源目录绝对路径
 
@@ -370,30 +422,27 @@ def main_compare(dir1,dir2,dir2_diff):
 #            destination_dir = re.sub(dir1, dir2, item)
             destination_dir = item.replace(dir1, dir2)
             destination_files.append(destination_dir)
-
     print('update item:')
     print(source_files)  # 输出更新项列表清单
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
             shutil.copyfile(item[0], item[1])
-            shutil.copyfile(item[0], os.path.join(dir2_diff,os.path.basename(item[0]))
-
-
+            shutil.copyfile(item[0], os.path.join(dir2_diff,os.path.basename(item[0])))
 
 
 if __name__ == '__main__':
-    if EnumProcesses('automail.exe') :
+    if EnumProcesses('automail.exe'):
         logging.warning('automail.exe is running ,请不要重复运行. Exit().')
         exit(4)
     clear_expire_folder()
     for i in range(customer_total):
         folder_list = customer_folder[i]
         c_name = customer_name[i]
-        dir_com1 = customer_dircom1[i]
-        dir_com2 = customer_dircom2[i]
+        source_dir = customer_sourcedir[i]
+        dest_dir = customer_destdir[i]
 
-        main_compare(dir_com1,dir_com2,folder_list)
+        main_compare(source_dir,dest_dir,folder_list)
         exit(0)
         file_list = get_customer_file_list(folder_list,customer_wildcard[i],dir_com1,dir_com2)
 
