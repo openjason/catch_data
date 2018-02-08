@@ -234,7 +234,7 @@ def prepare_files(source_dir,  target_dir):
             logging.info('copy file error.')
             copy_ok = False
     return copy_ok
-def check_diff_files(dir1,dir2):
+def check_diff_n_leftonly_files(dir1,dir2):
     dcmp = dircmp(dir1, dir2)
     is_diff = False
     if len(dcmp.diff_files)>0:
@@ -244,6 +244,16 @@ def check_diff_files(dir1,dir2):
         is_diff = True
         logging.info ("source_only:" + ";".join(dcmp.left_only))
     return is_diff
+
+def check_diff_files(dir1,dir2):
+#check directory diff, only check files diffenect exist in both side.
+    dcmp = dircmp(dir1, dir2)
+    is_diff = False
+    if len(dcmp.diff_files)>0:
+        is_diff = True
+        logging.info ("diff_file:" + ";".join(dcmp.diff_files))
+    return is_diff
+
 
 def check_smtp_server(ipaddr,port):
     try:
@@ -326,7 +336,7 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
-def clear_compare_right_side(dir1,dir2):
+def compare_clear_right_side(dir1,dir2):
     holderlist = []
     if dir1 == '' or dir2 == '':
         return 2
@@ -386,7 +396,7 @@ def clear_compare_right_side(dir1,dir2):
     return 0
 
 
-def main_compare(dir1,dir2,dir2_diff):
+def main_compare_sync(dir1,dir2,dir2_diff):
     holderlist = []
     if dir1 == '' or dir2 == '':
         return 2
@@ -458,9 +468,9 @@ if __name__ == '__main__':
         source_dir = customer_sourcedir[i]
         dest_dir = customer_destdir[i]
 
-        if clear_compare_right_side(dest_dir,source_dir) != 0:
+        if compare_clear_right_side(dest_dir,source_dir) != 0:
             logging.info("无法比较文件夹，请查看配置是否正确.")
-        if main_compare(source_dir,dest_dir,folder_list) != 0:
+        if main_compare_sync(source_dir,dest_dir,folder_list) != 0:
             logging.info("无法比较文件夹，请查看配置是否正确.")
 
         file_list = get_customer_file_list(folder_list, customer_wildcard[i])
@@ -477,7 +487,7 @@ if __name__ == '__main__':
                     logging.warning("拷贝文件夹出错...")
                     time.sleep(limit_times * 10)
                 else:
-                    if check_diff_files(customer_folder[i],prepare_folder) == False:
+                    if check_diff_n_leftonly_files(customer_folder[i],prepare_folder) == False:
                         logging.info("拷贝文件夹与原文件夹一致.")
                         if clear_files(customer_folder[i]):
                             break
@@ -499,5 +509,5 @@ if __name__ == '__main__':
 
             send_email(prepare_folder,file_list,tomail_list,ccmail_list,c_name,c_subject)
             logging.info("sending mail....."+c_name)
-            time.sleep(3)
+            time.sleep(2)
 

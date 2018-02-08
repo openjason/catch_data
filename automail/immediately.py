@@ -148,7 +148,7 @@ def prepare_files(source_dir,  target_dir):
             logging.info('copy file error.')
             copy_ok = False
     return copy_ok
-def check_diff_files(dir1,dir2):
+def check_diff_n_leftonly_files(dir1,dir2):
     dcmp = dircmp(dir1, dir2)
     is_diff = False
     if len(dcmp.diff_files)>0:
@@ -176,7 +176,7 @@ if __name__ == '__main__':
                 if prepare_files(customer_folder[i],prepare_folder) == False:
                     logging.warning("拷贝文件夹出错...")
                     continue
-                if check_diff_files(customer_folder[i],prepare_folder) == False:
+                if check_diff_n_leftonly_files(customer_folder[i],prepare_folder) == False:
                     logging.info("拷贝文件夹与原文件夹一致,已比对次数:" + str(limit_times))
                     time.sleep(limit_times * limit_times)
                     break
