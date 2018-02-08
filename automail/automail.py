@@ -328,7 +328,11 @@ def clear_expire_folder():
 
 def clear_compare_right_side(dir1,dir2):
     holderlist = []
-
+    if dir1 == '' or dir2 == '':
+        return 2
+    if not(os.path.exists(dir1) or os.path.exists(dir2)):
+        logging.warning("无法打开文件夹：" + dir1 + "|" + dir2)
+        return 2
     def compareme(dir1, dir2):  # 递归获取更新项函数
         dircomp = dircmp(dir1, dir2)
         only_in_one = dircomp.left_only  # 源目录新文件或目录
@@ -379,13 +383,16 @@ def clear_compare_right_side(dir1,dir2):
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
             logging.info("dist文件删除："+ item[0])
             os.remove(item[0])
-
-
+    return 0
 
 
 def main_compare(dir1,dir2,dir2_diff):
     holderlist = []
-
+    if dir1 == '' or dir2 == '':
+        return 2
+    if not(os.path.exists(dir1) or os.path.exists(dir2)):
+        logging.warning("无法打开文件夹："+dir1+"|"+dir2)
+        return 2
     def compareme(dir1, dir2):  # 递归获取更新项函数
         dircomp = dircmp(dir1, dir2)
         only_in_one = dircomp.left_only  # 源目录新文件或目录
@@ -434,6 +441,7 @@ def main_compare(dir1,dir2,dir2_diff):
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
             shutil.copyfile(item[0], item[1])
             shutil.copyfile(item[0], os.path.join(dir2_diff,os.path.basename(item[0])))
+    return 0
 
 
 if __name__ == '__main__':
@@ -443,13 +451,17 @@ if __name__ == '__main__':
     clear_expire_folder()
     for i in range(customer_total):
         folder_list = customer_folder[i]
+        if not os.path.exists(folder_list):
+            logging.info("无法打开文件夹："+folder_list)
+            continue
         c_name = customer_name[i]
         source_dir = customer_sourcedir[i]
         dest_dir = customer_destdir[i]
 
-        clear_compare_right_side(dest_dir,source_dir)
-        main_compare(source_dir,dest_dir,folder_list)
-        exit()
+        if clear_compare_right_side(dest_dir,source_dir) != 0:
+            logging.info("无法比较文件夹，请查看配置是否正确.")
+        if main_compare(source_dir,dest_dir,folder_list) != 0:
+            logging.info("无法比较文件夹，请查看配置是否正确.")
 
         file_list = get_customer_file_list(folder_list, customer_wildcard[i])
 
