@@ -3,6 +3,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
+from email.header import Header
 import logging
 import os
 import configparser
@@ -13,7 +16,7 @@ from filecmp import dircmp
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
-SMTP_PWD = "none"
+SMTP_PWD = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -74,7 +77,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-    msg['From'] = SMTP_USER
+    msg['From'] = "中文名<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
     template_file_name = WORK_DIR+"template\\"+c_name+".template"
@@ -94,10 +97,15 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg.attach(body)  # add message body (text or html)
 
     for f in files:  # add files to the message
-        file_path = os.path.join(dir_path, f)
-        attachment = MIMEApplication(open(file_path, "rb").read())
-        attachment.add_header('Content-Disposition','attachment', filename=f)
-        msg.attach(attachment)
+        fullname = os.path.join(dir_path, f)
+        with open(fullname, 'rb') as o_f:
+            msg_attach = MIMEBase('application', 'octet-stream')
+            msg_attach.set_payload(o_f.read())
+            encoders.encode_base64(msg_attach)
+            msg_attach.add_header('Content-Disposition', 'attachment',
+                                  filename=(Header(f, 'utf-8').encode()))
+            msg.attach(msg_attach)
+
     server = smtplib.SMTP(SMTP_SERVER, 25)
     server.login(SMTP_USER, SMTP_PWD)
     mailbody = msg.as_string()
@@ -151,5 +159,4 @@ if __name__ == '__main__':
 
             send_email(folder_list,file_list,tomail_list,ccmail_list,c_name,c_subject)
             logging.info("正在发送邮件..."+c_name)
-            time.sleep(3)
-
+            time.sleep(1)

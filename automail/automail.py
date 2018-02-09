@@ -1,14 +1,18 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-08
+# 版本：2018-02-09
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
+from email.header import Header
 import logging
 import os
 import configparser
 import re
-import time,datetime
+import time
+import datetime
 from filecmp import dircmp
 import socket
 from ctypes import *
@@ -17,7 +21,7 @@ import shutil
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
-SMTP_PWD = "none"
+SMTP_PWD = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -126,7 +130,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180208 "+str(p_count))
+    logging.info("Version: 20180209 "+str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -138,7 +142,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-    msg['From'] = SMTP_USER
+    msg['From'] = "ECP<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
     template_file_name = WORK_DIR+"template\\"+c_name+".template"
@@ -158,17 +162,21 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg.attach(body)  # add message body (text or html)
 
     for f in files:  # add files to the message
-        file_path = os.path.join(dir_path, f)
-        attachment = MIMEApplication(open(file_path, "rb").read())
-        attachment.add_header('Content-Disposition','attachment', filename=f)
-        msg.attach(attachment)
-    logging.info ("附件共" + str(len(files)) + "个，其中有文件名："+ file_path)
+        fullname = os.path.join(dir_path, f)
+        with open(fullname, 'rb') as o_f:
+            msg_attach = MIMEBase('application', 'octet-stream')
+            msg_attach.set_payload(o_f.read())
+            encoders.encode_base64(msg_attach)
+            msg_attach.add_header('Content-Disposition', 'attachment',
+                                  filename=(Header(f, 'utf-8').encode()))
+            msg.attach(msg_attach)
+
+    logging.info ("附件共" + str(len(files)) + "个，其中有："+ fullname)
 
 #    return 2
 #if enable return, then program will not send email...
 
     server = smtplib.SMTP(SMTP_SERVER, 25)
-    #    server.starttls()
     server.login(SMTP_USER, SMTP_PWD)
     mailbody = msg.as_string()
 
@@ -470,8 +478,10 @@ if __name__ == '__main__':
 
         if compare_clear_right_side(dest_dir,source_dir) != 0:
             logging.info("无法比较文件夹，请查看配置是否正确.")
+            continue
         if main_compare_sync(source_dir,dest_dir,folder_list) != 0:
             logging.info("无法比较文件夹，请查看配置是否正确.")
+            continue
 
         file_list = get_customer_file_list(folder_list, customer_wildcard[i])
 
