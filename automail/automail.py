@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-09
+# 版本：2018-02-11
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -130,7 +130,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180209 "+str(p_count))
+    logging.info("Version: 20180211 "+str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -142,7 +142,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-    msg['From'] = "ECP<" + SMTP_USER + ">"
+    msg['From'] = "EP<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
     template_file_name = WORK_DIR+"template\\"+c_name+".template"
@@ -215,7 +215,8 @@ def get_customer_file_list(folder,wildard):
                     if not(j in _filelist):
                         _filelist.append(j)
         if not have_file :
-            logging.info("没有匹配文件_folder:"+source_dir+"  "+wildard)
+#            logging.info("无更新:"+source_dir+" "+wildard)
+            print("无更新:" + source_dir + " " + wildard)
     return _filelist
 
 
@@ -394,7 +395,7 @@ def compare_clear_right_side(dir1,dir2):
 #            destination_dir = re.sub(dir1, dir2, item)
             destination_dir = item.replace(dir1, dir2)
             destination_files.append(destination_dir)
-    print('update item:')
+    print('update item:',end="")
     print(source_files)  # 输出更新项列表清单
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
@@ -452,8 +453,9 @@ def main_compare_sync(dir1,dir2,dir2_diff):
 #            destination_dir = re.sub(dir1, dir2, item)
             destination_dir = item.replace(dir1, dir2)
             destination_files.append(destination_dir)
-    print('update item:')
+    print('update item:',end="")
     print(source_files)  # 输出更新项列表清单
+    time.sleep(2)
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
@@ -519,5 +521,4 @@ if __name__ == '__main__':
 
             send_email(prepare_folder,file_list,tomail_list,ccmail_list,c_name,c_subject)
             logging.info("sending mail....."+c_name)
-            time.sleep(2)
 
