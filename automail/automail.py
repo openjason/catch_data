@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-11
+#Author: JasonChan
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -18,6 +18,7 @@ import socket
 from ctypes import *
 import shutil
 
+VERSION = "Ver: 20180212 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
@@ -130,7 +131,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180211 "+str(p_count))
+    logging.info(VERSION + str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -455,7 +456,8 @@ def main_compare_sync(dir1,dir2,dir2_diff):
             destination_files.append(destination_dir)
     print('update item:',end="")
     print(source_files)  # 输出更新项列表清单
-    time.sleep(2)
+    if len(source_files) > 0:
+        time.sleep(2)
     copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
     for item in copy_pair:
         if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
