@@ -22,8 +22,8 @@ ttk.Label(win, text="Eastcompeace.com").grid(column=0, row=0)
 def clickMe(): # 当acction被点击时,该函数则生效
     ans = askyesno(title='Warning',message='Close the window?')
     if ans:
-        win.destroy()
         timer.cancel()
+        win.destroy()
     else:
         return
 # 按钮
@@ -33,22 +33,11 @@ action.grid(column=2, row=0) # 设置其在界面中出现的位置 column代表
 name = tk.StringVar() # StringVar是Tk库内部定义的字符串变量类型，在这里用于管理部件上面的字符；不过一般用在按钮button上。改变StringVar，按钮上的文字也随之改变。
 nameEntered = ttk.Entry(win, width=12, textvariable=name) # 创建一个文本框，定义长度为12个字符长度，并且将文本框中的内容绑定到上一句定义的name变量上，方便clickMe调用 nameEntered.grid(column=0, row=1) # 设置其在界面中出现的位置 column代表列 row 代表行 nameEntered.focus() # 当程序运行时,光标默认会出现在该文本框中 # 创建一个下拉列表
 number = tk.StringVar()
-# numberChosen = ttk.Combobox(win, width=12, textvariable=number, state='readonly')
-# numberChosen['values'] = (1, 2, 4, 42, 100) # 设置下拉列表的值 numberChosen.grid(column=1, row=1) # 设置其在界面中出现的位置 column代表列 row 代表行
-# numberChosen.current(0) # 设置下拉列表默认显示的值，0为 numberChosen['values'] 的下标值 # 复选框
 chVarDis = tk.IntVar() # 用来获取复选框是否被勾选，通过chVarDis.get()来获取其的状态,其状态值为int类型 勾选为1 未勾选为0
 
-def radCall():
-    radSel = radVar.get()
-    if radSel == 1:
-        win.configure(background=COLOR1) # 设置整个界面的背景颜色
-    elif radSel == 2:
-        win.configure(background=COLOR2)
-    elif radSel == 3:
-        win.configure(background=COLOR3)
 radVar = tk.IntVar() # 通过tk.IntVar() 获取单选按钮value参数对应的值
 
-scrolW = 130 # 设置文本框的长度
+scrolW = 170 # 设置文本框的长度
 scrolH = 54 # 设置文本框的高度
 #scr = scrolledtext.ScrolledText(win, width=scrolW, height=scrolH, wrap=tk.WORD)
 scr = scrolledtext.ScrolledText(win, width=scrolW, height=scrolH)
