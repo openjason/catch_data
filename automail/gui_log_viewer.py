@@ -9,11 +9,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.messagebox import askyesno
 from tkinter import scrolledtext # 导入滚动文本框的模块
-
+last_record = 'none'
 def tail(filename, n=10):
     'Return the last n lines of a file'
     return collections.deque(open(filename), n)
-
 
 def get_last_n_lines(logfile, n):
     blk_size_max = 4096
@@ -52,13 +51,14 @@ scrolW = 170 # 设置文本框的长度
 scrolH = 44 # 设置文本框的高度
 #scr = scrolledtext.ScrolledText(win, width=scrolW, height=scrolH, wrap=tk.WORD)
 scr = scrolledtext.ScrolledText(win, width=scrolW, height=scrolH)
+scr.grid(column=0, columnspan=3)  # columnspan 个人理解是将3列合并成一列 也可以通过 sticky=tk.W 来控制该文本框的对齐方式
 # wrap=tk.WORD 这个值表示在行的末尾如果有一个单词跨行，会将该单词放到下一行显示,比如输入hello，he在第一行的行尾,llo在第二行的行首, 这时如果wrap=tk.WORD，则表示会将 hello 这个单词挪到下一行行首显示, wrap默认的值为tk.CHAR
 
 def fun_timeer():
 #    print("hello timeer.")
     global timer
-    test()
-    timer = threading.Timer(5,fun_timeer)
+    reload_logfile()
+    timer = threading.Timer(9,fun_timeer)
     timer.start()
 
 timer = threading.Timer(1,fun_timeer)
@@ -68,16 +68,17 @@ timer.start()
 #timer.cancel()
 
 def  reload_logfile():
+    global last_record
     f = "e:\\automail\\automail.log"
     fl = get_last_n_lines(f, 400)
     fllist = ""
-    for i in range(len(fl) - 1, 0, -1):
-        fllist += fl[i]
-    #scr.delete()
-    scr.delete(1.0,tk.END)
-    scr.insert(tk.INSERT,fllist)
-    scr.insert(tk.END,"本日志查看器只查看最近400行日志，如要查看之前日志，可直接查看源文件.ok.")
-    scr.grid(column=0, columnspan=3) # columnspan 个人理解是将3列合并成一列 也可以通过 sticky=tk.W 来控制该文本框的对齐方式
+    if not (fl[len(fl)-1] == last_record):
+        last_record = fl[len(fl)-1]
+        for i in range(len(fl) - 1, 0, -1):
+            fllist += fl[i]
+        scr.delete(1.0,tk.END)
+        scr.insert(tk.INSERT,fllist)
+        scr.insert(tk.END,"本日志查看器只查看最近400行日志，如要查看之前日志，可直接查看源文件.ok.")
 
 if __name__=="__main__":
     reload_logfile()

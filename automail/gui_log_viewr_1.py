@@ -1,23 +1,23 @@
 # for python 3.x use 'tkinter' rather than 'Tkinter'
-import Tkinter as tk
+import tkinter as tk
 import time
 
-class App():
-    def __init__(self):
-        self.root = tk.Tk()
-        self.label = tk.Label(text="")
-        self.label.pack()
-        self.update_clock()
-        self.root.mainloop()
-
-    def update_clock(self):
-        now = time.strftime("%H:%M:%S")
-        self.label.configure(text=now)
-        self.root.after(1000, self.update_clock)
-
-app=App()
-
-
+# class App():
+#     def __init__(self):
+#         self.root = tk.Tk()
+#         self.label = tk.Label(text="")
+#         self.label.pack()
+#         self.update_clock()
+#         self.root.mainloop()
+#
+#     def update_clock(self):
+#         now = time.strftime("%H:%M:%S")
+#         self.label.configure(text=now)
+#         self.root.after(1000, self.update_clock)
+#
+# app=App()
+#
+#
 
 
 ########################333
@@ -31,16 +31,23 @@ import tkinter as tk
 import time
 
 def current_iso8601():
-    """Get current date and time in ISO8601"""
-    # https://en.wikipedia.org/wiki/ISO_8601
-    # https://xkcd.com/1179/
-    return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+    """Get current date and time """
+    return time.strftime("%Y%m%d %H:%M:%S", time.localtime())
 
 class Application(tk.Frame):
     def __init__(self, master=None):
         tk.Frame.__init__(self, master)
-        self.pack()
+        #        self.pack()
+        self.f = "e:\\automail\\automail.log"
+
         self.createWidgets()
+        self.fp
+
+    def get_last_n_lines(logfile, n):
+        with open(logfile, 'r') as fp:
+            lines = fp.readlines()
+        n_lines = lines[len(lines) - n:len(lines)]
+        return n_lines
 
     def createWidgets(self):
         self.now = tk.StringVar()

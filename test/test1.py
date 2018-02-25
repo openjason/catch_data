@@ -1,65 +1,69 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
-
-"""
-ZetCode Tkinter tutorial
-
-In this script, we show how to
-use the Listbox widget.
-
-Author: Jan Bodnar
-Last modified: July 2017
-Website: www.zetcode.com
-"""
-
-from tkinter import Tk, BOTH, Listbox, StringVar, END
-from tkinter.ttk import Frame, Label
-
-class Example(Frame):
-
-    def __init__(self):
-        super().__init__()
-
-        self.initUI()
+from tkinter import *
+import time
 
 
-    def initUI(self):
+class StopWatch(Frame):
+    """ Implements a stop watch frame widget. """
 
-        self.master.title("Listbox")
+    def __init__(self, parent=None, **kw):
+        Frame.__init__(self, parent, kw)
+        self._start = 0.0
+        self._elapsedtime = 0.0
+        self._running = 0
+        self.timestr = StringVar()
+        self.makeWidgets()
 
-        self.pack(fill=BOTH, expand=1)
+    def makeWidgets(self):
+        """ Make the time label. """
+        l = Label(self, textvariable=self.timestr)
+        self._setTime(self._elapsedtime)
+        l.pack(fill=X, expand=NO, pady=2, padx=2)
 
-        acts = ['Scarlett Johansson', 'Rachel Weiss',
-                'Natalie Portman', 'Jessica Alba','ah','ha','bh','hb','ch','hc','asdfjasdfjas;dlfkjasd;kfjas;dklfjasd;klfjasdl;kfjasdl;kfjas']
+    def _update(self):
+        """ Update the label with elapsed time. """
+        self._elapsedtime = time.time() - self._start
+        self._setTime(self._elapsedtime)
+        self._timer = self.after(50, self._update)
 
-        lb = Listbox(self)
+    def _setTime(self, elap):
+        """ Set the time string to Minutes:Seconds:Hundreths """
+        minutes = int(elap / 60)
+        seconds = int(elap - minutes * 60.0)
+        hseconds = int((elap - minutes * 60.0 - seconds) * 100)
+        self.timestr.set('%02d:%02d:%02d' % (minutes, seconds, hseconds))
 
-        for i in acts:
-            lb.insert(END, i)
+    def Start(self):
+        """ Start the stopwatch, ignore if running. """
+        if not self._running:
+            self._start = time.time() - self._elapsedtime
+            self._update()
+            self._running = 1
 
-        lb.bind("<<ListboxSelect>>", self.onSelect)
+    def Stop(self):
+        """ Stop the stopwatch, ignore if stopped. """
+        if self._running:
+            self.after_cancel(self._timer)
+            self._elapsedtime = time.time() - self._start
+            self._setTime(self._elapsedtime)
+            self._running = 0
 
-        lb.pack(pady=15)
-
-        self.var = StringVar()
-        self.label = Label(self, text=0, textvariable=self.var)
-        self.label.pack()
-
-
-    def onSelect(self, val):
-
-        sender = val.widget
-        idx = sender.curselection()
-        value = sender.get(idx)
-
-        self.var.set(value)
+    def Reset(self):
+        """ Reset the stopwatch. """
+        self._start = time.time()
+        self._elapsedtime = 0.0
+        self._setTime(self._elapsedtime)
 
 
 def main():
-
     root = Tk()
-    ex = Example()
-    root.geometry("700x650+300+300")
+    sw = StopWatch(root)
+    sw.pack(side=TOP)
+
+    Button(root, text='Start', command=sw.Start).pack(side=LEFT)
+    Button(root, text='Stop', command=sw.Stop).pack(side=LEFT)
+    Button(root, text='Reset', command=sw.Reset).pack(side=LEFT)
+    Button(root, text='Quit', command=root.quit).pack(side=LEFT)
+
     root.mainloop()
 
 
