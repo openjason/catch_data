@@ -18,7 +18,7 @@ import socket
 from ctypes import *
 import shutil
 
-VERSION = "Ver: 20180212 "
+VERSION = "Ver: 20180309 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
@@ -226,7 +226,7 @@ def get_customer_mail_list(toaddr):
     _to_addr = toaddr.split("|")
     for i in range(len(_to_addr)):
         if len(_to_addr[i]) > 7:
-            if re.match('^[\w\d]+[\d\w\_\.]+@([\d\w]+)\.([\d\w]+)(?:\.[\d\w]+)?$|^(?:\+86)?(\d{3})\d{8}$|^(?:\+86)?(0\d{2,3})\d{7,8}$', _to_addr[i]) != None:
+            if re.match('^[\w\d]+[\d\w\-\.]+@([\d\w-]+)\.([\d\w-]+)(?:\.[\d\w-]+)?$|^(?:\+86)?(\d{3})\d{8}$|^(?:\+86)?(0\d{2,3})\d{7,8}$', _to_addr[i]) != None:
                 _mail_list.append(_to_addr[i])
             else:
                 logging.info("邮件地址有误："+_to_addr[i])

@@ -15,6 +15,7 @@ website: www.zetcode.com
 
 from tkinter import Frame, Tk, BOTH, Text, Menu, END
 from tkinter import filedialog
+import re
 
 class Example(Frame):
 
@@ -58,14 +59,22 @@ class Example(Frame):
 
         return text
 
+def get_customer_mail_list(toaddr):
+    _mail_list =[]
+    _to_addr = toaddr.split("|")
+    for i in range(len(_to_addr)):
+        if len(_to_addr[i]) > 7:
+            if re.match(
+                    '^[\w\d]+[\d\w\-\.]+@([\d\w-]+)\.([\d\w-]+)(?:\.[\d\w-]+)?$|^(?:\+86)?(\d{3})\d{8}$|^(?:\+86)?(0\d{2,3})\d{7,8}$',
+                    _to_addr[i]) != None:
+                _mail_list.append(_to_addr[i])
+            else:
+                print("邮件地址有误："+_to_addr[i])
+    return _mail_list
 
-def main():
-
-    root = Tk()
-    ex = Example()
-    root.geometry("300x250+300+300")
-    root.mainloop()
 
 
 if __name__ == '__main__':
-    main()
+    tstr= "ab-c@abc.com|dit@jx-bank.com|d_dd@163.com|ac_c.dd@di_r.com"
+    ts = get_customer_mail_list(tstr)
+    print(ts)

@@ -1,22 +1,28 @@
 # -*- coding: UTF-8 -*-
-# 版本：2018-02-02
+#Author: JasonChan
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
+from email.header import Header
 import logging
 import os
 import configparser
 import re
-import time,datetime
+import time
+import datetime
 from filecmp import dircmp
 import socket
 from ctypes import *
+import shutil
 
+VERSION = "Ver: 20180212 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
-SMTP_PWD = "none"
+SMTP_PWD = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -48,6 +54,9 @@ customer_wildcard = []
 customer_toaddr = []
 customer_ccaddr = []
 customer_subject = []
+customer_sourcedir = []
+customer_destdir = []
+
 for i in range(1,customer_total+1):
     try:
         cfstr = 'Customer' + str(i)
@@ -57,10 +66,10 @@ for i in range(1,customer_total+1):
         customer_toaddr.append(cf.get(cfstr,'to_email_addr'))
         customer_ccaddr.append(cf.get(cfstr,'cc_email_addr'))
         customer_subject.append(cf.get(cfstr,'subject'))
+        customer_sourcedir.append(cf.get(cfstr,'sourcedir'))
+        customer_destdir.append(cf.get(cfstr, 'destdir'))
     except:
-        logging.warning("conf.ini 配置有误，位置:"+cfstr)
-#    print (customer_name)
-#    print (customer_toaddr)
+        logging.warning("conf.ini 配置有误，参数:"+cfstr)
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -108,7 +117,7 @@ def EnumProcesses(process_name):
             tem_str1 = [i for i in modname if i != b'\x00']
             j=''
             for i in range(len(tem_str1)):
-                j = j + (tem_str1[i].decode())
+                j = j + (tem_str1[i].decode('utf-8', 'ignore'))
 #            print (j)
             process_list.append(j)
 
@@ -122,7 +131,7 @@ def EnumProcesses(process_name):
         if process_name == process_list[i]:
             p_count += 1
 #            logging.info(str(process_name)+str(i))
-    logging.info("Version: 20180202 "+str(p_count))
+    logging.info(VERSION + str(p_count))
     if p_count > 2 :
         return True
     else:
@@ -134,7 +143,7 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-    msg['From'] = SMTP_USER
+    msg['From'] = "EP<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
     template_file_name = WORK_DIR+"template\\"+c_name+".template"
@@ -154,23 +163,39 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg.attach(body)  # add message body (text or html)
 
     for f in files:  # add files to the message
-        file_path = os.path.join(dir_path, f)
-        attachment = MIMEApplication(open(file_path, "rb").read())
-        attachment.add_header('Content-Disposition','attachment', filename=f)
-        msg.attach(attachment)
-    logging.info ("附件共" + str(len(files)) + "个，其中有文件名："+ file_path)
+        fullname = os.path.join(dir_path, f)
+        with open(fullname, 'rb') as o_f:
+            msg_attach = MIMEBase('application', 'octet-stream')
+            msg_attach.set_payload(o_f.read())
+            encoders.encode_base64(msg_attach)
+            msg_attach.add_header('Content-Disposition', 'attachment',
+                                  filename=(Header(f, 'utf-8').encode()))
+            msg.attach(msg_attach)
+
+    logging.info ("附件共" + str(len(files)) + "个，其中有："+ fullname)
 
 #    return 2
 #if enable return, then program will not send email...
 
     server = smtplib.SMTP(SMTP_SERVER, 25)
-    #    server.starttls()
     server.login(SMTP_USER, SMTP_PWD)
     mailbody = msg.as_string()
 
     server.sendmail(SMTP_USER, toaddr + ccaddr, mailbody) #send mail to & cc email address
     logging.info(c_name + ":发送邮件："+"to:"+";".join(toaddr)+" ;附件："+";".join(files))
     server.quit()
+
+def dir_compare_diff(dir_com1,dir_com2,folder):
+    dcmp = dircmp(dir_com1, dir_com2)
+    is_diff = False
+    if len(dcmp.diff_files)>0:
+        is_diff = True
+        logging.info ("diff_file:" + ";".join(dcmp.diff_files))
+    if len(dcmp.left_only)>0:
+        is_diff = True
+        logging.info ("source_only:" + ";".join(dcmp.left_only))
+    return is_diff
+    return True
 
 def get_customer_file_list(folder,wildard):
     _filelist = []
@@ -180,17 +205,21 @@ def get_customer_file_list(folder,wildard):
     if not os.path.exists(folder):
         logging.warning("文件夹不存在："+ folder)
         return _filelist
-    for i in range(len(_wildcard)):
-        _wcard = _wildcard[i]
-        _wcard = _wcard.replace('*','')
-        for j in os.listdir(source_dir):
-            if j.find(_wcard) > 0 :
-                have_file = True
-                if not(j in _filelist):
-                    _filelist.append(j)
-    if not have_file :
-        logging.info("没有匹配文件_folder:"+source_dir+"  "+wildard)
+#    if dir_compare_diff(dir_com1,dir_com2,folder):
+    if True:
+        for i in range(len(_wildcard)):
+            _wcard = _wildcard[i]
+            _wcard = _wcard.replace('*','')
+            for j in os.listdir(source_dir):
+                if j.find(_wcard) > 0 :
+                    have_file = True
+                    if not(j in _filelist):
+                        _filelist.append(j)
+        if not have_file :
+#            logging.info("无更新:"+source_dir+" "+wildard)
+            print("无更新:" + source_dir + " " + wildard)
     return _filelist
+
 
 def get_customer_mail_list(toaddr):
     _mail_list =[]
@@ -225,6 +254,16 @@ def check_diff_n_leftonly_files(dir1,dir2):
         is_diff = True
         logging.info ("source_only:" + ";".join(dcmp.left_only))
     return is_diff
+
+def check_diff_files(dir1,dir2):
+#check directory diff, only check files diffenect exist in both side.
+    dcmp = dircmp(dir1, dir2)
+    is_diff = False
+    if len(dcmp.diff_files)>0:
+        is_diff = True
+        logging.info ("diff_file:" + ";".join(dcmp.diff_files))
+    return is_diff
+
 
 def check_smtp_server(ipaddr,port):
     try:
@@ -307,15 +346,148 @@ def clear_expire_folder():
         if is_expire(cef_foldername):
             erase_dir(rootdir + '\\' + cef_foldername)
 
+def compare_clear_right_side(dir1,dir2):
+    holderlist = []
+    if dir1 == '' or dir2 == '':
+        return 2
+    if not(os.path.exists(dir1) or os.path.exists(dir2)):
+        logging.warning("无法打开文件夹：" + dir1 + "|" + dir2)
+        return 2
+    def compareme(dir1, dir2):  # 递归获取更新项函数
+        dircomp = dircmp(dir1, dir2)
+        only_in_one = dircomp.left_only  # 源目录新文件或目录
+        diff_in_one = dircomp.diff_files  # 不匹配文件，源目录文件已发生变化
+        dirpath = os.path.abspath(dir1)  # 定义源目录绝对路径
+
+        # 将更新文件或目录追加到holderlist
+        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in only_in_one]
+#        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in diff_in_one]
+        if len(dircomp.common_dirs) > 0:  # 判断是否存在相同子目录，以便递归
+            for item in dircomp.common_dirs:  # 递归子目录
+                compareme(os.path.abspath(os.path.join(dir1, item)), os.path.abspath(os.path.join(dir2, item)))
+        return holderlist
+
+    source_files = compareme(dir1, dir2)  # 对比源目录与备份目录
+    dir1 = os.path.abspath(dir1)  # 取绝对路径后，后面不会自动加上'/'
+
+    if not dir2.endswith('/'):
+        dir2 = dir2 + '/'  # 备份目录路径加'/'
+
+    dir2 = os.path.abspath(dir2)
+    destination_files = []
+    createdir_bool = False
+
+    for item in source_files:  # 遍历返回的差异文件或目录清单
+#        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
+        destination_dir = item.replace(dir1,dir2)
+        destination_files.append(destination_dir)
+        if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
+            if not os.path.exists(destination_dir):
+                destination_dir = item.replace(dir2, dir1)
+                logging.info("dist文件夹删除：" + destination_dir)
+                shutil.rmtree(destination_dir)
+
+                createdir_bool = True  # 再次调用copareme函数标记
+    if createdir_bool:  # 重新调用compareme函数，重新遍历新创建目录的内容
+        destination_files = []
+        source_files = []
+        source_files = compareme(dir1, dir2)  # 调用compareme函数
+        for item in source_files:  # 获取源目录差异路径清单，对应替换成备份目录
+#            destination_dir = re.sub(dir1, dir2, item)
+            destination_dir = item.replace(dir1, dir2)
+            destination_files.append(destination_dir)
+    print('update item:',end="")
+    print(source_files)  # 输出更新项列表清单
+    copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
+    for item in copy_pair:
+        if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
+            logging.info("dist文件删除："+ item[0])
+            os.remove(item[0])
+    return 0
+
+
+def main_compare_sync(dir1,dir2,dir2_diff):
+    holderlist = []
+    if dir1 == '' or dir2 == '':
+        return 2
+    if not(os.path.exists(dir1) or os.path.exists(dir2)):
+        logging.warning("无法打开文件夹："+dir1+"|"+dir2)
+        return 2
+    def compareme(dir1, dir2):  # 递归获取更新项函数
+        dircomp = dircmp(dir1, dir2)
+        only_in_one = dircomp.left_only  # 源目录新文件或目录
+#        only_in_right = dircomp.right_only
+        diff_in_one = dircomp.diff_files  # 不匹配文件，源目录文件已发生变化
+        dirpath = os.path.abspath(dir1)  # 定义源目录绝对路径
+
+        # 将更新文件或目录追加到holderlist
+        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in only_in_one]
+        [holderlist.append(os.path.abspath(os.path.join(dir1, x))) for x in diff_in_one]
+        if len(dircomp.common_dirs) > 0:  # 判断是否存在相同子目录，以便递归
+            for item in dircomp.common_dirs:  # 递归子目录
+                compareme(os.path.abspath(os.path.join(dir1, item)), os.path.abspath(os.path.join(dir2, item)))
+        return holderlist
+
+    source_files = compareme(dir1, dir2)  # 对比源目录与备份目录
+    dir1 = os.path.abspath(dir1)  # 取绝对路径后，后面不会自动加上'/'
+
+    if not dir2.endswith('/'):
+        dir2 = dir2 + '/'  # 备份目录路径加'/'
+
+    dir2 = os.path.abspath(dir2)
+    destination_files = []
+    createdir_bool = False
+
+    for item in source_files:  # 遍历返回的差异文件或目录清单
+#        destination_dir = re.sub(dir1, dir2, item)  # 将源目录差异路径清单对应替换成备份目录,即需要在dir2中创建的差异目录和文件
+        destination_dir = item.replace(dir1,dir2)
+        destination_files.append(destination_dir)
+        if os.path.isdir(item):  # 如果差异路径为目录且不存在，则在备份目录中创建
+            if not os.path.exists(destination_dir):
+                os.makedirs(destination_dir)
+                createdir_bool = True  # 再次调用copareme函数标记
+    if createdir_bool:  # 重新调用compareme函数，重新遍历新创建目录的内容
+        destination_files = []
+        source_files = []
+        source_files = compareme(dir1, dir2)  # 调用compareme函数
+        for item in source_files:  # 获取源目录差异路径清单，对应替换成备份目录
+#            destination_dir = re.sub(dir1, dir2, item)
+            destination_dir = item.replace(dir1, dir2)
+            destination_files.append(destination_dir)
+    print('update item:',end="")
+    print(source_files)  # 输出更新项列表清单
+    if len(source_files) > 0:
+        time.sleep(2)
+    copy_pair = zip(source_files, destination_files)  # 将源目录与备份目录文件清单拆分成元组
+    for item in copy_pair:
+        if os.path.isfile(item[0]):  # 判断是否为文件，是则进行复制操作
+            shutil.copyfile(item[0], item[1])
+            shutil.copyfile(item[0], os.path.join(dir2_diff,os.path.basename(item[0])))
+    return 0
+
+
 if __name__ == '__main__':
-    if EnumProcesses('automail.exe') :
+    if EnumProcesses('automail.exe'):
         logging.warning('automail.exe is running ,请不要重复运行. Exit().')
         exit(4)
     clear_expire_folder()
     for i in range(customer_total):
         folder_list = customer_folder[i]
+        if not os.path.exists(folder_list):
+            logging.info("无法打开文件夹："+folder_list)
+            continue
         c_name = customer_name[i]
-        file_list = get_customer_file_list(folder_list,customer_wildcard[i])
+        source_dir = customer_sourcedir[i]
+        dest_dir = customer_destdir[i]
+
+        if compare_clear_right_side(dest_dir,source_dir) != 0:
+            logging.info("无法比较文件夹，请查看配置是否正确.")
+            continue
+        if main_compare_sync(source_dir,dest_dir,folder_list) != 0:
+            logging.info("无法比较文件夹，请查看配置是否正确.")
+            continue
+
+        file_list = get_customer_file_list(folder_list, customer_wildcard[i])
 
         if len(file_list) > 0:
             mail_server_ok()        #检查网络是否可用
@@ -351,4 +523,4 @@ if __name__ == '__main__':
 
             send_email(prepare_folder,file_list,tomail_list,ccmail_list,c_name,c_subject)
             logging.info("sending mail....."+c_name)
-            time.sleep(3)
+
