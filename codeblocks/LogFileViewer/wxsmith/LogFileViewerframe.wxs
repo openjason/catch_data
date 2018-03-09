@@ -109,6 +109,8 @@
 			<widths>-1</widths>
 			<styles>wxSB_NORMAL</styles>
 		</object>
-		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes" />
+		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
+			<handler function="OnTimer1Trigger2" entry="EVT_TIMER" />
+		</object>
 	</object>
 </wxsmith>

@@ -43,6 +43,7 @@ class LogFileViewerFrame: public wxFrame
         void OnButton_quitClick(wxCommandEvent& event);
         void OnTimer1Trigger(wxTimerEvent& event);
         void OnTimer1Trigger1(wxTimerEvent& event);
+        void OnTimer1Trigger2(wxTimerEvent& event);
         //*)
 
         //(*Identifiers(LogFileViewerFrame)

@@ -64,7 +64,7 @@ const long LogFileViewerFrame::ID_TIMER1 = wxNewId();
 
 BEGIN_EVENT_TABLE(LogFileViewerFrame,wxFrame)
     //(*EventTable(LogFileViewerFrame)
-        EVT_TIMER(TIMER_ID, MyFrame::OnTimer)
+        EVT_TIMER(ID_TIMER1, LogFileViewerFrame::OnTimer1Trigger)
     //*)
 END_EVENT_TABLE()
 
@@ -132,6 +132,7 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     Panel1->Connect(wxEVT_SIZE,(wxObjectEventFunction)&LogFileViewerFrame::OnPanel1Resize,0,this);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnAbout);
+    Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&LogFileViewerFrame::OnTimer1Trigger2);
     Connect(wxEVT_SIZE,(wxObjectEventFunction)&LogFileViewerFrame::OnResize);
     //*)
 }
@@ -246,4 +247,8 @@ void LogFileViewerFrame::OnTimer1Trigger(wxTimerEvent& event)
 void LogFileViewerFrame::OnTimer1Trigger1(wxTimerEvent& event)
 {
 
+}
+
+void LogFileViewerFrame::OnTimer1Trigger2(wxTimerEvent& event)
+{
 }
