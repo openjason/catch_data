@@ -28,7 +28,7 @@ class LogFileViewerFrame: public wxFrame
 
         LogFileViewerFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~LogFileViewerFrame();
-        void refresh_log(void);
+        int refresh_log(void);
 
     private:
 

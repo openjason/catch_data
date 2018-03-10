@@ -9,11 +9,14 @@
 
 #include "LogFileViewerMain.h"
 #include <wx/msgdlg.h>
-#include "string"
+#include <string.h>
 #include <fstream>
 #include <iostream>
 #include <time.h>
 #include <stdio.h>
+
+const char   *FILE_RD = "e:\\automail\\automail.log";//原文件
+const size_t VIEW_BLOCK_SIZE = 1024*100;//每次读写的大小,此处为10M
 
 //(*InternalHeaders(LogFileViewerFrame)
 #include <wx/intl.h>
@@ -156,41 +159,68 @@ void LogFileViewerFrame::OnAbout(wxCommandEvent& event)
 }
 
 
-void LogFileViewerFrame::refresh_log(void)
+int LogFileViewerFrame::refresh_log(void)
 {
-    std::string str;
-    std::string filename="e:\\automail\\automail.log";
-//    filename="e:\\automail\\automail.log";
-
-//    filename = "e:\\automail\\autoservice.log";
-    std::string lines;
     int i = 0;
-    // ...
-//    std::ifstream in("e:\\automail\\automail.log");
-    std::ifstream in(filename.c_str());
+
     wxRichTextCtrl &rtc = *RichTextCtrl1;
-    wxStaticText &st = *StaticText2;
-//    rtc.Newline();
 
-    if (in.is_open())
+    FILE * pFile;
+    long lSize;
+    char * buffer;
+    size_t result;
+    char mystring [200];
+
+    pFile = fopen ( FILE_RD , "rb" );
+  if (pFile==NULL) {
+//        fputs ("File error",stderr); exit (1);
+    wxMessageBox("File error","error",wxOK);
+    return 1;
+  }
+
+  // obtain file size:
+    fseek (pFile , 0 , SEEK_END);
+    lSize = ftell (pFile);
+//  cout << lSize <<endl;
+//  rewind (pFile);
+
+  // allocate memory to contain the whole file:
+    buffer = (char*) malloc (VIEW_BLOCK_SIZE);
+    if (buffer == NULL)
         {
-       rtc.Clear();
-       while (getline (in, lines))
-        {
-            i=i+1;
-            // in + "\n";
-//            getline (in, lines);
-            rtc.WriteText(lines);
-            rtc.Newline();
-//          if (in.eof()) break;
+            //        fputs ("Memory error",stderr); exit (2);
+            wxMessageBox("Memory error","error",wxOK);
+            return 1;
         }
+
+    if (lSize > VIEW_BLOCK_SIZE)
+        {
+            fseek (pFile,lSize-VIEW_BLOCK_SIZE,SEEK_SET); }
+    else {
+            fseek (pFile,0,SEEK_SET);}
+    if (pFile == NULL)
+        {    wxMessageBox("Memory error","error",wxOK);
+        return 1;
        }
-         in.close();
-        //str = st
-       str = str + "*";
-       st.SetLabel(str);
-
-
+    else
+        {
+        rtc.Clear();
+        while(!feof(pFile))
+        {
+     fgets (mystring , 200 , pFile);
+//       puts (mystring);
+//    lines = mystring;
+        if (strlen(mystring)>3)
+            {
+            //    wxMessageBox(lines,"test",wxOK);
+            rtc.MoveHome();
+            //    rtc.Newline();
+            rtc.WriteText(mystring);
+            }
+        }
+     }
+  fclose (pFile);
+  free (buffer);
 }
 
 char *timestring(void)
@@ -259,5 +289,5 @@ void LogFileViewerFrame::OnTimer1Trigger(wxTimerEvent& event)
 
 void LogFileViewerFrame::OnButton2Click1(wxCommandEvent& event)
 {
-
+    LogFileViewerFrame::refresh_log();
 }

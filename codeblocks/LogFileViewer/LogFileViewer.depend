@@ -2001,18 +2001,18 @@
 1518985831 d:\wxwidgets\include\wx\qt\msgdlg.h
 	"wx/msgdlg.h"
 
-1520639125 source:e:\dev\github\catch_data\codeblocks\logfileviewer\resource.rc
+1520511064 source:e:\dev\github\catch_data\codeblocks\logfileviewer\resource.rc
 	"wx/msw/wx.rc"
 
-1520639125 source:e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewerapp.cpp
+1520511064 source:e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewerapp.cpp
 	"LogFileViewerApp.h"
 	"LogFileViewerMain.h"
 	<wx/image.h>
 
-1520639125 e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewerapp.h
+1520511064 e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewerapp.h
 	<wx/app.h>
 
-1520652387 e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.h
+1520691025 e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.h
 	<wx/button.h>
 	<wx/frame.h>
 	<wx/menu.h>
@@ -2023,10 +2023,10 @@
 	<wx/statusbr.h>
 	<wx/timer.h>
 
-1520652301 source:e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.cpp
+1520694158 source:e:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.cpp
 	"LogFileViewerMain.h"
 	<wx/msgdlg.h>
-	"string"
+	<string.h>
 	<fstream>
 	<iostream>
 	<time.h>
