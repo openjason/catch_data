@@ -28,6 +28,7 @@ class LogFileViewerFrame: public wxFrame
 
         LogFileViewerFrame(wxWindow* parent,wxWindowID id = -1);
         virtual ~LogFileViewerFrame();
+        void refresh_log(void);
 
     private:
 
@@ -35,8 +36,8 @@ class LogFileViewerFrame: public wxFrame
         void OnQuit(wxCommandEvent& event);
         void OnAbout(wxCommandEvent& event);
         void OnButton2Click(wxCommandEvent& event);
-        void OnButton1Click(wxCommandEvent& event);
         void OnButton2Click1(wxCommandEvent& event);
+        void OnButton1Click(wxCommandEvent& event);
         void OnButton1Click1(wxCommandEvent& event);
         void OnResize(wxSizeEvent& event);
         void OnPanel1Resize(wxSizeEvent& event);
@@ -44,6 +45,7 @@ class LogFileViewerFrame: public wxFrame
         void OnTimer1Trigger(wxTimerEvent& event);
         void OnTimer1Trigger1(wxTimerEvent& event);
         void OnTimer1Trigger2(wxTimerEvent& event);
+
         //*)
 
         //(*Identifiers(LogFileViewerFrame)

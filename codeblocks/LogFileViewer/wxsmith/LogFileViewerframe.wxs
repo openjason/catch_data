@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="LogFileViewerFrame">
+		<title>AutoMail Log File Viewer. Designed by 东信和平安全部。 version:201803</title>
 		<size>1045,600</size>
 		<id_arg>0</id_arg>
 		<handler function="OnResize" entry="EVT_SIZE" />
@@ -35,6 +36,7 @@
 							<object class="sizeritem">
 								<object class="wxButton" name="ID_BUTTON2" variable="Button2" member="yes">
 									<label>刷新</label>
+									<size>129,24</size>
 									<handler function="OnButton2Click1" entry="EVT_BUTTON" />
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
@@ -61,11 +63,11 @@
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
 									<label>Label</label>
-									<size>141,14</size>
+									<size>150,14</size>
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>1</option>
+								<option>2</option>
 							</object>
 						</object>
 					</object>
@@ -110,7 +112,8 @@
 			<styles>wxSB_NORMAL</styles>
 		</object>
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
-			<handler function="OnTimer1Trigger2" entry="EVT_TIMER" />
+			<interval>1000</interval>
+			<handler function="OnTimer1Trigger" entry="EVT_TIMER" />
 		</object>
 	</object>
 </wxsmith>
