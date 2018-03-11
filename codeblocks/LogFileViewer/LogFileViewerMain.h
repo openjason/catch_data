@@ -12,6 +12,7 @@
 
 //(*Headers(LogFileViewerFrame)
 #include <wx/button.h>
+#include <wx/filedlg.h>
 #include <wx/frame.h>
 #include <wx/menu.h>
 #include <wx/panel.h>
@@ -45,7 +46,7 @@ class LogFileViewerFrame: public wxFrame
         void OnTimer1Trigger(wxTimerEvent& event);
         void OnTimer1Trigger1(wxTimerEvent& event);
         void OnTimer1Trigger2(wxTimerEvent& event);
-
+        void OnRichTextCtrl1Text(wxCommandEvent& event);
         //*)
 
         //(*Identifiers(LogFileViewerFrame)
@@ -68,6 +69,7 @@ class LogFileViewerFrame: public wxFrame
         wxButton* Button1;
         wxButton* Button2;
         wxButton* Button_quit;
+        wxFileDialog* FileDialog1;
         wxPanel* Panel1;
         wxPanel* Panel2;
         wxRichTextCtrl* RichTextCtrl1;

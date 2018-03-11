@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <wxsmith>
 	<object class="wxFrame" name="LogFileViewerFrame">
-		<title>AutoMail Log File Viewer. Designed by 东信和平安全部。 version:201803</title>
+		<title>AutoMail Log File Viewer. Designed by 东信和平安全部.       版本:v0.1803</title>
 		<size>1045,600</size>
 		<id_arg>0</id_arg>
 		<handler function="OnResize" entry="EVT_SIZE" />
@@ -18,20 +18,20 @@
 						<object class="wxBoxSizer" variable="BoxSizer1" member="no">
 							<object class="sizeritem">
 								<object class="wxButton" name="ID_BUTTON1" variable="Button1" member="yes">
-									<label>Label</label>
+									<label>日志文件</label>
 									<handler function="OnButton1Click1" entry="EVT_BUTTON" />
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>1</option>
+								<option>2</option>
 							</object>
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText1" member="yes">
-									<label>Label</label>
+									<label>e:\\automail\\automail.log</label>
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>1</option>
+								<option>3</option>
 							</object>
 							<object class="sizeritem">
 								<object class="wxButton" name="ID_BUTTON2" variable="Button2" member="yes">
@@ -41,11 +41,11 @@
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>1</option>
+								<option>2</option>
 							</object>
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT2" variable="StaticText2" member="yes">
-									<label>Label</label>
+									<label></label>
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
@@ -58,7 +58,7 @@
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>1</option>
+								<option>2</option>
 							</object>
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT3" variable="StaticText3" member="yes">
@@ -67,7 +67,7 @@
 								</object>
 								<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
-								<option>2</option>
+								<option>3</option>
 							</object>
 						</object>
 					</object>
@@ -76,9 +76,10 @@
 				</object>
 				<object class="sizeritem">
 					<object class="wxRichTextCtrl" name="ID_RICHTEXTCTRL1" variable="RichTextCtrl1" member="yes">
-						<value>Text</value>
+						<value>等待刷新日志文件...</value>
 						<pos>-1,-1</pos>
 						<size>495,405</size>
+						<handler function="OnRichTextCtrl1Text" entry="EVT_TEXT" />
 					</object>
 					<flag>wxALL|wxEXPAND</flag>
 					<border>1</border>
@@ -114,6 +115,9 @@
 		<object class="wxTimer" name="ID_TIMER1" variable="Timer1" member="yes">
 			<interval>1000</interval>
 			<handler function="OnTimer1Trigger" entry="EVT_TIMER" />
+		</object>
+		<object class="wxFileDialog" variable="FileDialog1" member="yes">
+			<message>Select file</message>
 		</object>
 	</object>
 </wxsmith>
