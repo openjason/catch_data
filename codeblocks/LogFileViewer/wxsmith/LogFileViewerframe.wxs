@@ -2,7 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="LogFileViewerFrame">
 		<title>AutoMail Log File Viewer. Designed by 东信和平安全部.       版本:v0.1803</title>
-		<size>1045,600</size>
+		<size>1258,621</size>
 		<id_arg>0</id_arg>
 		<handler function="OnResize" entry="EVT_SIZE" />
 		<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">

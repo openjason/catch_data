@@ -13,19 +13,17 @@
 #include <fstream>
 #include <iostream>
 #include <time.h>
-//#include <wx/tipdlg.h>
 
-//char *FILE_RD = "e:\\automail\\automail.log";
 char *read_file = "E:\\automail\\automail.log";
-char FILE_RD[40];
-
-
+char FILE_RD[99];
 size_t VIEW_BLOCK_SIZE = 1024*20;//每次读写的大小,此处为10M
+FILE * pFile;
+long lSize;
+char * buffer;
+char mystring [200];
 
-    FILE * pFile;
-    long lSize;
-    char * buffer;
-    char mystring [200];
+//定义全局变量
+
 //(*InternalHeaders(LogFileViewerFrame)
 #include <wx/intl.h>
 #include <wx/string.h>
@@ -91,14 +89,14 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     wxMenuItem* MenuItem2;
 
     Create(parent, wxID_ANY, _("AutoMail Log File Viewer. Designed by 东信和平安全部.       版本:v0.1803"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
-    SetClientSize(wxSize(1045,600));
+    SetClientSize(wxSize(1258,621));
     Panel1 = new wxPanel(this, ID_PANEL1, wxPoint(176,192), wxDefaultSize, wxTAB_TRAVERSAL|wxFULL_REPAINT_ON_RESIZE, _T("ID_PANEL1"));
     FlexGridSizer1 = new wxFlexGridSizer(2, 1, 0, 1);
     Panel2 = new wxPanel(Panel1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
     BoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
     Button1 = new wxButton(Panel2, ID_BUTTON1, _("日志文件"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     BoxSizer1->Add(Button1, 2, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("e:\\automail\\automail.log"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("E:\\automail\\automail.log"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer1->Add(StaticText1, 3, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     Button2 = new wxButton(Panel2, ID_BUTTON2, _("刷新"), wxDefaultPosition, wxSize(129,24), 0, wxDefaultValidator, _T("ID_BUTTON2"));
     BoxSizer1->Add(Button2, 2, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -150,7 +148,7 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     Connect(wxEVT_SIZE,(wxObjectEventFunction)&LogFileViewerFrame::OnResize);
     //*)
     strncpy(FILE_RD,read_file,strlen(read_file));
-
+    LogFileViewerFrame::refresh_log();
 }
 
 LogFileViewerFrame::~LogFileViewerFrame()
@@ -176,11 +174,8 @@ int LogFileViewerFrame::refresh_log(void)
 {
 
     wxRichTextCtrl &rtc = *RichTextCtrl1;
-
-//    wxMessageBox(FILE_RD,"OK",wxOK);
     pFile = fopen ( FILE_RD , "r" );
   if (pFile==NULL) {
-//        fputs ("File error",stderr); exit (1);
     wxMessageBox(FILE_RD,"无法打开文件...",wxOK);
     return 1;
   }
@@ -188,23 +183,18 @@ int LogFileViewerFrame::refresh_log(void)
   // obtain file size:
     fseek (pFile , 0 , SEEK_END);
     lSize = ftell (pFile);
-//  cout << lSize <<endl;
     rewind (pFile);
 
   // allocate memory to contain the whole file:
     buffer = (char*) malloc (VIEW_BLOCK_SIZE);
     if (buffer == NULL)
         {
-            //        fputs ("Memory error",stderr); exit (2);
             wxMessageBox("Memory error","error",wxOK);
             return 1;
         }
 
-//    if (lSize > VIEW_BLOCK_SIZE)
-  //      {
-            fseek (pFile,lSize-VIEW_BLOCK_SIZE,SEEK_SET); //}
-//    else {
-  //          fseek (pFile,0,SEEK_SET);}
+    fseek (pFile,lSize-VIEW_BLOCK_SIZE,SEEK_SET);
+
     if (pFile == NULL)
         {    wxMessageBox("Memory error","error",wxOK);
         return 1;
@@ -212,14 +202,13 @@ int LogFileViewerFrame::refresh_log(void)
     else
         {
         rtc.Clear();
-        mystring[0] = '\0';
+//        mystring[0] = '\0';
+        strcpy(mystring,"#此程序只显示20K大小的内容，更多内容请直接查看日志文件.");
         while(!feof(pFile))
         {
             if (strlen(mystring)>1)
                 {
-                //    wxMessageBox(lines,"test",wxOK);
                 rtc.MoveHome();
-                //    rtc.Newline();
                 rtc.WriteText(mystring);
                 }
             fgets (mystring , 200 , pFile);
@@ -227,6 +216,7 @@ int LogFileViewerFrame::refresh_log(void)
      }
   fclose (pFile);
   free (buffer);
+  return 0;
 }
 
 char *timestring(void)
@@ -242,36 +232,15 @@ char *timestring(void)
 
 void LogFileViewerFrame::OnButton1Click1(wxCommandEvent& event)
 {
-    int i;
     wxString bwfilename = wxFileSelector("Choose a file to open");
-//    char c_s = new char[20];
-    if ( !bwfilename.empty() )
-        {    // work with the file    ...
- //           wxMessageBox(bwfilename,"OK",wxOK);
-//            FILE_RD = bwfilename.char_str();
-//            FILE_RD = bwfilename.char_str();
 
+    if ( !bwfilename.empty() )
+        {
             strncpy(FILE_RD,bwfilename.char_str(),bwfilename.Len());
             FILE_RD[bwfilename.Len()]='\0';
-//bwfilename=wxString::Format(wxT("%i"),bwfilename.Len());
-//wxMessageBox(bwfilename,"OK",wxOK);
-/*
-        for (i=0;i<=bwfilename.Len();i++){
-            FILE_RD[i]=bwfilename[i];
-            }
-            FILE_RD[bwfilename.Len()+1]='\0';
-
-          wxMessageBox(FILE_RD,"OK",wxOK);
-        }//
-    //else:
-*/        //cancelled by user
-    wxStaticText &wx_statict1 = *StaticText1;
-    wx_statict1.SetLabel(bwfilename);
-
-}
-//    char *str_t = new char[64];
-  //  str_t = timestring();
-
+            wxStaticText &wx_statict1 = *StaticText1;
+            wx_statict1.SetLabel(bwfilename);
+        }
 }
 
 
@@ -300,7 +269,10 @@ void LogFileViewerFrame::OnPanel1Resize(wxSizeEvent& event)
 
 void LogFileViewerFrame::OnButton_quitClick(wxCommandEvent& event)
 {
-    Close();
+    int answer = wxMessageBox("确认退出程序？", "Confirm",wxYES_NO, this);
+    if (answer == wxYES)
+        Close();
+
 }
 
 void LogFileViewerFrame::OnTimer1Trigger(wxTimerEvent& event)
@@ -310,7 +282,8 @@ void LogFileViewerFrame::OnTimer1Trigger(wxTimerEvent& event)
     str_t = timestring();
     wxStaticText &wx_statict3 = *StaticText3;
     wx_statict3.SetLabel(str_t);
-    if (str_t[18] == '0' or str_t[18] == '5')
+//    if (str_t[18] == '0' or str_t[18] == '5')
+    if (str_t[18] == '0')
     {
         LogFileViewerFrame::refresh_log();
     }
