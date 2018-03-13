@@ -59,6 +59,8 @@ class LogFileViewerFrame: public wxFrame
         static const long ID_PANEL2;
         static const long ID_RICHTEXTCTRL1;
         static const long ID_PANEL1;
+        static const long ID_open_logf;
+        static const long ID_man_refr;
         static const long idMenuQuit;
         static const long idMenuAbout;
         static const long ID_STATUSBAR1;
@@ -70,6 +72,8 @@ class LogFileViewerFrame: public wxFrame
         wxButton* Button2;
         wxButton* Button_quit;
         wxFileDialog* FileDialog1;
+        wxMenuItem* MenuItem3;
+        wxMenuItem* MenuItem4;
         wxPanel* Panel1;
         wxPanel* Panel2;
         wxRichTextCtrl* RichTextCtrl1;

@@ -16,7 +16,7 @@
 
 char *read_file = "E:\\automail\\automail.log";
 char FILE_RD[99];
-size_t VIEW_BLOCK_SIZE = 1024*20;//每次读写的大小,此处为10M
+size_t VIEW_BLOCK_SIZE = 1024*20;//每次读写的大小,此处为20k
 FILE * pFile;
 long lSize;
 char * buffer;
@@ -65,6 +65,8 @@ const long LogFileViewerFrame::ID_STATICTEXT3 = wxNewId();
 const long LogFileViewerFrame::ID_PANEL2 = wxNewId();
 const long LogFileViewerFrame::ID_RICHTEXTCTRL1 = wxNewId();
 const long LogFileViewerFrame::ID_PANEL1 = wxNewId();
+const long LogFileViewerFrame::ID_open_logf = wxNewId();
+const long LogFileViewerFrame::ID_man_refr = wxNewId();
 const long LogFileViewerFrame::idMenuQuit = wxNewId();
 const long LogFileViewerFrame::idMenuAbout = wxNewId();
 const long LogFileViewerFrame::ID_STATUSBAR1 = wxNewId();
@@ -94,11 +96,11 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1 = new wxFlexGridSizer(2, 1, 0, 1);
     Panel2 = new wxPanel(Panel1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
     BoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
-    Button1 = new wxButton(Panel2, ID_BUTTON1, _("日志文件"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
+    Button1 = new wxButton(Panel2, ID_BUTTON1, _("重新日志文件"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     BoxSizer1->Add(Button1, 2, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("E:\\automail\\automail.log"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("e:\\automail\\automail.log"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer1->Add(StaticText1, 3, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
-    Button2 = new wxButton(Panel2, ID_BUTTON2, _("刷新"), wxDefaultPosition, wxSize(129,24), 0, wxDefaultValidator, _T("ID_BUTTON2"));
+    Button2 = new wxButton(Panel2, ID_BUTTON2, _("手动刷新"), wxDefaultPosition, wxSize(129,24), 0, wxDefaultValidator, _T("ID_BUTTON2"));
     BoxSizer1->Add(Button2, 2, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText2 = new wxStaticText(Panel2, ID_STATICTEXT2, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
     BoxSizer1->Add(StaticText2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -119,6 +121,11 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     FlexGridSizer1->SetSizeHints(Panel1);
     MenuBar1 = new wxMenuBar();
     Menu1 = new wxMenu();
+    MenuItem3 = new wxMenuItem(Menu1, ID_open_logf, _("打开日志文件"), wxEmptyString, wxITEM_NORMAL);
+    Menu1->Append(MenuItem3);
+    MenuItem4 = new wxMenuItem(Menu1, ID_man_refr, _("手动刷新"), wxEmptyString, wxITEM_NORMAL);
+    Menu1->Append(MenuItem4);
+    Menu1->AppendSeparator();
     MenuItem1 = new wxMenuItem(Menu1, idMenuQuit, _("Quit\tAlt-F4"), _("Quit the application"), wxITEM_NORMAL);
     Menu1->Append(MenuItem1);
     MenuBar1->Append(Menu1, _("&File"));
@@ -142,6 +149,8 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&LogFileViewerFrame::OnButton_quitClick);
     Connect(ID_RICHTEXTCTRL1,wxEVT_COMMAND_TEXT_UPDATED,(wxObjectEventFunction)&LogFileViewerFrame::OnRichTextCtrl1Text);
     Panel1->Connect(wxEVT_SIZE,(wxObjectEventFunction)&LogFileViewerFrame::OnPanel1Resize,0,this);
+    Connect(ID_open_logf,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnButton1Click1);
+    Connect(ID_man_refr,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnButton2Click1);
     Connect(idMenuQuit,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnQuit);
     Connect(idMenuAbout,wxEVT_COMMAND_MENU_SELECTED,(wxObjectEventFunction)&LogFileViewerFrame::OnAbout);
     Connect(ID_TIMER1,wxEVT_TIMER,(wxObjectEventFunction)&LogFileViewerFrame::OnTimer1Trigger);
@@ -203,7 +212,7 @@ int LogFileViewerFrame::refresh_log(void)
         {
         rtc.Clear();
 //        mystring[0] = '\0';
-        strcpy(mystring,"#此程序只显示20K大小的内容，更多内容请直接查看日志文件.");
+        strcpy(mystring,"#此程序只显示20K字节大小的内容，更多内容请直接查看日志文件.");
         while(!feof(pFile))
         {
             if (strlen(mystring)>1)
