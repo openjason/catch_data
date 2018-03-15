@@ -23,6 +23,7 @@ SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
 SMTP_PWD = ""
+SMTP_SENDER = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
@@ -144,7 +145,6 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-#    msg['From'] = "EP<" + SMTP_USER + ">"
     msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
