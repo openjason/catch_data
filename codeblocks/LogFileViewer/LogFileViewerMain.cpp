@@ -21,10 +21,15 @@ FILE * pFile;
 long lSize;
 char * buffer;
 char mystring [200];
+//wxRichTextCtrl rtc;
+
 
 //定义全局变量
 
 //(*InternalHeaders(LogFileViewerFrame)
+#include <wx/bitmap.h>
+#include <wx/icon.h>
+#include <wx/image.h>
 #include <wx/intl.h>
 #include <wx/string.h>
 //*)
@@ -90,13 +95,18 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     wxMenuItem* MenuItem1;
     wxMenuItem* MenuItem2;
 
-    Create(parent, wxID_ANY, _("AutoMail Log File Viewer. Designed by 东信和平安全部.       版本:v0.1803"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
+    Create(parent, wxID_ANY, _("AutoMail Log File Viewer.          Designed by 东信和平安全部.   版本号:v0.1803"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, _T("wxID_ANY"));
     SetClientSize(wxSize(1258,621));
+    {
+    	wxIcon FrameIcon;
+    	FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("F:\\dev\\GitHub\\catch_data\\codeblocks\\bombs.ico"))));
+    	SetIcon(FrameIcon);
+    }
     Panel1 = new wxPanel(this, ID_PANEL1, wxPoint(176,192), wxDefaultSize, wxTAB_TRAVERSAL|wxFULL_REPAINT_ON_RESIZE, _T("ID_PANEL1"));
     FlexGridSizer1 = new wxFlexGridSizer(2, 1, 0, 1);
     Panel2 = new wxPanel(Panel1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
     BoxSizer1 = new wxBoxSizer(wxHORIZONTAL);
-    Button1 = new wxButton(Panel2, ID_BUTTON1, _("重新日志文件"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
+    Button1 = new wxButton(Panel2, ID_BUTTON1, _("打开日志文件"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON1"));
     BoxSizer1->Add(Button1, 2, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
     StaticText1 = new wxStaticText(Panel2, ID_STATICTEXT1, _("e:\\automail\\automail.log"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer1->Add(StaticText1, 3, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
@@ -157,6 +167,7 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     Connect(wxEVT_SIZE,(wxObjectEventFunction)&LogFileViewerFrame::OnResize);
     //*)
     strncpy(FILE_RD,read_file,strlen(read_file));
+//    wxRichTextCtrl &rtc =*RichTextCtrl1;
     LogFileViewerFrame::refresh_log();
 }
 
@@ -168,7 +179,10 @@ LogFileViewerFrame::~LogFileViewerFrame()
 
 void LogFileViewerFrame::OnQuit(wxCommandEvent& event)
 {
-    Close();
+    int answer = wxMessageBox("确认退出程序？", "Confirm",wxYES_NO, this);
+    if (answer == wxYES)
+        Close();
+
 }
 
 void LogFileViewerFrame::OnAbout(wxCommandEvent& event)
@@ -201,9 +215,7 @@ int LogFileViewerFrame::refresh_log(void)
             wxMessageBox("Memory error","error",wxOK);
             return 1;
         }
-
     fseek (pFile,lSize-VIEW_BLOCK_SIZE,SEEK_SET);
-
     if (pFile == NULL)
         {    wxMessageBox("Memory error","error",wxOK);
         return 1;

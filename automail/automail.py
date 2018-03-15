@@ -44,6 +44,7 @@ try:
     WORK_DIR = cf.get("Common", "WORK_DIR")
     SMTP_USER = cf.get("Common", "SMTP_USER")
     SMTP_PWD = cf.get("Common", "SMTP_PWD")
+    SMTP_SENDER = cf.get("Common", "SMTP_SENDER")
 
 except:
     logging.warning('无法打开文件 automail.ini 或设置错误.')
@@ -143,7 +144,8 @@ def send_email(dir_path,files,toaddr,ccaddr,c_name,c_subject):
     msg = MIMEMultipart()
     msg['To'] = ";".join(toaddr)
     msg['CC'] = ";".join(ccaddr)
-    msg['From'] = "EP<" + SMTP_USER + ">"
+#    msg['From'] = "EP<" + SMTP_USER + ">"
+    msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
     msg['Subject'] = c_subject
     html = ""
     template_file_name = WORK_DIR+"template\\"+c_name+".template"

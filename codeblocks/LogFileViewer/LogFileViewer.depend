@@ -1500,7 +1500,7 @@
 1518985831 d:\wxwidgets\include\wx\univ\theme.h
 	"wx/string.h"
 
-1520815470 f:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.h
+1520987847 f:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.h
 	<wx/button.h>
 	<wx/filedlg.h>
 	<wx/frame.h>
@@ -1921,13 +1921,16 @@
 
 1518985831 d:\wxwidgets\include\wx\msw\rcdefs.h
 
-1520846336 source:f:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.cpp
+1521077747 source:f:\dev\github\catch_data\codeblocks\logfileviewer\logfileviewermain.cpp
 	"LogFileViewerMain.h"
 	<wx/msgdlg.h>
 	<string.h>
 	<fstream>
 	<iostream>
 	<time.h>
+	<wx/bitmap.h>
+	<wx/icon.h>
+	<wx/image.h>
 	<wx/intl.h>
 	<wx/string.h>
 
