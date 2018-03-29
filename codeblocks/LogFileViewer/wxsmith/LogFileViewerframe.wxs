@@ -2,7 +2,7 @@
 <wxsmith>
 	<object class="wxFrame" name="LogFileViewerFrame">
 		<title>AutoMail Log File Viewer.          Designed by 东信和平安全部.   版本号:v0.1803</title>
-		<icon>F:\dev\GitHub\catch_data\codeblocks\bombs.ico</icon>
+		<icon stock_id="wxART_FLOPPY" stock_client="wxART_OTHER" />
 		<size>1258,621</size>
 		<id_arg>0</id_arg>
 		<handler function="OnResize" entry="EVT_SIZE" />

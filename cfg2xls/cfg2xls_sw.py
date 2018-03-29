@@ -21,27 +21,31 @@ def judge_legal_ip(one_str):
         return False
 
 def fix_address_string(add_str):
-    return add_str
-#停用
-    tmp_list = add_str.split()
+    #停用    return add_str
+    fix_addr_str = "地址有误"
+    if add_str[0]=='"':
+        tmp_pos = add_str[1:].find('"')
+        aname = add_str[0:tmp_pos+2]
+        tmp_list = add_str[tmp_pos:].split()
+    else:
+        tmp_list = add_str.split()
+        aname = tmp_list[0]
     if len(tmp_list)< 3:
         return add_str
-    if 'host' == tmp_list[0]:
-        fix_addr_str = tmp_list[0] + ' ' + tmp_list[1] + '/32'
-        return fix_addr_str
+    if 'host' == tmp_list[1]:
+        fix_addr_str = tmp_list[2] + '/32'
 
-    if 'range' == tmp_list[0]:
-        fix_addr_str = tmp_list[0] + ' ' + tmp_list[1] + '-' + tmp_list[2]
-        return fix_addr_str
+    if 'range' == tmp_list[1]:
+        fix_addr_str = tmp_list[2] + '-' + tmp_list[3]
 
-    if 'network' == tmp_list[0]:
-        if '255.255.255.0' == tmp_list [2]:
+    if 'network' == tmp_list[1]:
+        if '255.255.255.0' == tmp_list [3]:
             netmaskstr = '/24'
         else:
-            netmaskstr = tmp_list [2]
-        fix_addr_str = tmp_list[0] +' '+ tmp_list[1] + netmaskstr
-    else:
-        fix_addr_str = add_str
+            netmaskstr = tmp_list [3]
+        fix_addr_str = tmp_list[2] + netmaskstr
+
+#    return aname + ":" +fix_addr_str
     return fix_addr_str
 
 
@@ -156,20 +160,24 @@ def getAddressList(blocked_list, block_child_list,aname):
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
             continue
-        tempStr1 = blocked_list[i]
+        tempStr_raw = blocked_list[i]
+        # temp_str_zone_pos = tempStr_raw.find('zone')
+        # if temp_str_zone_pos > 0:
+        #     tempStr1 = tempStr_raw[:temp_str_zone_pos]
+        # else:
+        tempStr1 = tempStr_raw
         if 'address-object' == tempStr1[:14]:
             if aname == tempStr1[20:20+len(aname)] and tempStr1[20+len(aname):21+len(aname)]== ' ':
-                try:
-                    first_space = tempStr1[21 + len(aname):len(tempStr1)].index(' ')
-                except:
-                    first_space = 0
-                address_detail = tempStr1[21+1 + len(aname)+first_space:len(tempStr1)]
+                # try:
+                #     first_space = tempStr1[21 + len(aname):len(tempStr1)].index(' ')
+                # except:
+                #     first_space = 0
+                #address_detail = tempStr1[21+1 + len(aname)+first_space:len(tempStr1)]
+                address_detail = tempStr_raw[len("address-object ipv4 ") :len(tempStr_raw)]
+                address_detail = fix_address_string(address_detail)
                 break
-    # if judge_legal_ip(aname):
-    #     return 'host'+address_detail
-    # else:
-    #     return aname + address_detail
-    return aname +":"+ address_detail
+    #    return aname +":"+ address_detail
+    return address_detail
 
 
 def save_xls_file(blocked_list, block_child_list):
@@ -196,14 +204,20 @@ def save_xls_file(blocked_list, block_child_list):
             tempList2 = tempList1[0].split()            #catch alias name
             if len(tempList2) == 3:
                 tempStr2 = tempList2[1].strip()
+                ipassignment = tempList2[2].strip()
             else:
                 tempStr2 = '-'
+                ipassignment = '-'
             interface_alias = tempStr2
             if interface_alias != '-' :                 #if have ip address
                 tempList2 = tempList1[1].split()            #ip / netmask
                 if len(tempList2) == 4:
                     interface_ip = tempList2[1].strip()
                     interface_netmask = tempList2[3].strip()
+                if len(tempList2) == 2 and tempList2[0]=='ip':
+                    interface_ip = tempList2[1].strip()
+                    tempList2 = tempList1[2].split()
+                    interface_netmask = tempList2[1].strip()
             else:
                 interface_ip = '-'
                 interface_netmask = '-'
@@ -225,6 +239,7 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = interface_netmask
             cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = ipassignment
             cellcolumn += 1
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
@@ -277,6 +292,9 @@ def save_xls_file(blocked_list, block_child_list):
                         tempList3 = tempStr3.split()
                         if len(tempList3) > 2:
                             route_gateway = tempList3[2]
+                            if route_gateway[0] == '"':
+                                tempList3 = tempStr3.split('"')
+                                route_gateway = '"'+tempList3[1]+'"'
                         else:
                             route_gateway = tempList3[1]
 
@@ -350,13 +368,12 @@ def save_xls_file(blocked_list, block_child_list):
 ####
                                 if tempList2[2] == 'name':
                                     rule_address_detail = getAddressList(blocked_list, block_child_list, rule_source_address)
-                                    rule_address_detail = fix_address_string(rule_address_detail)
                                 if tempList2[2] == 'group':
                                     gList_temp = []
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_source_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
-                                        rule_address_detail = rule_address_detail + fix_address_string(gList_temp[tempInt1]) + '\n'
+                                        rule_address_detail = rule_address_detail + gList_temp[tempInt1] + '\n'
 
                             else:
                                 rule_source_address = tempList2[2]
@@ -372,13 +389,12 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_destination_address = rule_destination_address.strip()
                                 if tempList2[2] == 'name':
                                     rule_destination_detail = getAddressList(blocked_list, block_child_list, rule_destination_address)
-                                    rule_destination_detail = fix_address_string(rule_destination_detail)
                                 if tempList2[2] == 'group':
                                     gList_temp = []
                                     gList_temp = getAddressGroupList(blocked_list, block_child_list, rule_destination_address,gList_temp)
 
                                     for tempInt1 in range(len(gList_temp)):
-                                        rule_destination_detail = rule_destination_detail + fix_address_string(gList_temp[tempInt1]) + '\n'
+                                        rule_destination_detail = rule_destination_detail + gList_temp[tempInt1] + '\n'
 
                             else:
                                 rule_destination_address = tempList2[2]

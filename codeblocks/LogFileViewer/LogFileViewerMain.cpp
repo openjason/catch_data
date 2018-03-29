@@ -21,12 +21,19 @@ FILE * pFile;
 long lSize;
 char * buffer;
 char mystring [200];
+char *str_t = new char[64];
+
+    time_t t = time(0);
+    char tmp[64];
+    char *ts = new char[64];// = (char *)malloc(32);
+
 //wxRichTextCtrl rtc;
 
 
 //定义全局变量
 
 //(*InternalHeaders(LogFileViewerFrame)
+#include <wx/artprov.h>
 #include <wx/bitmap.h>
 #include <wx/icon.h>
 #include <wx/image.h>
@@ -99,7 +106,7 @@ LogFileViewerFrame::LogFileViewerFrame(wxWindow* parent,wxWindowID id)
     SetClientSize(wxSize(1258,621));
     {
     	wxIcon FrameIcon;
-    	FrameIcon.CopyFromBitmap(wxBitmap(wxImage(_T("F:\\dev\\GitHub\\catch_data\\codeblocks\\bombs.ico"))));
+    	FrameIcon.CopyFromBitmap(wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_FLOPPY")),wxART_OTHER));
     	SetIcon(FrameIcon);
     }
     Panel1 = new wxPanel(this, ID_PANEL1, wxPoint(176,192), wxDefaultSize, wxTAB_TRAVERSAL|wxFULL_REPAINT_ON_RESIZE, _T("ID_PANEL1"));
@@ -242,12 +249,10 @@ int LogFileViewerFrame::refresh_log(void)
 
 char *timestring(void)
 {
-    time_t t = time(0);
-    char tmp[64];
-    char *ts = new char[64];// = (char *)malloc(32);
-    strftime( tmp, sizeof(tmp), "%Y/%m/%d %X %A",localtime(&t) );
+    t = time(0);
+    strftime(tmp, sizeof(tmp), "%Y/%m/%d %X %A",localtime(&t) );
     strcpy(ts,tmp);
-    return ts;
+    return tmp;
 }
 
 
@@ -299,7 +304,6 @@ void LogFileViewerFrame::OnButton_quitClick(wxCommandEvent& event)
 void LogFileViewerFrame::OnTimer1Trigger(wxTimerEvent& event)
 {
 
-    char *str_t = new char[64];
     str_t = timestring();
     wxStaticText &wx_statict3 = *StaticText3;
     wx_statict3.SetLabel(str_t);
