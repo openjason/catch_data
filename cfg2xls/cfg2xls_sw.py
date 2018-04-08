@@ -2,7 +2,7 @@
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2017-11-29
+2018-04-08
 '''
 # import os
 import openpyxl
@@ -61,8 +61,6 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
     address_g_list = []
-    if '&' in Aname :
-        a= 0
     if '"' in Aname:
         Aname = Aname[1:len(Aname) - 1]
 
@@ -103,10 +101,15 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
 
 def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
 #    ServicePortList = []
-    if Gname == 'ICMP' or Gname == 'Ping':
-        return ['ICMP']
+    if Gname == 'ICMP':
+        ServicePortList.append('ICMP')
+        return ServicePortList
+    if Gname == 'Ping':
+        ServicePortList.append('Ping')
+        return ServicePortList
 
-
+    if Gname == '5000&ping':
+        Gname = Gname
 
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -136,8 +139,8 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
                         tempGetSObject = tempGetSObject.strip()
 
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
-#                        for tempInt1 in range(len(tempList3)):
-#                            ServicePortList.append(tempList3[tempInt1])
+#                        ServicePortList = ServicePortList + tempList3
+
     return ServicePortList
 
 def getServiceList(blocked_list, block_child_list,sname):
@@ -410,7 +413,7 @@ def save_xls_file(blocked_list, block_child_list):
                                 rule_service = rule_service + tempList2[k] + ' '
                             rule_service = rule_service.strip()
                             if tempList2[1] == 'name':
-                                rule_service_port = getServiceList(blocked_list, block_child_list, rule_service)
+                                rule_service_port = rule_service_port + getServiceList(blocked_list, block_child_list, rule_service)
                             if tempList2[1] == 'group':
                                 ServicePortList = []
                                 rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
@@ -420,6 +423,7 @@ def save_xls_file(blocked_list, block_child_list):
 #                                    print(rule_service_port_list)
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
             format_rule_str = format_service_list(rule_service_port)
+#            format_rule_str = rule_service_port
 
             if rule_from == rule_to or rule_from == 'VPN' or \
                     (rule_source_address == 'any' and rule_destination_address == 'any' and rule_service == 'any') or \
@@ -500,7 +504,10 @@ def format_service_list(s_list):
             if len(tmpList2) == 3:
                 if last_str1 != tmpList2[0]:
                     if last_str1 == "":
-                        f_service_str = tmpList2[0]
+                        if f_service_str == '':
+                            f_service_str = tmpList2[0]
+                        else:
+                            f_service_str = f_service_str + "、" + tmpList2[0]
                     else:
                         f_service_str = f_service_str + "\n" +tmpList2[0]
                     last_str1 = tmpList2[0]
@@ -513,6 +520,13 @@ def format_service_list(s_list):
                         f_service_str = f_service_str + "、" + tmpList2[1]
                     else:
                         f_service_str = f_service_str + "、" + tmpList2[1]+"-" + tmpList2[2]
+            else:
+                if len(tmpList2) == 1:
+                    if f_service_str == '':
+                        f_service_str = tmp_str2
+                    else:
+                        f_service_str = f_service_str + "、" + tmp_str2
+
     return f_service_str
 
 def get_first_word(str):
