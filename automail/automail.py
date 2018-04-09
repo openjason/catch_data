@@ -18,7 +18,7 @@ import socket
 from ctypes import *
 import shutil
 
-VERSION = "Ver: 20180309 "
+VERSION = "Ver: 20180409 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
@@ -213,7 +213,7 @@ def get_customer_file_list(folder,wildard):
             _wcard = _wildcard[i]
             _wcard = _wcard.replace('*','')
             for j in os.listdir(source_dir):
-                if j.find(_wcard) > 0 :
+                if j.find(_wcard) != -1 :
                     have_file = True
                     if not(j in _filelist):
                         _filelist.append(j)
