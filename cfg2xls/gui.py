@@ -1,23 +1,80 @@
-from tkinter import *
+﻿import paramiko
+import sys
+import time
+#import hashlib
 
-def show_entry_fields():
-   print("First Name: %s\nLast Name: %s" % (e1.get(), e2.get()))
-   e1.delete(0,END)
-   e2.delete(0,END)
 
-master = Tk()
-Label(master, text="Username:").grid(row=0)
-Label(master, text="Password:").grid(row=1)
+def get_sw_conf(hostip,port,username,password):
+    i = 10
+    while True:
+        print ("Trying to connect to %s (%i/30)" % (hostip, i))
 
-e1 = Entry(master)
-e2 = Entry(master)
-e1.insert(10,"admin")
-e2.insert(10,"")
+        try:
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(hostip, username=username, password=password, port=port)
+            print ("Connected to %s" % hostip)
+            remote_conn = ssh.invoke_shell()
+            output = remote_conn.recv(65535)
+            print (output)
+            break
+        except paramiko.AuthenticationException:
+            print ("Authentication failed when connecting to %s" % hostip)
+            sys.exit(1)
+        except:
+            print ("Could not SSH to %s, waiting for it to start" % hostip)
+            i += 1
+            time.sleep(2)
+        # If we could not connect within time limit
+        if i == 30:
+            print ("Could not connect to %s. Giving up" % hostip)
+            sys.exit(1)
 
-e1.grid(row=0, column=1)
-e2.grid(row=1, column=1)
+    # Send the command (non-blocking)
 
-Button(master, text='Quit', command=master.quit).grid(row=3, column=0, sticky=W, pady=4)
-Button(master, text='获取配置文本', command=show_entry_fields).grid(row=3, column=1, sticky=W, pady=4)
+    fo = open("sw.log","w")
+    
+    remote_conn.send('show version \n')
+    output = remote_conn.recv(65535)
+    prompt = username + "@"
+    output_str = bytes.decode(output)
+    print (output_str)
 
-mainloop( )
+    fo.write(output_str)
+
+    remote_conn.send('cli screen length session 1600\n')
+    time.sleep(0.2)
+    output = remote_conn.recv(65535)
+    prompt = username + "@"
+    output_str = bytes.decode(output)
+    print (output_str)
+    fo.write(output_str)
+    output_str = ''
+    remote_conn.send('show curr\n')
+
+    while (True):
+        if prompt in output_str:
+            print("hava prompt...............")
+            break
+        remote_conn.send(' ')
+        time.sleep(0.2)
+        output = remote_conn.recv(65535)
+        output_str = bytes.decode(output)
+        output_str = output_str[0:len(output_str)-10]
+        print (output_str)
+        fo.write(output_str)
+        
+
+    ssh.close()
+
+    fo.close()
+
+if __name__ == "__main__":
+    nbytes = 4096
+    hostip = '192.168.151.1'
+    port = 22
+    username = 'cjchll' 
+    password = 'Admin@007'
+    command = 'show curr'
+
+    get_sw_conf(hostip,port,username,password)
