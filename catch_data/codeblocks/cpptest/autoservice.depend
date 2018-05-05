@@ -1,0 +1,26 @@
+# depslib dependency file v1.0
+1517104573 source:e:\dev\github\catch_data\codeblocks\cpptest\main.cpp
+	<windows.h>
+	<stdio.h>
+	"RcLogInfo.h"
+
+1516977124 e:\dev\github\catch_data\codeblocks\cpptest\rcloginfo.h
+	<windows.h>
+	<time.h>
+	<stdio.h>
+	<sys/timeb.h>
+	<iostream>
+
+1517709245 source:f:\dev\github\catch_data\codeblocks\cpptest\main.cpp
+	<windows.h>
+	<stdio.h>
+	"tlhelp32.h"
+	"RcLogInfo.h"
+
+1516942770 f:\dev\github\catch_data\codeblocks\cpptest\rcloginfo.h
+	<windows.h>
+	<time.h>
+	<stdio.h>
+	<sys/timeb.h>
+	<iostream>
+
