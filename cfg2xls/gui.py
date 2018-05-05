@@ -1,4 +1,6 @@
-﻿import paramiko
+﻿#author openjason
+
+import paramiko
 import sys
 import time
 #import hashlib
