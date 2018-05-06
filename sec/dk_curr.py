@@ -11,7 +11,6 @@ from email.header import Header
 import logging
 import os
 import configparser
-import re
 import time
 import datetime
 from filecmp import dircmp
@@ -25,7 +24,7 @@ import http.cookiejar
 from anjian import stock_sale
 from anjian import stock_buy
 
-VERSION = "Ver: 20180504 "
+VERSION = "Ver: 20180506 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
@@ -202,7 +201,7 @@ def dk_detect():
         try:
             new_price = round(float(new_price_str[0]), 3)
         except:
-            logging.info("gap error.")
+            logging.info("gap get error.")
             continue
         if dk_flag == 'buy':
             #计划买入,之前价格检测２次均符合条件，执行交易
@@ -228,10 +227,6 @@ def dk_detect():
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
-
-
-#        print(id, end="")
-#        print (new_price_str,end=" ",flush=True)
         logging.info(str(id) + str(new_price_str)+dk_flag+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
@@ -242,13 +237,11 @@ if __name__ == "__main__":
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         print (str_time,flush=True)
-#        if (int(str_time[9:16]) in range(92500, 113500)) or (int(str_time[9:16]) in range(125500, 150500)):
+#        if (int(str_time[9:16]) in range(93000, 113500)) or (int(str_time[9:16]) in range(125500, 150500)):
         if (True):
             print("test")
             dk_detect()
             time.sleep(2)
-            
-
         else:
             print("out of exchange time.")
             time.sleep(6)
