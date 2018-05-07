@@ -237,9 +237,9 @@ if __name__ == "__main__":
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         print (str_time,flush=True)
-#        if (int(str_time[9:16]) in range(93000, 113500)) or (int(str_time[9:16]) in range(125500, 150500)):
-        if (True):
-            print("test")
+        if (int(str_time[9:16]) in range(93000, 113500)) or (int(str_time[9:16]) in range(125500, 150500)):
+#        if (True):
+#            print("test")
             dk_detect()
             time.sleep(2)
         else:

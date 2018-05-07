@@ -1,6 +1,4 @@
-﻿#author openjason
-
-import paramiko
+﻿import paramiko
 import sys
 import time
 #import hashlib
@@ -34,6 +32,9 @@ def get_sw_conf(hostip,port,username,password):
 
     # Send the command (non-blocking)
 
+    more_str = bytes.fromhex('2D2D4D4F52452D2D1B5B38441B5B4B')
+#    more_str = b'abc'        #2D2D4D4F52452D2D1B5B38441B5B4B
+    
     fo = open("sw.log","w")
     
     remote_conn.send('show version \n')
@@ -45,7 +46,7 @@ def get_sw_conf(hostip,port,username,password):
     fo.write(output_str)
 
     remote_conn.send('cli screen length session 1600\n')
-    time.sleep(0.2)
+    time.sleep(0.1)
     output = remote_conn.recv(65535)
     prompt = username + "@"
     output_str = bytes.decode(output)
@@ -54,17 +55,22 @@ def get_sw_conf(hostip,port,username,password):
     output_str = ''
     remote_conn.send('show curr\n')
 
+    
     while (True):
         if prompt in output_str:
             print("hava prompt...............")
             break
         remote_conn.send(' ')
-        time.sleep(0.2)
+        time.sleep(0.1)
         output = remote_conn.recv(65535)
+#        print(type(output))
+        output = output.replace(more_str,b'')
+
         output_str = bytes.decode(output)
-        output_str = output_str[0:len(output_str)-10]
+
         print (output_str)
         fo.write(output_str)
+#        time.sleep(1)
         
 
     ssh.close()
