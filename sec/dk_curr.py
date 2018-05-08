@@ -1,5 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
+VERSION = "Ver: 20180508 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -24,7 +25,6 @@ import http.cookiejar
 from anjian import stock_sale
 from anjian import stock_buy
 
-VERSION = "Ver: 20180506 "
 SMTP_SERVER = ""
 WORK_DIR = ""
 SMTP_USER = ""
@@ -33,6 +33,7 @@ SMTP_SENDER = ""
 
 long_date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+log_prefix = time.strftime('%m%d', time.localtime(time.time()))
 
 cf = configparser.ConfigParser()
 cf_file = 'c:\\dk\\dk_curr.ini'
@@ -70,6 +71,15 @@ last_first_price = []
 last_secondary_price = []
 exchage_ready = []
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(message)s',
+                    datefmt='%a, %d %b %H:%M:%S',
+                    filename = os.path.join(WORK_DIR,log_prefix+'.log'),
+                    filemode='a')
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger('').addHandler(console)
 
 for i in range(1,target_total+1):
     try:
@@ -94,15 +104,6 @@ for i in range(1,target_total+1):
         logging.warning("conf.ini 配置有误，参数:"+cfstr)
 
 
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(levelname)s %(message)s',
-                    datefmt='%a, %d %b %Y %H:%M:%S',
-                    filename = os.path.join(WORK_DIR,'dk_curr.log'),
-                    filemode='a')
-
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logging.getLogger('').addHandler(console)
 
 def check_smtp_server(ipaddr,port):
     try:
@@ -114,6 +115,32 @@ def check_smtp_server(ipaddr,port):
     except socket.error as e:
         sock.close()
         return False
+
+def send_email(toaddr,c_subject):
+    logging.info("Subject:"+c_subject)
+    toaddr = SMTP_USER
+    try:
+        msg = MIMEMultipart()
+        msg['To'] = ";".join(toaddr)
+        msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
+        msg['Subject'] = c_subject
+
+        html = c_subject
+
+        html = html.replace("YYYY-MM-DD",long_date)
+        body = MIMEText(html, 'plain')
+        #    body = MIMEText(text_body, 'plain')
+        msg.attach(body)  # add message body (text or html)
+
+        server = smtplib.SMTP(SMTP_SERVER, 25)
+        server.login(SMTP_USER, SMTP_PWD)
+        mailbody = msg.as_string()
+
+        server.sendmail(SMTP_USER, toaddr, mailbody) #send mail to & cc email address
+        logging.info("发送邮件OK："+"to:"+c_subject)
+        server.quit()
+    except:
+        logging.info("Error发送邮件："+"to:"+c_subject)
 
 def check_server_auth():
     try:
@@ -212,6 +239,8 @@ def dk_detect():
                     stock_buy(id,str(dk_amount))
                     exchage_ready[i] = False
                     logging.info ("excute exchage......" + id + "buy:" +str(dk_amount))
+                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
@@ -221,27 +250,30 @@ def dk_detect():
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
                 if exchage_ready[i]:
                     #excute
-                    stock_sale(id,str(dk_amount))
                     logging.info ("excute exchage......" + id + "sale:" +str(dk_amount))
                     exchage_ready[i] = False
+                    stock_sale(id,str(dk_amount))
+                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
-        logging.info(str(id) + str(new_price_str)+dk_flag+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        logging.info(str(id) + str(new_price_str)+dk_flag+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
 
 
 
 if __name__ == "__main__":
+    logging.info(VERSION)
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         print (str_time,flush=True)
-        if (int(str_time[9:16]) in range(93000, 113500)) or (int(str_time[9:16]) in range(125500, 150500)):
+        if (int(str_time[9:16]) in range(92800, 113500)) or (int(str_time[9:16]) in range(125800, 150500)):
 #        if (True):
 #            print("test")
             dk_detect()
             time.sleep(2)
         else:
             print("out of exchange time.")
-            time.sleep(6)
+            time.sleep(8)

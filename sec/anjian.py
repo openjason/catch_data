@@ -241,9 +241,6 @@ def stock_action(stock_str,amount_str):
  
 if __name__ == "__main__":    
 
-
-
-    
  
     for i in range(1):
         print(i)
