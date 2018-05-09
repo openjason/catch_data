@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+﻿# -*- coding: UTF-8 -*-
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
@@ -184,9 +184,6 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 
 def save_xls_file(blocked_list, block_child_list):
-
-    xlsfile = 'sonicwall.xlsx'
-
     workbook = openpyxl.load_workbook(xlsfile)
     vaild_counter = 1
     print(xlsfile)
@@ -489,7 +486,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 # Edit sheet "rule" end
     try:
-        workbook.save('cfg_new.xlsx')
+        workbook.save(WorkDir+'cfg_new.xlsx')
     except:
         print("xlsx文件被锁定，无法保存。。。")
     finally:
@@ -546,7 +543,6 @@ def list_to_string(rawlist):
 
 
 def get_block(filename, confile_blocked, wfilename):
-    confile_block = []
     confile_raw = []
     confile_temp = []
     fpline = ''
@@ -597,15 +593,15 @@ def get_xls_keys(workbook, keyslist):
         sheetcell = sheet.cell(row=cellrow, column=cellcolumn).value
     wb.close()
 
-def cfgxlsproc():
-    xlsfile = 'sonicwall.xlsx'
+
+if __name__ == '__main__':
+    WorkDir = 'C:\\test\\'
+    xlsfile = WorkDir + 'sonicwall.xlsx'
+    filename = 'hw254.cfg'
+    wfilename = 'hwblock.txt'
     keyslist = []
 
     confile_blocked = []
-    swcfgfile = 'sw.log'
-    get_block(swcfgfile, confile_blocked, 'sn_block.txt')
-
-
-
-if __name__ == '__main__':
-    cfgxlsproc()
+    confile_block = []
+    swcfgfile = WorkDir + 'sw.log'
+    get_block(swcfgfile, confile_blocked, WorkDir+'sn_block.txt')

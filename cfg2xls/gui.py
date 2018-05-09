@@ -3,13 +3,17 @@ import sys
 import time
 #import hashlib
 from tkinter import *
+from tkinter import messagebox
+
+from cfg2xls_sw import cfgxlsproc
 
 
 class SW_CONF():
     def __init__(self,main_win):
         self.main_win = main_win
+        self.main_win.title("防火墙配置导出处理程序")
         self.tips_lable_text = "tips"
-        self.var = IntVar()
+        self.var_l_tips = IntVar()
 
     def check_ip_format(self,ipaddr):
         if re.match('((?:(?:25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(?:25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d))))',ipaddr) != None:
@@ -17,60 +21,78 @@ class SW_CONF():
         else:
             return False
 
+    def proc_conf_click(self):
+        cfgxlsproc()
+
+ 
     def get_conf_click(self):
         hostip = self.e1.get()
-        msgbox(text, title, ok_button='OK', image=None, root=None)
-        if self.check_ip_format(hostip):
-            msgbox(text, title, ok_button='OK', image=None, root=None)
+        if not self.check_ip_format(hostip):
+            messagebox.showerror('ERROR', 'IP地址有误.')
+            return 1
         username = self.e2.get()
+        if len(username)<3 :
+            messagebox.showerror('ERROR', '用户名有误.')
+            return 1
         port = 22
         password = self.e3.get()
+        if len(password)<3 :
+            messagebox.showerror('ERROR', '密码有误.')
+            return 1
         self.get_sw_conf(hostip,port,username,password)
+        
 
     def init_win(self):
+        entry_var = StringVar()
 
-        self.hostip_lable = Label(self.main_win, text="防火墙ip:").grid(sticky=E)
-        self.username_lable = Label(self.main_win, text="用户:").grid(sticky=E)
-        self.pwd_lable = Label(self.main_win, text="密码:").grid(sticky=E)
-        self.tips_lable = Label(self.main_win, textvariable=self.var).grid(column=1, row=4, sticky=E)
+#        self.space1_lable = Label(self.main_win).grid(column=0, row=0)
 
-        self.e1 = Entry(self.main_win,width = 50)
-        self.e2 = Entry(self.main_win,width = 50)
-        self.e3 = Entry(self.main_win,width = 50)
+        self.hostip_lable = Label(self.main_win, text="防火墙IP:",font = ("Arial, 11")).grid(column=0, row=1, sticky=E)
+        self.username_lable = Label(self.main_win, text="   管理员用户:",font = ("Arial, 11")).grid(sticky=E)
+        self.pwd_lable = Label(self.main_win, text="密码:",font = ("Arial, 11")).grid(sticky=E)
+        self.tips_lable = Label(self.main_win, textvariable=self.var_l_tips).grid(column=1, row=5, sticky=E)
+        self.var_l_tips.set(" ")
+        
+        self.space_lable = Label(self.main_win).grid(column=1, row=0, sticky=E)
 
-        self.e1.grid(row=0, column=1)
-        self.e2.grid(row=1, column=1)
-        self.e3.grid(row=2, column=1)
+        self.e1 = Entry(self.main_win,textvariable = entry_var ,width = 50,font = ("Arial, 11"))
+        
+        entry_var.set("192.168.")
+        self.e2 = Entry(self.main_win,width = 50,font = ("Arial, 11"))
+        self.e3 = Entry(self.main_win,width = 50,font = ("Arial, 11"))
 
-        self.photo = PhotoImage(file='e:\\test\\tt.png')
+        self.e1.grid(row=1, column=1)
+        self.e2.grid(row=2, column=1)
+        self.e3.grid(row=3, column=1)
+
+        self.photo = PhotoImage(file='ep.png')
         self.label = Label(image=self.photo)
         self.label.image = self.photo
-        self.label.grid(row=0, column=2, columnspan=2, rowspan=2, sticky=W+E+N+S, padx=5, pady=5)
+        self.label.grid(row=1, column=2, columnspan=3, rowspan=3, sticky=W+E+N+S, padx=18, pady=18)
 
-        self.get_conf_button = Button(self.main_win, text="读取配置", bg="lightblue", width=10,
-                                              command=self.get_conf_click)
-        self.get_conf_button.grid(row=2, column=2)
+        self.get_conf_button = Button(self.main_win, text="读配置", bg="lightblue", width=12,command=self.get_conf_click)
+        self.get_conf_button.grid(row=4, column=1,padx=7, pady=5, sticky="w")
 
-        button2 = Button(self.main_win, text='Zoom out')
-        button2.grid(row=2, column=3)
+        self.proc_conf_button = Button(self.main_win, text="导出配置",bg="lightblue", width=12,command=self.proc_conf_click)
+        self.proc_conf_button.grid(row=4, column=1,padx=17, pady=15, )
         mainloop()
 
 
     def get_sw_conf(self,hostip,port,username,password):
-        self.var.set("Try to connect host:" + hostip)
-        return
-        i = 10
+        self.var.set("Connecting host: " + username+"@"+hostip)
+        i = 1
         while True:
-            print ("Trying to connect to %s (%i/30)" % (hostip, i))
+            print ("Trying to connect to %s (%i/3)" % (hostip, i))
 
             try:
                 ssh = paramiko.SSHClient()
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(hostip, username=username, password=password, port=port)
+                ssh.connect(hostip, username=username, password=password, port=port,timeout=3)
                 print ("Connected to %s" % hostip)
 
-                self.tips_lable.config(text = "Connected to %s" % hostip)
-
+                self.var_l_tips.set("Connected to %s" % hostip)
+                self.main_win.update_idletasks()
+                
                 remote_conn = ssh.invoke_shell()
                 output = remote_conn.recv(65535)
                 print (output)
@@ -83,15 +105,17 @@ class SW_CONF():
                 i += 1
                 time.sleep(2)
             # If we could not connect within time limit
-            if i == 30:
+            if i > 3:
                 print ("Could not connect to %s. Giving up" % hostip)
-                sys.exit(1)
+                self.var_l_tips.set("Failed to connect host: " + username + "@" + hostip)
+                self.main_win.update_idletasks()
 
-        # Send the command (non-blocking)
+                return 2
+
 
         more_str = bytes.fromhex('2D2D4D4F52452D2D1B5B38441B5B4B')
-    #    more_str = b'abc'        #2D2D4D4F52452D2D1B5B38441B5B4B
-
+        #替换--MORE--等
+        
         fo = open("sw.log","w")
 
         remote_conn.send('show version \n')
@@ -112,19 +136,22 @@ class SW_CONF():
         output_str = ''
         remote_conn.send('show curr\n')
 
-
+        i = 1
         while (True):
             if prompt in output_str:
                 print("hava prompt...............")
                 break
+            self.var_l_tips.set("Reading SonicWall configure file." + str(i*1600)+ "lines")
+            self.main_win.update_idletasks()
+
+            i = i + 1
             remote_conn.send(' ')
             time.sleep(0.1)
             output = remote_conn.recv(65535)
-    #        print(type(output))
+
             output = output.replace(more_str,b'')
 
             output_str = bytes.decode(output)
-
             print (output_str)
             fo.write(output_str)
 

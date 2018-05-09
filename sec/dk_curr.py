@@ -91,7 +91,7 @@ for i in range(1,target_total+1):
         target_dk_value.append(cf.get(cfstr, 'dk_value'))
         target_dk_amount.append(cf.get(cfstr, 'dk_amount'))
         target_emailaddr.append(cf.get(cfstr,'to_email_addr'))
-        if cf.get(cfstr, 'dk_flag') == 'buy':
+        if cf.get(cfstr, 'dk_flag') == 'dkbuy':
             last_first_price.append(0)
             last_secondary_price.append(0)
         else:
@@ -230,7 +230,7 @@ def dk_detect():
         except:
             logging.info("gap get error.")
             continue
-        if dk_flag == 'buy':
+        if dk_flag == 'dkbuy':
             #计划买入,之前价格检测２次均符合条件，执行交易
             dk_gap = round(new_price - dk_value,3)
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
@@ -238,7 +238,7 @@ def dk_detect():
                     #excute
                     stock_buy(id,str(dk_amount))
                     exchage_ready[i] = False
-                    logging.info ("excute exchage......" + id + "buy:" +str(dk_amount))
+                    logging.info ("excute exchage......" + id + "dkbuy:" +str(dk_amount))
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
 
             else:
@@ -250,7 +250,7 @@ def dk_detect():
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
                 if exchage_ready[i]:
                     #excute
-                    logging.info ("excute exchage......" + id + "sale:" +str(dk_amount))
+                    logging.info ("excute exchage......" + id + "dksale:" +str(dk_amount))
                     exchage_ready[i] = False
                     stock_sale(id,str(dk_amount))
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
