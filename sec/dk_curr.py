@@ -96,7 +96,7 @@ for i in range(1,target_total+1):
         target_dk_value.append(cf.get(cfstr, 'dk_value'))
         target_dk_amount.append(cf.get(cfstr, 'dk_amount'))
         target_emailaddr.append(cf.get(cfstr,'to_email_addr'))
-        if cf.get(cfstr, 'dk_flag') == 'dkbuy':
+        if cf.get(cfstr, 'dk_flag') == 'dkbuy' or cf.get(cfstr, 'dk_flag') == 'tpsale':
             last_first_price.append(0)
             last_secondary_price.append(0)
         else:
@@ -286,6 +286,7 @@ def dk_detect():
     global last_secondary_price
 
     for i in range(target_total):
+    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
         httpa = target_httpa[i]
         httpb = target_httpb[i]
         httpc = target_httpc[i]
@@ -315,28 +316,60 @@ def dk_detect():
             dk_gap = round(new_price - dk_value,3)
             if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
                 if exchage_ready[i]:
-                    #excute
+                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
                     stock_buy(id,str(dk_amount))
                     exchage_ready[i] = False
-                    logging.info ("excute exchage......" + id + "dkbuy:" +str(dk_amount))
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
+        #end of dkbuy
+
+        elif dk_flag == 'tpbuy': ##到目标价，买
+            dk_gap = round(dk_value - new_price, 3)
+            if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
+                if exchage_ready[i]:
+                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
+                    stock_buy(id,str(dk_amount))
+                    exchage_ready[i] = False
+                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+            else:
+                last_secondary_price[i] = last_first_price[i]
+                last_first_price[i] = new_price
+        #end of tpbuy
+
         elif dk_flag == 'dksale':
             #计划卖出，之前价格检测２次均符合条件，执行交易
             dk_gap = round(dk_value - new_price, 3)
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
                 if exchage_ready[i]:
-                    #excute
-                    logging.info ("excute exchage......" + id + "dksale:" +str(dk_amount))
-                    exchage_ready[i] = False
+                    logging.info ("Excute exchage......" + id + dk_flag+":" +str(dk_amount))
                     stock_sale(id,str(dk_amount))
+                    exchage_ready[i] = False
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
-        logging.info(str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        #end of dksale
+
+        elif dk_flag == 'tpsale':   #到目标价，卖
+            dk_gap = round(new_price - dk_value,3)
+            if (dk_gap >0) and (last_one_value - dk_value) > 0 and (last_two_value - dk_value) >0:
+                if exchage_ready[i]:
+                    logging.info ("Excute exchage......" + id + dk_flag + ":" +str(dk_amount))
+                    stock_sale(id,str(dk_amount))
+                    exchage_ready[i] = False
+                    send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
+            else:
+                last_secondary_price[i] = last_first_price[i]
+                last_first_price[i] = new_price
+        #end of tpsale
+        else:
+            logging.info ("无此交易类型...error.")
+
+
+        #记录全部交易类型的日志。
+        logging.info(str(i+1)+":"+str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
 
@@ -346,9 +379,7 @@ if __name__ == "__main__":
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         print (str_time,flush=True)
-        if (int(str_time[9:16]) in range(92800, 190800)):
-#        if (True):
-#            print("test")
+        if (int(str_time[9:16]) in range(52800, 190800)):
             dk_detect()
         else:
             print("out of exchange time.")
