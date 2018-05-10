@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180508 "
+VERSION = "Ver: 20180510 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -17,6 +17,7 @@ import datetime
 from filecmp import dircmp
 import socket
 from ctypes import *
+import ssl
 
 from bs4 import BeautifulSoup
 import urllib.request
@@ -57,7 +58,9 @@ except:
     exit(2)
 
 target_name = []
-target_http = []
+target_httpa = []
+target_httpb = []
+target_httpc = []
 target_id = []
 target_dk_flag =[]
 target_dk_value = []
@@ -85,7 +88,9 @@ for i in range(1,target_total+1):
     try:
         cfstr = 'Target' + str(i)
         target_name.append(cf.get(cfstr,'name'))
-        target_http.append(cf.get(cfstr,'http_addr'))
+        target_httpa.append(cf.get(cfstr,'httpa'))
+        target_httpb.append(cf.get(cfstr,'httpb'))
+        target_httpc.append(cf.get(cfstr,'httpc'))
         target_id.append(cf.get(cfstr, 'stock_id'))
         target_dk_flag.append(cf.get(cfstr, 'dk_flag'))
         target_dk_value.append(cf.get(cfstr, 'dk_value'))
@@ -163,23 +168,54 @@ def clear_files(dir):
                 return False
     return True
 
-def getHtml(url):
+def getHtml_sinajs(url):
     try:
+        context = ssl._create_unverified_context()
         cj = http.cookiejar.CookieJar()
         opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-        opener.addheaders = [('User-Agent',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36'),
-        ('Cookie', '4564563564564564565646544')]
-
+        opener.addheaders = [('User-Agent','Mozilla/5.0')]
         urllib.request.install_opener(opener)
-        html_bytes = urllib.request.urlopen(url).read()
+        html_bytes = urllib.request.urlopen(url,context=context).read()
+        html_string = html_bytes.decode("gb2312")
+        return html_string
+    except:
+        logging.info("error in getHtml_sinajs(url).")
+        return "error."
+
+def get_curr_sinajs(html_doc):
+    #is string not need beautifulsoup.
+    soup = html_doc
+    if len(soup) > 2:
+        lstTemp = soup.split('"')
+    if len(lstTemp) == 3 :
+        strTemp = lstTemp[1]
+        lstTemp = strTemp.split(',')
+
+        curr_str = lstTemp[3]
+        last_str = lstTemp[2]
+        gap_float = round(float(curr_str) - float(last_str),2)
+        rate = round(gap_float * 100 / float(last_str),2)
+        rtstr = curr_str + '|' + str(gap_float) + '|' + str(rate) +'%'
+        return rtstr
+    else:
+        logging.info("error in get_curr_sinajs(html_doc)")
+        return ("error no data.")
+
+def getHtml_baidu(url):
+    try:
+        context = ssl._create_unverified_context()
+        cj = http.cookiejar.CookieJar()
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        opener.addheaders = [('User-Agent','Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        html_bytes = urllib.request.urlopen(url,context=context).read()
         html_string = html_bytes.decode('utf-8')
         return html_string
     except:
-        print("can not get html file.")
-        return "can not get html file."
+        logging.info("error in getHtml_baidu(url).")
+        return "error in getHtml_baidu(url)."
 
-def get_curr(html_doc):
+def get_curr_baidu(html_doc):
     soup = BeautifulSoup(html_doc, 'html.parser')
     stock_info = soup.find_all(class_ = "price s-up ") #price s-down
     get_text = ""
@@ -188,16 +224,51 @@ def get_curr(html_doc):
         get_text = i.get_text()
         if len(get_text)>0:
             get_text = get_text.split()
-    else:
-        stock_info = soup.find_all(class_="price s-down ")  # price s-down
-        if len(stock_info) > 0:
-            i = stock_info[0]
-            get_text = i.get_text()
-            if len(get_text) > 0:
-                get_text = get_text.split()
-        else:
-            print("no data.")
-    return (get_text)
+            rt = get_text[0]+"|"+get_text[1]+"|"+get_text[2]
+        return (rt)
+    stock_info = soup.find_all(class_="price s-down ")  # price s-down
+    get_text = ""
+    if len(stock_info) > 0:
+        i = stock_info[0]
+        get_text = i.get_text()
+        if len(get_text) > 0:
+            get_text = get_text.split()
+            rt = get_text[0]+"|"+get_text[1]+"|"+get_text[2]
+        return (rt)
+    stock_info = soup.find_all(class_="price s-stop ")  # price s-down
+    get_text = ""
+    if len(stock_info) > 0:
+        i = stock_info[0]
+        get_text = i.get_text()
+        if len(get_text) > 0:
+            get_text = get_text.split()
+            rt = get_text[0]+"|"+get_text[1]+"|"+get_text[2]
+        return (rt)
+    logging.info ("error no data.in get_curr_baidu(html_doc)")
+    return ("error no data.in get_curr_baidu(html_doc)")
+
+def get_from_site(httpa,httpb,httpc):
+    current_price_str = '2.31 1% 0.02'
+    current_price_str = get_current(httpa)
+    if 'error' in current_price_str:
+        current_price_str = get_current(httpb)
+        if 'error' in current_price_str:
+            current_price_str = get_current(httpc)
+            if 'error' in current_price_str:
+                return "error in get_from_site(httpa,httpb,httpc)"
+    return current_price_str
+
+def get_current(http):
+    if 'baidu' in http:
+        baidu_html = getHtml_baidu(http)
+        new_price_str = get_curr_baidu(baidu_html)
+        return (new_price_str)
+    if 'sinajs' in http:
+        sianjs_html = getHtml_sinajs(http)
+        new_price_str = get_curr_sinajs(sianjs_html)
+        return (new_price_str)
+    return "error in get_current(http)."
+
 
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
 #对目标dk值设置采用相反的比较,符合条件(差为正)则执行操作.否则记录更新上两次价格.
@@ -207,13 +278,17 @@ def dk_detect():
     global target_dk_value
     global target_dk_amount
     global target_dk_flag
-    global target_http
+    global target_httpa
+    global target_httpb
+    global target_httpc
     global target_id
     global last_first_price
     global last_secondary_price
 
     for i in range(target_total):
-        http_addr = target_http[i]
+        httpa = target_httpa[i]
+        httpb = target_httpb[i]
+        httpc = target_httpc[i]
         dk_flag = target_dk_flag[i]
         dk_value = float(target_dk_value[i])
         dk_amount = int(target_dk_amount[i])
@@ -221,15 +296,20 @@ def dk_detect():
         last_one_value = last_first_price[i]
         last_two_value = last_secondary_price[i]
 
-        html_doc = getHtml(http_addr)
-        new_price_str = get_curr(html_doc)
+        time.sleep(1.8)
+        new_price_str_raw = get_from_site(httpa,httpb,httpc)
 
+        if "|" in new_price_str_raw:
+            new_price_str = new_price_str_raw.split('|')
+        else:
+            new_price_str = []
         dk_gap = -888888
         try:
             new_price = round(float(new_price_str[0]), 3)
         except:
             logging.info("gap get error.")
             continue
+
         if dk_flag == 'dkbuy':
             #计划买入,之前价格检测２次均符合条件，执行交易
             dk_gap = round(new_price - dk_value,3)
@@ -240,11 +320,10 @@ def dk_detect():
                     exchage_ready[i] = False
                     logging.info ("excute exchage......" + id + "dkbuy:" +str(dk_amount))
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
-        else:
+        elif dk_flag == 'dksale':
             #计划卖出，之前价格检测２次均符合条件，执行交易
             dk_gap = round(dk_value - new_price, 3)
             if (dk_gap >0) and (dk_value - last_one_value ) > 0 and (dk_value - last_two_value ) >0:
@@ -254,14 +333,12 @@ def dk_detect():
                     exchage_ready[i] = False
                     stock_sale(id,str(dk_amount))
                     send_email(SMTP_USER,"DK:"+str(id) + str(new_price_str)+dk_flag+str(dk_amount))
-
             else:
                 last_secondary_price[i] = last_first_price[i]
                 last_first_price[i] = new_price
-        logging.info(str(id) + str(new_price_str)+dk_flag+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        logging.info(str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
-
 
 
 if __name__ == "__main__":
@@ -269,11 +346,10 @@ if __name__ == "__main__":
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         print (str_time,flush=True)
-        if (int(str_time[9:16]) in range(92800, 113500)) or (int(str_time[9:16]) in range(125800, 150500)):
+        if (int(str_time[9:16]) in range(92800, 190800)):
 #        if (True):
 #            print("test")
             dk_detect()
-            time.sleep(2)
         else:
             print("out of exchange time.")
-            time.sleep(8)
+            time.sleep(14)

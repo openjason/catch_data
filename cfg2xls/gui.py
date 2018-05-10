@@ -1,5 +1,6 @@
 ﻿import paramiko
 import sys
+import os
 import time
 #import hashlib
 from tkinter import *
@@ -11,9 +12,28 @@ from cfg2xls_sw import cfgxlsproc
 class SW_CONF():
     def __init__(self,main_win):
         self.main_win = main_win
+
+        self.screen_width = main_win.winfo_screenwidth()
+        self.screen_height = main_win.winfo_screenheight() - 100  # under windows, taskbar may lie under the screen
+#        root.resizable(False, False)
+
+        # add some widgets to the root window...
+
+        self.main_win.update_idletasks()
+        self.main_win.deiconify()  # now window size was calculated
+        self.main_win.withdraw()  # hide window again
+        self.main_win.geometry('410x410+860+390')
+#        self.main_win.geometry('%sx%s+%s+%s' % (self.main_win.winfo_width() + 10, self.main_win.winfo_height() + 10, (self.screen_width - self.main_win.winfo_width()) / 2,(self.screen_height - self.main_win.winfo_height()) / 2))
+        # center window on desktop
+        self.main_win.deiconify()
+
+
+
         self.main_win.title("防火墙配置导出处理程序")
         self.tips_lable_text = "tips"
         self.var_l_tips = IntVar()
+
+
 
     def check_ip_format(self,ipaddr):
         if re.match('((?:(?:25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d)))\.){3}(?:25[0-5]|2[0-4]\d|((1\d{2})|([1-9]?\d))))',ipaddr) != None:
@@ -22,9 +42,21 @@ class SW_CONF():
             return False
 
     def proc_conf_click(self):
-        cfgxlsproc()
+        self.var_l_tips.set("正在分析配置文件,输出Excel文件.")
+        self.main_win.update_idletasks()
+        try:
+            cfgxlsproc()
+            
+        except:
+            self.var_l_tips.set("程序出错，请联系管理员.")
+            self.main_win.update_idletasks()
+            
+        self.var_l_tips.set("防火器策略Excel文件已生成.")
+        self.main_win.update_idletasks()
+        if messagebox.askyesno('询问','确认现在打开Excel ？')== True:
+            os.system("start " + r"cfg_new.xlsx")
+            
 
- 
     def get_conf_click(self):
         hostip = self.e1.get()
         if not self.check_ip_format(hostip):
@@ -79,7 +111,8 @@ class SW_CONF():
 
 
     def get_sw_conf(self,hostip,port,username,password):
-        self.var.set("Connecting host: " + username+"@"+hostip)
+        self.var_l_tips.set("Connecting host: " + username+"@"+hostip)
+        self.main_win.update_idletasks()
         i = 1
         while True:
             print ("Trying to connect to %s (%i/3)" % (hostip, i))
@@ -103,11 +136,11 @@ class SW_CONF():
             except:
                 print ("Could not SSH to %s, waiting for it to start" % hostip)
                 i += 1
-                time.sleep(2)
+                time.sleep(1)
             # If we could not connect within time limit
-            if i > 3:
+            if i > 2:
                 print ("Could not connect to %s. Giving up" % hostip)
-                self.var_l_tips.set("Failed to connect host: " + username + "@" + hostip)
+                self.var_l_tips.set(username + "@" + hostip+"  Connect Failed...")
                 self.main_win.update_idletasks()
 
                 return 2
