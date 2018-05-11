@@ -66,9 +66,9 @@ target_dk_flag =[]
 target_dk_value = []
 target_dk_amount = []
 target_emailaddr = []
-target_ccaddr = []
-target_sourcedir = []
-target_destdir = []
+
+target_volatility = []
+target_timerange = []
 
 last_first_price = []
 last_secondary_price = []
@@ -96,12 +96,16 @@ for i in range(1,target_total+1):
         target_dk_value.append(cf.get(cfstr, 'dk_value'))
         target_dk_amount.append(cf.get(cfstr, 'dk_amount'))
         target_emailaddr.append(cf.get(cfstr,'to_email_addr'))
+        target_volatility.append(cf.get(cfstr,'volatility'))
+        target_timerange.append(cf.get(cfstr,'timerange'))
+
+        #新交易类型，需配置初始值
         if cf.get(cfstr, 'dk_flag') == 'dkbuy' or cf.get(cfstr, 'dk_flag') == 'tpsale':
-            last_first_price.append(0)
-            last_secondary_price.append(0)
+            last_first_price.append(-7777)
+            last_secondary_price.append(-7777)
         else:
-            last_first_price.append(888888)
-            last_secondary_price.append(888888)
+            last_first_price.append(8888)
+            last_secondary_price.append(8888)
 
         exchage_ready.append(True)
 
@@ -129,9 +133,7 @@ def send_email(toaddr,c_subject):
         msg['To'] = ";".join(toaddr)
         msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
         msg['Subject'] = c_subject
-
         html = c_subject
-
         html = html.replace("YYYY-MM-DD",long_date)
         body = MIMEText(html, 'plain')
         #    body = MIMEText(text_body, 'plain')
@@ -145,7 +147,7 @@ def send_email(toaddr,c_subject):
         logging.info("发送邮件OK："+"to:"+c_subject)
         server.quit()
     except:
-        logging.info("Error发送邮件："+"to:"+c_subject)
+        logging.info("error发送邮件："+"to:"+c_subject)
 
 def check_server_auth():
     try:
@@ -181,7 +183,6 @@ def getHtml_sinajs(url):
     except:
         logging.info("error in getHtml_sinajs(url).")
         return "error."
-
 def get_curr_sinajs(html_doc):
     #is string not need beautifulsoup.
     soup = html_doc
@@ -193,13 +194,40 @@ def get_curr_sinajs(html_doc):
 
         curr_str = lstTemp[3]
         last_str = lstTemp[2]
-        gap_float = round(float(curr_str) - float(last_str),2)
+        gap_float = round(float(curr_str) - float(last_str),3)
         rate = round(gap_float * 100 / float(last_str),2)
         rtstr = curr_str + '|' + str(gap_float) + '|' + str(rate) +'%'
         return rtstr
     else:
         logging.info("error in get_curr_sinajs(html_doc)")
         return ("error no data.")
+# 这个字符串由许多数据拼接在一起，不同含义的数据用逗号隔开了，按照程序员的思路，顺序号从0开始。
+# 0：”大秦铁路”，股票名字；
+# 1：”27.55″，今日开盘价；
+# 2：”27.25″，昨日收盘价；
+# 3：”26.91″，当前价格；
+# 4：”27.55″，今日最高价；
+# 5：”26.20″，今日最低价；
+# 6：”26.91″，竞买价，即“买一”报价；
+# 7：”26.92″，竞卖价，即“卖一”报价；
+# 8：”22114263″，成交的股票数，由于股票交易以一百股为基本单位，所以在使用时，通常把该值除以一百；
+# 9：”589824680″，成交金额，单位为“元”，为了一目了然，通常以“万元”为成交金额的单位，所以通常把该值除以一万；
+# 10：”4695″，“买一”申请4695股，即47手；
+# 11：”26.91″，“买一”报价；
+# 12：”57590″，“买二”
+# 13：”26.90″，“买二”
+# 14：”14700″，“买三”
+# 15：”26.89″，“买三”
+# 16：”14300″，“买四”
+# 17：”26.88″，“买四”
+# 18：”15100″，“买五”
+# 19：”26.87″，“买五”
+# 20：”3100″，“卖一”申报3100股，即31手；
+# 21：”26.92″，“卖一”报价
+# (22, 23), (24, 25), (26,27), (28, 29)分别为“卖二”至“卖四的情况”
+# 30：”2008-01-11″，日期；
+# 31：”15:05:32″，时间；
+
 
 def getHtml_baidu(url):
     try:
@@ -297,7 +325,8 @@ def dk_detect():
         last_one_value = last_first_price[i]
         last_two_value = last_secondary_price[i]
 
-        time.sleep(1.8)
+        time.sleep(1.7)
+
         new_price_str_raw = get_from_site(httpa,httpb,httpc)
 
         if "|" in new_price_str_raw:
@@ -369,17 +398,33 @@ def dk_detect():
 
 
         #记录全部交易类型的日志。
-        logging.info(str(i+1)+":"+str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
+        logging.info(str(i+1)+":"+str(id) +"|"+ new_price_str_raw+"|"+dk_flag+"_"+str(dk_amount)\
+            +"|"+str(dk_value)+" gap:"+str(dk_gap) + "|"+str(last_one_value) + "|"+str(last_two_value))
         continue
     return 0
 
+def show_setting():
+    for i in range(target_total):
+    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
+        httpa = target_httpa[i]
+        httpb = target_httpb[i]
+        httpc = target_httpc[i]
+        dk_flag = target_dk_flag[i]
+        dk_value = float(target_dk_value[i])
+        dk_amount = int(target_dk_amount[i])
+        id = target_id [i]
+
+        print(str(i + 1) + ":" + str(id) + "|" + " " + "|" + dk_flag + "_" + str(dk_amount) + " value:"
+              + str(dk_value) + "|" + str(httpa) + "|" + str(httpb))
 
 if __name__ == "__main__":
     logging.info(VERSION)
+    show_setting()
     while (True):
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-        print (str_time,flush=True)
-        if (int(str_time[9:16]) in range(52800, 190800)):
+        time.sleep(0.1)
+        print (str_time[9:],flush=True)
+        if (int(str_time[9:16]) in range(52800, 170800)):
             dk_detect()
         else:
             print("out of exchange time.")

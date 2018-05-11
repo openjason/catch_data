@@ -12,18 +12,13 @@ from cfg2xls_sw import cfgxlsproc
 class SW_CONF():
     def __init__(self,main_win):
         self.main_win = main_win
-
-        self.screen_width = main_win.winfo_screenwidth()
-        self.screen_height = main_win.winfo_screenheight() - 100  # under windows, taskbar may lie under the screen
-#        root.resizable(False, False)
-
         # add some widgets to the root window...
 
         self.main_win.update_idletasks()
         self.main_win.deiconify()  # now window size was calculated
         self.main_win.withdraw()  # hide window again
-        self.main_win.geometry('410x410+860+390')
-#        self.main_win.geometry('%sx%s+%s+%s' % (self.main_win.winfo_width() + 10, self.main_win.winfo_height() + 10, (self.screen_width - self.main_win.winfo_width()) / 2,(self.screen_height - self.main_win.winfo_height()) / 2))
+        self.main_win.geometry('770x310+300+200')
+#        self.main_win.geometry('%sx%s+s%+s%' % (self.main_win.winfo_width() + 10, self.main_win.winfo_height() + 10),400,400)
         # center window on desktop
         self.main_win.deiconify()
 
@@ -51,11 +46,13 @@ class SW_CONF():
             self.var_l_tips.set("程序出错，请联系管理员.")
             self.main_win.update_idletasks()
             
-        self.var_l_tips.set("防火器策略Excel文件已生成.")
+        self.var_l_tips.set("防火器策略Excel文件已生成.文件名: cfg_new.xlsx")
         self.main_win.update_idletasks()
         if messagebox.askyesno('询问','确认现在打开Excel ？')== True:
-            os.system("start " + r"cfg_new.xlsx")
-            
+#            os.system("start " + r"cfg_new.xlsx")
+            os.startfile(r"cfg_new.xlsx")
+            self.var_l_tips.set("正在启动Excel... ... ")
+            self.main_win.update_idletasks()
 
     def get_conf_click(self):
         hostip = self.e1.get()
