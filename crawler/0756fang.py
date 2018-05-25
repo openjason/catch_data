@@ -95,7 +95,7 @@ def send_email(toaddr,c_subject):
         msg = MIMEMultipart()
         msg['To'] = ";".join(toaddr)
         msg['From'] = SMTP_SENDER+"<" + SMTP_USER + ">"
-        msg['Subject'] = c_subject
+        msg['Subject'] = c_subject[:30]
         html = c_subject
         html = html.replace("YYYY-MM-DD",long_date)
         body = MIMEText(html, 'plain')
@@ -184,7 +184,7 @@ def get_curr_0756(html_doc,listfilename):
 
     houseinfo1 = house_info1_list[0]
     houseinfo2 = house_info2_list[0]
-    with open(listfilename + '.txt','r') as fp_hl:
+    with open(listfilename + '.txt','r',encoding='utf-8') as fp_hl:
         hl1 = fp_hl.readline()
         hl1 = hl1.replace('\n','')
         hl2 = fp_hl.readline()
@@ -208,7 +208,7 @@ def get_curr_0756(html_doc,listfilename):
 
     if houselist_xm_update :
         os.rename(listfilename+ '.txt',listfilename + folder_prefix + '.txt')
-        with open(listfilename+ '.txt','w') as fp_hl:
+        with open(listfilename+ '.txt','w',encoding='utf-8') as fp_hl:
             for i in range(len(house_info1_list)):
                 templist = house_info1_list [i]
                 print(templist)
@@ -236,7 +236,11 @@ def get_curr_0756(html_doc,listfilename):
             hl2 = fp_hl.readline()
             hl2 = hl2.replace('\n', '')
         send_email(SMTP_USER, "Fang变动:" + hl1 + hl2)
-
+        for i in range(90):
+            print("sleep..." + str(i))
+            time.sleep(60)
+            str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
+            logging.info(str_time)
 
 
 def get_from_site(httpa,httpb,httpc):
@@ -288,18 +292,16 @@ def is_exchage_time(i):
 
 if __name__ == "__main__":
     logging.info(VERSION)
-#    show_setting()
-    html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E5%A4%8F%E7%BE%8E.html')
-    curr = get_curr_0756(html,'houselist_xm')
 
-    time.sleep(2)
+    while(True):
+        html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E5%A4%8F%E7%BE%8E.html')
+        curr = get_curr_0756(html,'houselist_xm')
 
-    html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E4%B8%B0%E6%B3%BD%E5%9B%AD.html')
-    curr = get_curr_0756(html,'houselist_fzy')
+        time.sleep(2)
 
-    # while (True):
-    #     str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-    #     time.sleep(0.1)
-    #     print (str_time[9:],flush=True)
-    #     dk_detect()
-    #     time.sleep(14)
+        html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E4%B8%B0%E6%B3%BD%E5%9B%AD.html')
+        curr = get_curr_0756(html,'houselist_fzy')
+        str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
+        logging.info(str_time)
+
+        time.sleep(90)
