@@ -1,7 +1,10 @@
-.idea/*
 *.log
 *.pyc
-*.o
 *.iml
 *.exe
 *.obj
+*.ini
+.*
+*.[oa]
+.idea
+!.gitignore
