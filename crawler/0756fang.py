@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180510 "
+VERSION = "Ver: 20180525 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -107,10 +107,10 @@ def send_email(toaddr,c_subject):
         mailbody = msg.as_string()
 
         server.sendmail(SMTP_USER, toaddr, mailbody) #send mail to & cc email address
-        logging.info("发送邮件OK："+"to:"+c_subject)
+        logging.info("send email OK："+"to:"+c_subject)
         server.quit()
     except:
-        logging.info("error发送邮件："+"to:"+c_subject)
+        logging.info("error in send mail :"+"to:"+c_subject)
 
 def check_server_auth():
     try:
@@ -200,10 +200,10 @@ def get_curr_0756(html_doc,listfilename):
 
         if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2 :
             houselist_xm_update = True
-            print (listfilename+'有变动')
+            print (listfilename+'anything was changed.')
         else:
             houselist_xm_update = False
-            print(listfilename + '无变动')
+            print(listfilename + 'nothing changed.')
 
 
     if houselist_xm_update :
@@ -304,4 +304,4 @@ if __name__ == "__main__":
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         logging.info(str_time)
 
-        time.sleep(90)
+        time.sleep(190)
