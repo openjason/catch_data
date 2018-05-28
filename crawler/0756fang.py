@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180525 "
+VERSION = "Ver: 20180528 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -107,7 +107,8 @@ def send_email(toaddr,c_subject):
         mailbody = msg.as_string()
 
         server.sendmail(SMTP_USER, toaddr, mailbody) #send mail to & cc email address
-        logging.info("send email OK："+"to:"+c_subject)
+#        logging.info("send email OK："+"to:"+c_subject)
+        logging.info("send email OK.")
         server.quit()
     except:
         logging.info("error in send mail :"+"to:"+c_subject)
@@ -200,10 +201,10 @@ def get_curr_0756(html_doc,listfilename):
 
         if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2 :
             houselist_xm_update = True
-            print (listfilename+'anything was changed.')
+            print (listfilename+' anything was changed.')
         else:
             houselist_xm_update = False
-            print(listfilename + 'nothing changed.')
+            print(listfilename + ' nothing changed.')
 
 
     if houselist_xm_update :
@@ -236,7 +237,7 @@ def get_curr_0756(html_doc,listfilename):
             hl2 = fp_hl.readline()
             hl2 = hl2.replace('\n', '')
         send_email(SMTP_USER, "Fang变动:" + hl1 + hl2)
-        for i in range(90):
+        for i in range(70):
             print("sleep..." + str(i))
             time.sleep(60)
             str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
@@ -292,7 +293,7 @@ def is_exchage_time(i):
 
 if __name__ == "__main__":
     logging.info(VERSION)
-
+    icount = 0
     while(True):
         html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E5%A4%8F%E7%BE%8E.html')
         curr = get_curr_0756(html,'houselist_xm')
@@ -302,6 +303,6 @@ if __name__ == "__main__":
         html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E4%B8%B0%E6%B3%BD%E5%9B%AD.html')
         curr = get_curr_0756(html,'houselist_fzy')
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-        logging.info(str_time)
+        logging.info(str_time+" count:" + str(icount))
 
-        time.sleep(190)
+        time.sleep(240)
