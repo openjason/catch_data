@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180528 "
+VERSION = "Ver: 20180529 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -150,6 +150,9 @@ def getHtml_0756(url):
         return "error in getHtml_0756(url)."
 
 def get_curr_0756(html_doc,listfilename):
+    if len (html_doc) < 30:
+        logging.info("error in html_doc,less then 30ch.")
+        return "error in html_doc,less then 30ch."
     soup = BeautifulSoup(html_doc, 'html.parser')
     stock_info1 = soup.find_all(class_ = "house-text")
     stock_info2 = soup.find_all(class_ = "house-text2")
