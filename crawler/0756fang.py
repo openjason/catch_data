@@ -66,7 +66,7 @@ exchage_done = []
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(message)s',
                     datefmt='%a, %d %b %H:%M:%S',
-                    filename = os.path.join(WORK_DIR,log_prefix+'.log'),
+                    filename = log_prefix+'.log',
                     filemode='a')
 
 console = logging.StreamHandler()
@@ -136,12 +136,16 @@ def clear_files(dir):
 
 def getHtml_0756(url):
     try:
-        context = ssl._create_unverified_context()
-        cj = http.cookiejar.CookieJar()
-        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-        opener.addheaders = [('User-Agent','Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        html_bytes = urllib.request.urlopen(url,context=context).read()
+#         context = ssl._create_unverified_context()
+# #        cj = http.cookiejar.CookieJar()
+# #        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+#         opener.addheaders = [('User-Agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0')]
+#         urllib.request.install_opener(opener)
+#         html_bytes = urllib.request.urlopen(url,context=context).read()
+
+        page = urllib.request.urlopen(url)
+        html_bytes = page.read()
+
         html_string = html_bytes.decode('utf-8')
         print("get html..")
         return html_string
@@ -234,13 +238,13 @@ def get_curr_0756(html_doc,listfilename):
                 fp_hl.writelines(writestr)
                 fp_hl.writelines('\n')
 
-        with open(listfilename + '.txt', 'r') as fp_hl:
+        with open(listfilename + '.txt', 'r',encoding='utf-8') as fp_hl:
             hl1 = fp_hl.readline()
             hl1 = hl1.replace('\n', '')
             hl2 = fp_hl.readline()
             hl2 = hl2.replace('\n', '')
         send_email(SMTP_USER, "Fang变动:" + hl1 + hl2)
-        for i in range(70):
+        for i in range(40):
             print("sleep..." + str(i))
             time.sleep(60)
             str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
@@ -307,5 +311,5 @@ if __name__ == "__main__":
         curr = get_curr_0756(html,'houselist_fzy')
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
         logging.info(str_time+" count:" + str(icount))
-
-        time.sleep(240)
+        icount = icount + 1
+        time.sleep(600)
