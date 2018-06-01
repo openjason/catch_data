@@ -125,8 +125,16 @@ class SW_CONF():
                 
                 remote_conn = ssh.invoke_shell()
                 output = remote_conn.recv(65535)
-                print (output)
-                break
+                output_str = bytes.decode(output)
+                print (output_str)
+                time.sleep(0.4)
+                prompt = username + "@"
+                if not(prompt in output_str):
+                    messagebox.showerror('ERROR', '用户或密码有误.')
+                    return 2
+                else:
+                    break
+                
             except paramiko.AuthenticationException:
                 print ("Authentication failed when connecting to %s" % hostip)
                 sys.exit(1)

@@ -603,9 +603,8 @@ def cfgxlsproc():
 
     confile_blocked = []
     swcfgfile = 'sw.log'
+
     get_block(swcfgfile, confile_blocked, 'sn_block.txt')
-
-
 
 if __name__ == '__main__':
     cfgxlsproc()

@@ -1,6 +1,6 @@
 #-*- coding: utf-8 -*-
 #Author: JasonChan
-VERSION = "Ver: 20180529 "
+VERSION = "Ver: 20180601 "
 
 import smtplib
 from email.mime.text import MIMEText
@@ -143,7 +143,7 @@ def getHtml_0756(url):
 #         urllib.request.install_opener(opener)
 #         html_bytes = urllib.request.urlopen(url,context=context).read()
 
-        page = urllib.request.urlopen(url)
+        page = urllib.request.urlopen(url,timeout=3)
         html_bytes = page.read()
 
         html_string = html_bytes.decode('utf-8')
@@ -208,13 +208,14 @@ def get_curr_0756(html_doc,listfilename):
 
         if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2 :
             houselist_xm_update = True
-            print (listfilename+' anything was changed.')
+            print (listfilename+' something has changed.')
         else:
             houselist_xm_update = False
             print(listfilename + ' nothing changed.')
 
 
     if houselist_xm_update :
+        folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         os.rename(listfilename+ '.txt',listfilename + folder_prefix + '.txt')
         with open(listfilename+ '.txt','w',encoding='utf-8') as fp_hl:
             for i in range(len(house_info1_list)):
@@ -276,27 +277,8 @@ def get_current(http):
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
 #对目标dk值设置采用相反的比较,符合条件(差为正)则执行操作.否则记录更新上两次价格.
 
-def show_setting():
-    for i in range(target_total):
-    #标号 数字 显示 从 1 开始，与配置文件一致，读取配置文件标号已做处理 。
-        httpa = target_httpa[i]
-        httpb = target_httpb[i]
-        httpc = target_httpc[i]
-        dk_flag = target_dk_flag[i]
-        dk_value = float(target_dk_value[i])
-        dk_amount = int(target_dk_amount[i])
-        id = target_id [i]
 
-        print(str(i + 1) + ":" + str(id) + "|" + " " + "|" + dk_flag + "_" + str(dk_amount) + " value:"
-              + str(dk_value) + "|" + str(httpa) + "|" + str(httpb))
 
-def is_exchage_time(i):
-    str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
-    if (int(str_time[9:16]) in range(92700, 113800) or int(str_time[9:16]) in range(125700, 150800)):
-        return True
-    else:
-        logging.info(str_time + " error, out of exchange time.")
-        return False
 
 if __name__ == "__main__":
     logging.info(VERSION)
