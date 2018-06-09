@@ -136,13 +136,6 @@ def clear_files(dir):
 
 def getHtml_0756(url):
     try:
-#         context = ssl._create_unverified_context()
-# #        cj = http.cookiejar.CookieJar()
-# #        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-#         opener.addheaders = [('User-Agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0')]
-#         urllib.request.install_opener(opener)
-#         html_bytes = urllib.request.urlopen(url,context=context).read()
-
         page = urllib.request.urlopen(url,timeout=3)
         html_bytes = page.read()
 
@@ -160,8 +153,7 @@ def get_curr_0756(html_doc,listfilename):
     soup = BeautifulSoup(html_doc, 'html.parser')
     stock_info1 = soup.find_all(class_ = "house-text")
     stock_info2 = soup.find_all(class_ = "house-text2")
-    get_text = ""
-#    for stock_info in stock_info1:
+
     housestr = ''
     house_info1_list = []
     house_info2_list = []
@@ -252,26 +244,77 @@ def get_curr_0756(html_doc,listfilename):
             logging.info(str_time)
 
 
-def get_from_site(httpa,httpb,httpc):
-    current_price_str = '2.31 1% 0.02'
-    current_price_str = get_current(httpa)
-    if 'error' in current_price_str:
-        current_price_str = get_current(httpb)
-        if 'error' in current_price_str:
-            current_price_str = get_current(httpc)
-            if 'error' in current_price_str:
-                return "error in get_from_site(httpa,httpb,httpc)"
-    return current_price_str
+def get_curr_qf0756(html_doc,listfilename):
+    if len (html_doc) < 30:
+        logging.info("error in html_doc,less then 30ch.")
+        return "error in html_doc,less then 30ch."
+    soup = BeautifulSoup(html_doc, 'html.parser')
+    stock_info1 = soup.find_all(class_ = "show-detail ")
 
-def get_current(http):
-    f0756_html = getHtml_0756(http)
-    new_price_str = get_curr_0756(f0756_html)
-    return (new_price_str)
-    if 'sinajs' in http:
-        sianjs_html = getHtml_sinajs(http)
-        new_price_str = get_curr_sinajs(sianjs_html)
-        return (new_price_str)
-    return "error in get_current(http)."
+    housestr = ''
+    house_info1_list = []
+
+    listcount = 2
+    if len(stock_info1) < 5:
+        listcount = len(stock_info1)
+    for i in range(listcount):
+        housestr = stock_info1[i].get_text()
+
+
+        housestr = housestr.replace('\r','\n')
+        housestr = housestr.replace('\t', '\n')
+        housestr = housestr.replace('丨','')
+        housestr = housestr.replace(' ', '')
+        houseinfo1 = housestr.split('\n')
+
+        while '' in houseinfo1:
+            houseinfo1.remove('')
+#        print(houseinfo1)
+        house_info1_list.append(houseinfo1)
+    houseinfo1 = house_info1_list[0]
+    with open(listfilename + '.txt','r',encoding='utf-8') as fp_hl:
+        hl1 = fp_hl.readline()
+        hl1 = hl1.replace('\n','')
+        hl2 = fp_hl.readline()
+        hl2 = hl2.replace('\n', '')
+        lasthouselist1 = hl1.split('|')
+        lasthouselist2 = hl2.split('|')
+
+        if lasthouselist1 != houseinfo1 :
+            houselist_xm_update = True
+            print (listfilename+' something has changed.')
+        else:
+            houselist_xm_update = False
+            print(listfilename + ' nothing changed.')
+
+    if houselist_xm_update :
+        folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+        os.rename(listfilename+ '.txt',listfilename + folder_prefix + '.txt')
+        with open(listfilename+ '.txt','w',encoding='utf-8') as fp_hl:
+            for i in range(len(house_info1_list)):
+                templist = house_info1_list [i]
+                print(templist)
+                for j in range(len(templist)):
+                    if j > 0:
+                        writestr = writestr + '|' + templist[j]
+                    else:
+                        writestr  = templist[j]
+                fp_hl.writelines(writestr)
+                fp_hl.writelines('\n')
+
+        with open(listfilename + '.txt', 'r',encoding='utf-8') as fp_hl:
+            hl1 = fp_hl.readline()
+            hl1 = hl1.replace('\n', '')
+            hl2 = fp_hl.readline()
+            hl2 = hl2.replace('\n', '')
+        send_email(SMTP_USER, "qFang变动:" + hl1 + hl2)
+        for i in range(40):
+            print("sleep..." + str(i))
+            time.sleep(60)
+            str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
+            logging.info(str_time)
+
+
 
 
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
@@ -284,11 +327,15 @@ if __name__ == "__main__":
     logging.info(VERSION)
     icount = 0
     while(True):
+
+        html = getHtml_0756('https://zhuhai.qfang.com/sale?keyword=%E5%A4%8F%E7%BE%8E%E5%A4%A7%E5%8E%A6')
+        curr = get_curr_qf0756(html,'houselist_qfxm')
+        time.sleep(2)
+
         html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E5%A4%8F%E7%BE%8E.html')
         curr = get_curr_0756(html,'houselist_xm')
 
         time.sleep(2)
-
         html = getHtml_0756('http://www.0756fang.com/Fang_1_0_0_0_0_0_0_15_0_0_0_0_%E4%B8%B0%E6%B3%BD%E5%9B%AD.html')
         curr = get_curr_0756(html,'houselist_fzy')
         str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
