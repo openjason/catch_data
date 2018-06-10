@@ -250,16 +250,19 @@ def get_curr_qf0756(html_doc,listfilename):
         return "error in html_doc,less then 30ch."
     soup = BeautifulSoup(html_doc, 'html.parser')
     stock_info1 = soup.find_all(class_ = "show-detail ")
+    stock_info2 = soup.find_all(class_ = "show-price")
 
-    housestr = ''
     house_info1_list = []
+    house_info2_list = []
+    houseinfo1 = []
+    houseinfo2 = []
 
     listcount = 2
     if len(stock_info1) < 5:
         listcount = len(stock_info1)
     for i in range(listcount):
         housestr = stock_info1[i].get_text()
-
+        housestr2 = stock_info2[i].get_text()
 
         housestr = housestr.replace('\r','\n')
         housestr = housestr.replace('\t', '\n')
@@ -267,11 +270,22 @@ def get_curr_qf0756(html_doc,listfilename):
         housestr = housestr.replace(' ', '')
         houseinfo1 = housestr.split('\n')
 
+        housestr2 = housestr2.replace('\r','\n')
+        housestr2 = housestr2.replace('\t', '\n')
+        housestr2 = housestr2.replace('丨','')
+        housestr2 = housestr2.replace(' ', '')
+        houseinfo2 = housestr2.split('\n')
+
         while '' in houseinfo1:
             houseinfo1.remove('')
+        while '' in houseinfo2:
+            houseinfo2.remove('')
 #        print(houseinfo1)
         house_info1_list.append(houseinfo1)
+        house_info2_list.append(houseinfo2)
+
     houseinfo1 = house_info1_list[0]
+    houseinfo2 = house_info2_list[0]
     with open(listfilename + '.txt','r',encoding='utf-8') as fp_hl:
         hl1 = fp_hl.readline()
         hl1 = hl1.replace('\n','')
@@ -280,41 +294,54 @@ def get_curr_qf0756(html_doc,listfilename):
         lasthouselist1 = hl1.split('|')
         lasthouselist2 = hl2.split('|')
 
-        if lasthouselist1 != houseinfo1 :
+        print('11', lasthouselist1)
+        print('12', houseinfo1)
+        print('21', lasthouselist2)
+        print('22', houseinfo2)
+        if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2:
             houselist_xm_update = True
             print (listfilename+' something has changed.')
         else:
             houselist_xm_update = False
             print(listfilename + ' nothing changed.')
 
-    if houselist_xm_update :
+
+    if houselist_xm_update:
         folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-        os.rename(listfilename+ '.txt',listfilename + folder_prefix + '.txt')
-        with open(listfilename+ '.txt','w',encoding='utf-8') as fp_hl:
+        os.rename(listfilename + '.txt', listfilename + folder_prefix + '.txt')
+        with open(listfilename + '.txt', 'w', encoding='utf-8') as fp_hl:
             for i in range(len(house_info1_list)):
-                templist = house_info1_list [i]
-                print(templist)
+                templist = house_info1_list[i]
+                # print(templist)
                 for j in range(len(templist)):
                     if j > 0:
                         writestr = writestr + '|' + templist[j]
                     else:
-                        writestr  = templist[j]
+                        writestr = templist[j]
                 fp_hl.writelines(writestr)
                 fp_hl.writelines('\n')
 
-        with open(listfilename + '.txt', 'r',encoding='utf-8') as fp_hl:
+                templist = house_info2_list[i]
+                for j in range(len(templist)):
+                    if j > 0:
+                        writestr = writestr + '|' + templist[j]
+                    else:
+                        writestr = templist[j]
+                #                print(writestr)
+                fp_hl.writelines(writestr)
+                fp_hl.writelines('\n')
+
+        with open(listfilename + '.txt', 'r', encoding='utf-8') as fp_hl:
             hl1 = fp_hl.readline()
             hl1 = hl1.replace('\n', '')
             hl2 = fp_hl.readline()
             hl2 = hl2.replace('\n', '')
-        send_email(SMTP_USER, "qFang变动:" + hl1 + hl2)
+            send_email(SMTP_USER, "qFang变动:" + hl1 + hl2)
         for i in range(40):
             print("sleep..." + str(i))
             time.sleep(60)
             str_time = time.strftime('%Y%m%d %H%M%S', time.localtime(time.time()))
             logging.info(str_time)
-
-
 
 
 #对目标进行轮询,检测当前价格与设定dk价格进行比较,如最新价及上两次价格都满足条件,则进行交易操作.
