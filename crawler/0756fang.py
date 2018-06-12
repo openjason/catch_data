@@ -297,14 +297,16 @@ def get_curr_qf0756(html_doc,listfilename):
         print('11', lasthouselist1)
         print('12', houseinfo1)
         print('21', lasthouselist2)
-        print('22', houseinfo2)
-        if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2:
+        print('22', houseinfo2[1])
+#        print('22', houseinfo2) 防止2条记录轮换顺序而产生的不必要的变动信息
+# 只比较2套房的单价。不加入中文字符比对。
+#        if lasthouselist1 != houseinfo1 or lasthouselist2 != houseinfo2:
+        if not (('21128' in houseinfo2[1]) or ('17227' in houseinfo2[1])):
             houselist_xm_update = True
-            print (listfilename+' something has changed.')
+            print(listfilename + ' something has changed.')
         else:
             houselist_xm_update = False
             print(listfilename + ' nothing changed.')
-
 
     if houselist_xm_update:
         folder_prefix = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
