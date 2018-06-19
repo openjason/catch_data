@@ -50,6 +50,7 @@ def fix_address_string(add_str):
 
 
 def save_block_file(blocked_list, block_child_list, fn):
+    #配置文件一块为单位，进行保存
     with open(fn, 'w') as fopen:
         for i in range(len(blocked_list)):
             if 'ipv6' in blocked_list[i]:
@@ -60,6 +61,7 @@ def save_block_file(blocked_list, block_child_list, fn):
             fopen.writelines(block_child_list[i])
 
 def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
+    #对地址明细进行解释，解析address-group明细，获取具体地址列表
     address_g_list = []
     if '"' in Aname:
         Aname = Aname[1:len(Aname) - 1]
@@ -69,9 +71,6 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
             continue
         tempStr1 = blocked_list[i]
         if 'address-group' == tempStr1[:13]:
-
-            if '200.40' in tempStr1:
-                a = 0
 
             if '"' in tempStr1:
                 tempList1 = tempStr1.split('"')
@@ -100,7 +99,8 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
 
 
 def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
-#    ServicePortList = []
+    # 对服务（端口）明细进行解释，解析service-group明细，获取具体地址列表
+    #    ServicePortList = []
     if Gname == 'ICMP':
         ServicePortList.append('ICMP')
         return ServicePortList
@@ -144,6 +144,7 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
     return ServicePortList
 
 def getServiceList(blocked_list, block_child_list,sname):
+    #获取具体服务对应的服务名和端口号
     ServicePort = ''
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -156,6 +157,7 @@ def getServiceList(blocked_list, block_child_list,sname):
     return ServicePort
 
 def getAddressList(blocked_list, block_child_list,aname):
+    #获取具体地址对应的地址名和地址
     address_detail = ''
     if aname =='any':
         return ' '
@@ -184,7 +186,7 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 
 def save_xls_file(blocked_list, block_child_list):
-
+    #保存配置文件，保存配置文件文件名
     xlsfile = 'sonicwall.xlsx'
 
     workbook = openpyxl.load_workbook(xlsfile)
@@ -496,6 +498,7 @@ def save_xls_file(blocked_list, block_child_list):
         workbook.close()
 
 def format_service_list(s_list):
+    #格式化服务列表，将重名的内容去除。
     if s_list == "":
         return ""
     f_service_str = ''
