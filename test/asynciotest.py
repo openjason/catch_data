@@ -1,6 +1,8 @@
 import threading
 import asyncio
 
+# 由打印的当前线程名称可以看出，两个coroutine是由同一个线程并发执行的。
+# 如果把asyncio.sleep()换成真正的IO操作，则多个coroutine就可以由一个线程并发执行。
 # @asyncio.coroutine
 # def hello():
 #     print('Hello world! (%s)' % threading.currentThread())
@@ -12,9 +14,7 @@ import asyncio
 # loop.run_until_complete(asyncio.wait(tasks))
 # loop.close()
 
-
 import asyncio
-
 @asyncio.coroutine
 def wget(host):
     print('wget %s...' % host)
