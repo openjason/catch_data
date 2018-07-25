@@ -160,7 +160,7 @@ def getAddressList(blocked_list, block_child_list,aname):
     #获取具体地址对应的地址名和地址
     address_detail = ''
     if aname =='any':
-        return ' '
+        return '0.0.0.0'
 
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -355,7 +355,8 @@ def save_xls_file(blocked_list, block_child_list):
                 if len(tempList2) < 2:
                     continue
                 if len(tempList2) > 1:
-                    if 'id' == tempList2[0]:
+#                    if 'id' == tempList2[0]:
+                    if 'id' == tempList2[0] or 'uuid' == tempList2[0]:
                         rule_id = tempList2[1]
                     if 'from' == tempList2[0]:
                         rule_from = tempList2[1]
