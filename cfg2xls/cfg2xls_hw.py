@@ -6,7 +6,7 @@ author:jason chan
 '''
 # import os
 import openpyxl
-
+import copy
 import re
 
 def judge_legal_ip(one_str):
@@ -346,36 +346,15 @@ def save_xls_file(blocked_list, block_child_list):
     cellrow = 2
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
+            i = i + 1
+            in_security_polich = True
             tempStr1 = blocked_list[i]
+            while in_security_polich:
             if ' rule name' == tempStr1[:10] :
                 rule_name = tempStr1[10:]
                 rule_name = rule_name.strip
 
                 cellcolumn = 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
-                sheet.cell(row=cellrow, column=cellcolumn).value = vaild_counter
-                vaild_counter += 1
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_from
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = '>'
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_to
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
-                cellcolumn += 1
-
-                row_diaplay = rule_address_detail.split('\n')
-                rule_source_address_row = len(row_diaplay)
-                # if len(row_diaplay) >1:
-                #     for i in range(len(row_diaplay)):
-                #         sheet.cell(row=cellrow + rule_source_address_row, column=cellcolumn).value = row_diaplay[i]
-                #         rule_source_address_row +=1
-                # else:
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_address_detail
-
-                cellcolumn += 1
-
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
                 cellcolumn += 1
 
@@ -407,6 +386,8 @@ def save_xls_file(blocked_list, block_child_list):
                 rule_destination_address = ''
                 rule_service = ''
                 rule_action = ''
+
+                cellrow = cellrow + 1
             elif '  source-zone' == tempStr1[:14]:
                 rule_source_zone = tempStr1[14:]
                 rule_source_zone = rule_name.strip
@@ -429,9 +410,6 @@ def save_xls_file(blocked_list, block_child_list):
 
             else:
                 print('Unknow keywork.')
-
-
-        cellrow +=1
 
 # Edit sheet "rule" end
     try:
@@ -499,34 +477,14 @@ def get_block(filename, confile_blocked, wfilename):
     fpline = ''
     with open(filename, 'r', encoding='gbk') as fp:
         for fpline in fp:
-            #print(len(fpline),fpline)
-            #        if len(fpline) > 3 and fpline[0] != '#': 井号也是标志，不可清理
             if len(fpline) > 1:
                 fpline = fpline.rstrip('\n')
                 if len(fpline.strip(" ")) < 1:
                     continue
                 confile_raw.append(fpline)
-    for line_num in range(len(confile_raw) - 1):
-        # = confile_raw.index(fpline)
-        lineStr = confile_raw[line_num]
-        space1 = len(confile_raw[line_num]) - len(confile_raw[line_num].lstrip(' '))
-        space2 = len(confile_raw[line_num + 1]) - len(confile_raw[line_num + 1].lstrip(' '))
-        step1 = 0
- #       step2 = 1
-        if space1 == 0 and space2 == 0 :
-            confile_blocked.append (lineStr)
-            confile_block.append ("null")
-        if space1 == 0 and space2 > 0:
-            confile_blocked.append(lineStr)
+    confile_block = copy.deepcopy(confile_raw)
+    confile_blocked = copy.deepcopy(confile_raw)
 
-        if space1 > 0 and space2 > 0:
-            confile_temp.append('\n'+ lineStr)
-#            confile_temp.append('\n')
-        if space1 > 0 and space2 == 0:
-            confile_temp.append('\n'+ lineStr)
-            confile_block.append(confile_temp)
-            confile_temp = []
-    save_block_file(confile_blocked, confile_block, wfilename)
     save_xls_file(confile_blocked, confile_block)
 
 
