@@ -60,134 +60,92 @@ def save_block_file(blocked_list, block_child_list, fn):
 #            if block_list[i] != 'null':
             fopen.writelines(block_child_list[i])
 
-def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
-    #对地址明细进行解释，解析address-group明细，获取具体地址列表
-    address_g_list = []
-    if '"' in Aname:
-        Aname = Aname[1:len(Aname) - 1]
-
-    for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
-        tempStr1 = blocked_list[i]
-        if 'address-group' == tempStr1[:13]:
-
-            if '"' in tempStr1:
-                tempList1 = tempStr1.split('"')
-#                tempGname = '"'+tempList1[1]+'"'
-                tempAname = tempList1[1]
-            else:
-                tempList1 = tempStr1.split()
-#                print (tempList1)
-                tempAname = tempList1[2]
-            if Aname == tempAname:
-                tempList2 = block_child_list[i]
-                for j in range(len(tempList2)):
-                    tempStr2 = tempList2[j].strip()
-                    if 'address-object' == tempStr2[:14]:
-                        tempGetSObject = tempStr2[15+5:len(tempStr2)]
-                        AddressGroupList.append(getAddressList(blocked_list, block_child_list,tempGetSObject))
-                    if 'address-group' == tempStr2[:13]:
-                        tempGetSObject = tempStr2[14+5:len(tempStr2)]
-                        tempGetSObject = tempGetSObject.strip()
-                        tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,AddressGroupList)
-#                        for tempInt1 in range(len(tempList3)):
-#                            AddressGroupList.append(tempList3[tempInt1])
-                break
-    return AddressGroupList
-
-
-
-def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
-    # 对服务（端口）明细进行解释，解析service-group明细，获取具体地址列表
-    #    ServicePortList = []
-    if Gname == 'ICMP':
-        ServicePortList.append('ICMP')
-        return ServicePortList
-    if Gname == 'Ping':
-        ServicePortList.append('Ping')
-        return ServicePortList
-
-    if Gname == '5000&ping':
-        Gname = Gname
-
-    for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
-        tempStr1 = blocked_list[i]
-        if 'service-group' == tempStr1[:13]:
-            if '"' in Gname:
-                Gname = Gname[1:len(Gname)-1]
-
-            if '"' in tempStr1:
-                tempList1 = tempStr1.split('"')
-#                tempGname = '"'+tempList1[1]+'"'
-                tempGname = tempList1[1]
-            else:
-                tempList1 = tempStr1.split()
-#                print (tempList1)
-                tempGname = tempList1[1]
-            if Gname == tempGname:
-                tempList2 = block_child_list[i]
-                for j in range(len(tempList2)):
-                    tempStr2 = tempList2[j].strip()
-                    if 'service-object' == tempStr2[:14]:
-                        tempGetSObject = tempStr2[15:len(tempStr2)]
-                        ServicePortList.append(getServiceList(blocked_list, block_child_list,tempGetSObject))
-                    if 'service-group' == tempStr2[:13]:
-                        tempGetSObject = tempStr2[14:len(tempStr2)]
-                        tempGetSObject = tempGetSObject.strip()
-
-                        tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
-#                        ServicePortList = ServicePortList + tempList3
-
-    return ServicePortList
-
 def getServiceList(blocked_list, block_child_list,sname):
     #获取具体服务对应的服务名和端口号
     ServicePort = ''
+    return_service_list = []
+    target_string = 'ip service-set ' + sname
+    target_str_len = len(target_string)
+
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
-        tempStr1 = blocked_list[i]
-        if 'service-object' == tempStr1[:14]:
-            if sname == tempStr1[15:15+len(sname)] and tempStr1[15+len(sname):15+len(sname)+1]== ' ':
-                ServicePort = tempStr1[15 + len(sname)+1:len(tempStr1)]
-                break
-    return ServicePort
+        tempStr_raw = blocked_list[i]
+        tempStr1 = tempStr_raw
+        if target_string == tempStr1[:target_str_len]:
+            tempStr2 = tempStr1[-11:len(tempStr1)]
+            if 'type object' == tempStr1[-11:]:
+                i = i + 1
+                tempStr1 = blocked_list[i]
+                while tempStr1[0] == ' ':
+                    if ' service' == tempStr1[:8]:
+                        tempList3 = tempStr1.split()
+                        if tempList3[3] == 'icmp':
+                            return_service_list.append('ICMP')
+                        elif tempList3[3] == 'tcp':
+                            if len(tempList3) == 10:
+                                return_service_list.append('TCP' + tempList3[9])
+                            elif len(tempList3) == 12:
+                                return_service_list.append('TCP' + tempList3[9]+'-' + tempList3[11])
+
+                        elif tempList3[3] == 'udp':
+                            if len(tempList3) == 10:
+                                return_service_list.append('UDP' + tempList3[9])
+                            elif len(tempList3) == 12:
+                                return_service_list.append('UDP' + tempList3[9]+'-' + tempList3[11])
+
+                    i = i + 1
+                    tempStr1 = blocked_list[i]
+                return return_service_list
+            if 'type group' == tempStr1[-10:]:
+                return return_service_list
+    return []
+
 
 def getAddressList(blocked_list, block_child_list,aname):
     #获取具体地址对应的地址名和地址
     address_detail = ''
-    if aname =='any':
-        return '0.0.0.0'
-
+    return_address_list = []
+    target_string = 'ip address-set ' + aname
+    target_str_len = len(target_string)
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
         tempStr_raw = blocked_list[i]
-        # temp_str_zone_pos = tempStr_raw.find('zone')
-        # if temp_str_zone_pos > 0:
-        #     tempStr1 = tempStr_raw[:temp_str_zone_pos]
-        # else:
         tempStr1 = tempStr_raw
-        if 'address-object' == tempStr1[:14]:
-            if aname == tempStr1[20:20+len(aname)] and tempStr1[20+len(aname):21+len(aname)]== ' ':
-                # try:
-                #     first_space = tempStr1[21 + len(aname):len(tempStr1)].index(' ')
-                # except:
-                #     first_space = 0
-                #address_detail = tempStr1[21+1 + len(aname)+first_space:len(tempStr1)]
-                address_detail = tempStr_raw[len("address-object ipv4 ") :len(tempStr_raw)]
-                address_detail = fix_address_string(address_detail)
-                break
-    #    return aname +":"+ address_detail
-    return address_detail
+        if target_string == tempStr1[:target_str_len]:
+            tempStr2 = tempStr1[-11:len(tempStr1)]
+            if 'type object' == tempStr1[-11:]:
+                i = i + 1
+                tempStr1 = blocked_list[i]
+                while tempStr1[0] == ' ':
+                    if ' address' == tempStr1[:8]:
+                        tempList = tempStr1.split()
+                        try:
+                            return_address_list.append(tempList[2])
+                        except:
+                            print("err_split2:" + tempStr1)
+                    i = i + 1
+                    tempStr1 = blocked_list[i]
+                return return_address_list
+            if 'type group' == tempStr1[-10:]:
+                i = i + 1
+                tempStr1 = blocked_list[i]
+                while tempStr1[0] == ' ':
+                    if ' address' == tempStr1[:8]:
+                        tempList = tempStr1.split()
+                        sub_group_string = tempList[3]
+                        sub_group_r_l = getAddressList(blocked_list, block_child_list, sub_group_string)
+                        for j in range(len(sub_group_r_l)):
+                            return_address_list.append(sub_group_r_l[j])
+                    i = i + 1
+                    tempStr1 = blocked_list[i]
+                return return_address_list
+
+
+                return address_detail
+    return []
 
 
 def save_xls_file(blocked_list, block_child_list):
     #保存配置文件，保存配置文件文件名
-    xlsfile = 'sonicwall.xlsx'
+    xlsfile = 'HuaWeiUSG.xlsx'
 
     workbook = openpyxl.load_workbook(xlsfile)
     vaild_counter = 1
@@ -334,86 +292,114 @@ def save_xls_file(blocked_list, block_child_list):
 
 # Edit sheet "rule" begin
 
-    rule_source_zone = ''
-    rule_destination_zone = ''
-    rule_source_address = ''
-    rule_destination_address = ''
-    rule_service = ''
+    rule_source_zone = 'any'
+    rule_destination_zone = 'any'
+    rule_source_address = 'any'
+    rule_destination_address = 'any'
+    rule_source_address_d = ''
+    rule_destination_address_d = ''
+    rule_service_d = ''
+    rule_service = 'any'
     rule_action = ''
+    rule_source_address_l = []
+    rule_destination_address_l = []
+    rule_service_l = []
 
 
     sheet = wb.get_sheet_by_name('rule')
-    cellrow = 2
+    cellrow = 3
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
-            i = i + 1
             in_security_polich = True
-            tempStr1 = blocked_list[i]
             while in_security_polich:
-            if ' rule name' == tempStr1[:10] :
-                rule_name = tempStr1[10:]
-                rule_name = rule_name.strip
+                i = i + 1
+                tempStr1 = blocked_list[i]
+                if tempStr1[0] != " ":
+                    in_security_polich = False
+                    continue
+                if ' rule name' == tempStr1[:10] :
+                    rule_name = tempStr1[10:]
+                    rule_name = rule_name.strip()
 
-                cellcolumn = 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
-                cellcolumn += 1
+                    cellcolumn = 1
+                    sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
+                    cellcolumn += 1
+                    sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
+                    cellcolumn += 1
+                    print (type(rule_source_address_l))
 
-                row_diaplay = rule_destination_detail.split('\n')
-                rule_destination_address_row = len(row_diaplay)
-                # if len(row_diaplay) > 1:
-                #     for i in range(len(row_diaplay)):
-                #         sheet.cell(row=cellrow + rule_destination_address_row, column=cellcolumn).value = row_diaplay[i]
-                #         rule_destination_address_row += 1
-                # else:
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
+                    for tempInt4 in range(len(rule_source_address_l)):
+                        rule_source_address_d = rule_source_address_d + rule_source_address_l[tempInt4] + '\n'
+                    for tempInt4 in range(len(rule_destination_address_l)):
+                        rule_destination_address_d = rule_destination_address_d + rule_destination_address_l[tempInt4] + '\n'
+                    for tempInt4 in range(len(rule_service_l)):
+                        rule_service_d = rule_service_d + rule_service_l[tempInt4] + '\n'
 
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_port
-                sheet.cell(row=cellrow, column=cellcolumn).value = format_rule_str
-                cellcolumn += 1
-                sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
+                    if cellrow > 3 :
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_zone
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_zone
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address_d
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address_d
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_d
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
-                if rule_source_address_row > rule_destination_address_row:
-                    sheet.row_dimensions[cellrow].height = 16 * rule_source_address_row
+                    rule_source_address_d = ''
+                    rule_destination_address_d = ''
+                    rule_source_zone = ''
+                    rule_destination_zone = ''
+                    rule_source_address = ''
+                    rule_destination_address = ''
+                    rule_service = ''
+                    rule_service_l  = []
+                    rule_action = ''
+                    rule_source_address_l = []
+                    rule_destination_address_l = []
+                    rule_service_d = ''
+
+                    cellrow = cellrow + 1
+                elif '  source-zone' == tempStr1[:13]:
+                    rule_source_zone = rule_source_zone + tempStr1[13:]
+                    rule_source_zone = rule_source_zone.strip()
+
+                elif '  destination-zone' == tempStr1[:18]:
+                    rule_destination_zone = rule_destination_zone + tempStr1[18:]
+                    rule_destination_zone = rule_destination_zone.strip()
+
+                elif '  source-address' == tempStr1[:16]:
+                    rule_source_address = rule_source_address + tempStr1[16+13:]
+                    rule_source_address = rule_source_address.strip()
+                    rule_source_address_l = getAddressList(blocked_list, block_child_list, rule_source_address)
+
+                elif '  destination-address' == tempStr1[:21]:
+                    rule_destination_address = rule_destination_address + tempStr1[21+13:]
+                    rule_destination_address = rule_destination_address.strip()
+                    rule_destination_address_l = getAddressList(blocked_list, block_child_list, rule_destination_address)
+
+                elif '  service' == tempStr1[:9]:
+                    rule_service =  rule_service + tempStr1[9:]
+                    rule_service = rule_service.strip()
+                    rule_service_l = getServiceList(blocked_list, block_child_list, rule_service)
+
+                elif '  action' == tempStr1[:8]:
+                    rule_action = tempStr1[8:]
+                    rule_action = rule_action.strip()
+
                 else:
-                    sheet.row_dimensions[cellrow].height = 16 * rule_destination_address_row
-
-                rule_source_zone = ''
-                rule_destination_zone = ''
-                rule_source_address = ''
-                rule_destination_address = ''
-                rule_service = ''
-                rule_action = ''
-
-                cellrow = cellrow + 1
-            elif '  source-zone' == tempStr1[:14]:
-                rule_source_zone = tempStr1[14:]
-                rule_source_zone = rule_name.strip
-
-            elif '  destination-zone' == tempStr1[:19]:
-                rule_destination_zone = tempStr1[19:]
-                rule_destination_zone = rule_name.strip
-
-            elif '  source-address' == tempStr1[:14]:
-                rule_source_address = tempStr1[14:]
-                rule_source_address = rule_name.strip
-
-            elif '  service' == tempStr1[:10]:
-                rule_source_zone = tempStr1[10:]
-                rule_source_zone = rule_name.strip
-
-            elif '  action' == tempStr1[:9]:
-                rule_source_zone = tempStr1[9:]
-                rule_source_zone = rule_name.strip
-
-            else:
-                print('Unknow keywork.')
-
+                    print('Unknow keywork.')
 # Edit sheet "rule" end
     try:
-        workbook.save('cfg_new.xlsx')
+        workbook.save('hw_new.xlsx')
     except:
         print("xlsx文件被锁定，无法保存。。。")
     finally:
