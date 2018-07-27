@@ -214,7 +214,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 # Edit sheet "route" begin
     sheet = wb.get_sheet_by_name('route')
-    cellrow = 2
+    cellrow = 3
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
             continue
@@ -292,13 +292,14 @@ def save_xls_file(blocked_list, block_child_list):
 
 # Edit sheet "rule" begin
 
+    rule_name = ''
     rule_source_zone = 'any'
     rule_destination_zone = 'any'
     rule_source_address = 'any'
     rule_destination_address = 'any'
-    rule_source_address_d = ''
-    rule_destination_address_d = ''
-    rule_service_d = ''
+    rule_source_address_d = 'any'
+    rule_destination_address_d = 'any'
+    rule_service_d = 'any'
     rule_service = 'any'
     rule_action = ''
     rule_source_address_l = []
@@ -307,7 +308,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 
     sheet = wb.get_sheet_by_name('rule')
-    cellrow = 3
+    cellrow = 2
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
             in_security_polich = True
@@ -318,8 +319,6 @@ def save_xls_file(blocked_list, block_child_list):
                     in_security_polich = False
                     continue
                 if ' rule name' == tempStr1[:10] :
-                    rule_name = tempStr1[10:]
-                    rule_name = rule_name.strip()
 
                     cellcolumn = 1
                     sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
@@ -329,13 +328,32 @@ def save_xls_file(blocked_list, block_child_list):
                     print (type(rule_source_address_l))
 
                     for tempInt4 in range(len(rule_source_address_l)):
-                        rule_source_address_d = rule_source_address_d + rule_source_address_l[tempInt4] + '\n'
+                        rule_source_address_d = rule_source_address_d + rule_source_address_l[tempInt4]
+                        if tempInt4 < len(rule_source_address_l) - 1:
+                            rule_source_address_d = rule_source_address_d + '\n'
                     for tempInt4 in range(len(rule_destination_address_l)):
-                        rule_destination_address_d = rule_destination_address_d + rule_destination_address_l[tempInt4] + '\n'
-                    for tempInt4 in range(len(rule_service_l)):
-                        rule_service_d = rule_service_d + rule_service_l[tempInt4] + '\n'
+                        rule_destination_address_d = rule_destination_address_d + rule_destination_address_l[tempInt4]
+                        if tempInt4 < len(rule_destination_address_l) - 1:
+                            rule_destination_address_d = rule_destination_address_d + '\n'
 
-                    if cellrow > 3 :
+                    for tempInt4 in range(len(rule_service_l)):
+                        rule_service_d = rule_service_d + rule_service_l[tempInt4]
+                        if tempInt4 < len(rule_service_l) - 1:
+                            rule_service_d = rule_service_d + '\n'
+
+                    if cellrow > 2 :
+                        if rule_source_zone == '':
+                            rule_source_zone = 'any'
+                        if rule_destination_zone == '':
+                            rule_destination_zone = 'any'
+                        if rule_source_address == '':
+                            rule_source_address = 'any'
+                        if rule_destination_address == '':
+                            rule_destination_address = 'any'
+                        if rule_service == '':
+                            rule_service = 'any'
+
+
                         sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_zone
                         cellcolumn += 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_zone
@@ -354,20 +372,24 @@ def save_xls_file(blocked_list, block_child_list):
                         cellcolumn += 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
 
-                    rule_source_address_d = ''
-                    rule_destination_address_d = ''
                     rule_source_zone = ''
                     rule_destination_zone = ''
                     rule_source_address = ''
                     rule_destination_address = ''
+                    rule_source_address_d = ''
+                    rule_destination_address_d = ''
+                    rule_service_d = ''
                     rule_service = ''
-                    rule_service_l  = []
                     rule_action = ''
                     rule_source_address_l = []
                     rule_destination_address_l = []
-                    rule_service_d = ''
+                    rule_service_l = []
 
+                    rule_name = tempStr1[10:]
+                    rule_name = rule_name.strip()
                     cellrow = cellrow + 1
+
+
                 elif '  source-zone' == tempStr1[:13]:
                     rule_source_zone = rule_source_zone + tempStr1[13:]
                     rule_source_zone = rule_source_zone.strip()
@@ -376,15 +398,25 @@ def save_xls_file(blocked_list, block_child_list):
                     rule_destination_zone = rule_destination_zone + tempStr1[18:]
                     rule_destination_zone = rule_destination_zone.strip()
 
+                elif rule_name == '交行新FCC访问接收机':
+                    pass
                 elif '  source-address' == tempStr1[:16]:
-                    rule_source_address = rule_source_address + tempStr1[16+13:]
-                    rule_source_address = rule_source_address.strip()
-                    rule_source_address_l = getAddressList(blocked_list, block_child_list, rule_source_address)
+                    tmp_rule_str = tempStr1[16+13:]
+                    tmp_rule_str = tmp_rule_str.strip()
+                    rule_source_address = rule_source_address + tmp_rule_str
+                    tmp_rule_list = getAddressList(blocked_list, block_child_list, tmp_rule_str)
+                    for temp_rule_int in range(len(tmp_rule_list)):
+                        rule_source_address_l.append(tmp_rule_list[temp_rule_int])
+                # elif '  source-address' == tempStr1[:16]:
+                #     rule_source_address = rule_source_address + tempStr1[16+13:]
+                #     rule_source_address = rule_source_address.strip()
+                #     rule_source_address_l = getAddressList(blocked_list, block_child_list, rule_source_address)
 
                 elif '  destination-address' == tempStr1[:21]:
                     rule_destination_address = rule_destination_address + tempStr1[21+13:]
                     rule_destination_address = rule_destination_address.strip()
-                    rule_destination_address_l = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                    rule_temp_l = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                    rule_destination_address_l = rule_temp_l
 
                 elif '  service' == tempStr1[:9]:
                     rule_service =  rule_service + tempStr1[9:]
