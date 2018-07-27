@@ -62,9 +62,12 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getServiceList(blocked_list, block_child_list,sname):
     #获取具体服务对应的服务名和端口号
-    ServicePort = ''
+    standard_service = ['ftp','ssh','ntp','http','icmp']
     return_service_list = []
-    target_string = 'ip service-set ' + sname
+    if sname in standard_service:
+        return_service_list.append(sname)
+        return return_service_list
+    target_string = 'ip service-set ' + sname + ' '
     target_str_len = len(target_string)
 
     for i in range(len(blocked_list)):
@@ -85,7 +88,6 @@ def getServiceList(blocked_list, block_child_list,sname):
                                 return_service_list.append('TCP' + tempList3[9])
                             elif len(tempList3) == 12:
                                 return_service_list.append('TCP' + tempList3[9]+'-' + tempList3[11])
-
                         elif tempList3[3] == 'udp':
                             if len(tempList3) == 10:
                                 return_service_list.append('UDP' + tempList3[9])
@@ -96,6 +98,17 @@ def getServiceList(blocked_list, block_child_list,sname):
                     tempStr1 = blocked_list[i]
                 return return_service_list
             if 'type group' == tempStr1[-10:]:
+                i = i + 1
+                tempStr1 = blocked_list[i]
+                while tempStr1[0] == ' ':
+                    if ' service' == tempStr1[:8]:
+                        tempList = tempStr1.split()
+                        sub_group_string = tempList[3]
+                        sub_group_r_l = getServiceList(blocked_list, block_child_list, sub_group_string)
+                        for j in range(len(sub_group_r_l)):
+                            return_service_list.append(sub_group_r_l[j])
+                    i = i + 1
+                    tempStr1 = blocked_list[i]
                 return return_service_list
     return []
 
@@ -104,7 +117,7 @@ def getAddressList(blocked_list, block_child_list,aname):
     #获取具体地址对应的地址名和地址
     address_detail = ''
     return_address_list = []
-    target_string = 'ip address-set ' + aname
+    target_string = 'ip address-set ' + aname + ' '
     target_str_len = len(target_string)
     for i in range(len(blocked_list)):
         tempStr_raw = blocked_list[i]
@@ -157,9 +170,6 @@ def save_xls_file(blocked_list, block_child_list):
     sheet = wb.get_sheet_by_name('interface')
     cellrow = 2
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
-            continue
-
         tempStr1 = blocked_list[i]
         if 'interface' == tempStr1[:9] :
             interface_name = tempStr1[10:len(tempStr1)]
@@ -216,11 +226,9 @@ def save_xls_file(blocked_list, block_child_list):
     sheet = wb.get_sheet_by_name('route')
     cellrow = 3
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
 
         tempStr1 = blocked_list[i]
-        if 'routing' == tempStr1[:7]:
+        if 'ip route-static' == tempStr1[:15]:
             child_List = block_child_list[i]
             for j in range(len(child_List)):
                 tempStr2 = child_List[j].strip()
@@ -308,7 +316,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 
     sheet = wb.get_sheet_by_name('rule')
-    cellrow = 2
+    cellrow = 3
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
             in_security_polich = True
@@ -319,9 +327,8 @@ def save_xls_file(blocked_list, block_child_list):
                     in_security_polich = False
                     continue
                 if ' rule name' == tempStr1[:10] :
-
                     cellcolumn = 1
-                    sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
+                    sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 1
                     cellcolumn += 1
                     sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
                     cellcolumn += 1
@@ -341,7 +348,7 @@ def save_xls_file(blocked_list, block_child_list):
                         if tempInt4 < len(rule_service_l) - 1:
                             rule_service_d = rule_service_d + '\n'
 
-                    if cellrow > 2 :
+                    if cellrow > 3 :
                         if rule_source_zone == '':
                             rule_source_zone = 'any'
                         if rule_destination_zone == '':
@@ -398,11 +405,11 @@ def save_xls_file(blocked_list, block_child_list):
                     rule_destination_zone = rule_destination_zone + tempStr1[18:]
                     rule_destination_zone = rule_destination_zone.strip()
 
-                elif rule_name == '交行新FCC访问接收机':
-                    pass
                 elif '  source-address' == tempStr1[:16]:
                     tmp_rule_str = tempStr1[16+13:]
                     tmp_rule_str = tmp_rule_str.strip()
+                    if len(rule_source_address) > 3:
+                        rule_source_address = rule_source_address + '\n'
                     rule_source_address = rule_source_address + tmp_rule_str
                     tmp_rule_list = getAddressList(blocked_list, block_child_list, tmp_rule_str)
                     for temp_rule_int in range(len(tmp_rule_list)):
@@ -413,15 +420,29 @@ def save_xls_file(blocked_list, block_child_list):
                 #     rule_source_address_l = getAddressList(blocked_list, block_child_list, rule_source_address)
 
                 elif '  destination-address' == tempStr1[:21]:
-                    rule_destination_address = rule_destination_address + tempStr1[21+13:]
-                    rule_destination_address = rule_destination_address.strip()
-                    rule_temp_l = getAddressList(blocked_list, block_child_list, rule_destination_address)
-                    rule_destination_address_l = rule_temp_l
+                    tmp_rule_str = tempStr1[21+13:]
+                    tmp_rule_str = tmp_rule_str.strip()
+                    if len(rule_destination_address) > 3:
+                        rule_destination_address = rule_destination_address + '\n'
+                    rule_destination_address = rule_destination_address + tmp_rule_str
+                    tmp_rule_list = getAddressList(blocked_list, block_child_list, tmp_rule_str)
+                    for temp_rule_int in range(len(tmp_rule_list)):
+                        rule_destination_address_l.append(tmp_rule_list[temp_rule_int])
+                    # rule_destination_address = rule_destination_address + tempStr1[21+13:]
+                    # rule_destination_address = rule_destination_address.strip()
+                    # rule_temp_l = getAddressList(blocked_list, block_child_list, rule_destination_address)
+                    # rule_destination_address_l = rule_temp_l
 
                 elif '  service' == tempStr1[:9]:
-                    rule_service =  rule_service + tempStr1[9:]
-                    rule_service = rule_service.strip()
-                    rule_service_l = getServiceList(blocked_list, block_child_list, rule_service)
+                    tmp_rule_str = tempStr1[9:]
+                    tmp_rule_str = tmp_rule_str.strip()
+                    rule_service = rule_service + tmp_rule_str + '\n'
+                    tmp_rule_list = getServiceList(blocked_list, block_child_list, tmp_rule_str)
+                    for temp_rule_int in range(len(tmp_rule_list)):
+                        rule_service_l.append(tmp_rule_list[temp_rule_int])
+                    # rule_service =  rule_service + tempStr1[9:]
+                    # rule_service = rule_service.strip()
+                    # rule_service_l = getServiceList(blocked_list, block_child_list, rule_service)
 
                 elif '  action' == tempStr1[:8]:
                     rule_action = tempStr1[8:]
