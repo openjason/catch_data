@@ -2,7 +2,7 @@
 '''
 根据华为防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2018-04-08
+2018-08-01
 '''
 # import os
 import openpyxl
@@ -23,29 +23,15 @@ def judge_legal_ip(one_str):
 def fix_address_string(add_str):
     #停用    return add_str
     fix_addr_str = "地址有误"
-    if add_str[0]=='"':
-        tmp_pos = add_str[1:].find('"')
-        aname = add_str[0:tmp_pos+2]
-        tmp_list = add_str[tmp_pos:].split()
-    else:
-        tmp_list = add_str.split()
-        aname = tmp_list[0]
+    tmp_list = add_str.split()
+    aname = tmp_list[0]
     if len(tmp_list)< 3:
         return add_str
-    if 'host' == tmp_list[1]:
-        fix_addr_str = tmp_list[2] + '/32'
+    if 'range' == tmp_list[2]:
+        fix_addr_str = tmp_list[3] + '-' + tmp_list[4]
 
-    if 'range' == tmp_list[1]:
-        fix_addr_str = tmp_list[2] + '-' + tmp_list[3]
-
-    if 'network' == tmp_list[1]:
-        if '255.255.255.0' == tmp_list [3]:
-            netmaskstr = '/24'
-        else:
-            netmaskstr = tmp_list [3]
-        fix_addr_str = tmp_list[2] + netmaskstr
-
-#    return aname + ":" +fix_addr_str
+    if 'mask' == tmp_list[3]:
+        fix_addr_str = tmp_list[2] + '/' + tmp_list[4]
     return fix_addr_str
 
 
@@ -85,14 +71,14 @@ def getServiceList(blocked_list, block_child_list,sname):
                             return_service_list.append('ICMP')
                         elif tempList3[3] == 'tcp':
                             if len(tempList3) == 10:
-                                return_service_list.append('TCP' + tempList3[9])
+                                return_service_list.append('tcp' + tempList3[9])
                             elif len(tempList3) == 12:
-                                return_service_list.append('TCP' + tempList3[9]+'-' + tempList3[11])
+                                return_service_list.append('tcp' + tempList3[9]+'-' + tempList3[11])
                         elif tempList3[3] == 'udp':
                             if len(tempList3) == 10:
-                                return_service_list.append('UDP' + tempList3[9])
+                                return_service_list.append('udp' + tempList3[9])
                             elif len(tempList3) == 12:
-                                return_service_list.append('UDP' + tempList3[9]+'-' + tempList3[11])
+                                return_service_list.append('udp' + tempList3[9]+'-' + tempList3[11])
 
                     i = i + 1
                     tempStr1 = blocked_list[i]
@@ -131,9 +117,9 @@ def getAddressList(blocked_list, block_child_list,aname):
                     if ' address' == tempStr1[:8]:
                         tempList = tempStr1.split()
                         try:
-                            return_address_list.append(tempList[2])
+                            return_address_list.append(fix_address_string(tempStr1))
                         except:
-                            print("err_split2:" + tempStr1)
+                            print("err_return_address_list.append(fix_address_string(tempStr1))" + tempStr1)
                     i = i + 1
                     tempStr1 = blocked_list[i]
                 return return_address_list
@@ -292,11 +278,8 @@ def save_xls_file(blocked_list, block_child_list):
                         cellcolumn += 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = route_metric
                         cellcolumn += 1
-#配置文件没找到优先级                        sheet.cell(row=cellrow, column=cellcolumn).value = route_priority
                         cellrow += 1
 # Edit sheet "route" end
-
-#        print(str(cellrow) + interface_name+':'+interface_alias + interface_ip+';'+ interface_netmask + interface_comment)
 
 # Edit sheet "rule" begin
 
@@ -316,7 +299,7 @@ def save_xls_file(blocked_list, block_child_list):
 
 
     sheet = wb.get_sheet_by_name('rule')
-    cellrow = 3
+    cellrow = 2
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
             in_security_polich = True
@@ -328,11 +311,7 @@ def save_xls_file(blocked_list, block_child_list):
                     continue
                 if ' rule name' == tempStr1[:10] :
                     cellcolumn = 1
-                    sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 1
-                    cellcolumn += 1
-                    sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
-                    cellcolumn += 1
-                    print (type(rule_source_address_l))
+#                    print (type(rule_source_address_l))
 
                     for tempInt4 in range(len(rule_source_address_l)):
                         rule_source_address_d = rule_source_address_d + rule_source_address_l[tempInt4]
@@ -346,9 +325,9 @@ def save_xls_file(blocked_list, block_child_list):
                     for tempInt4 in range(len(rule_service_l)):
                         rule_service_d = rule_service_d + rule_service_l[tempInt4]
                         if tempInt4 < len(rule_service_l) - 1:
-                            rule_service_d = rule_service_d + '\n'
+                            rule_service_d = rule_service_d + '、'
 
-                    if cellrow > 3 :
+                    if cellrow > 2 :
                         if rule_source_zone == '':
                             rule_source_zone = 'any'
                         if rule_destination_zone == '':
@@ -360,6 +339,10 @@ def save_xls_file(blocked_list, block_child_list):
                         if rule_service == '':
                             rule_service = 'any'
 
+                        sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
+                        cellcolumn += 1
+                        sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
+                        cellcolumn += 1
 
                         sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_zone
                         cellcolumn += 1
@@ -414,10 +397,6 @@ def save_xls_file(blocked_list, block_child_list):
                     tmp_rule_list = getAddressList(blocked_list, block_child_list, tmp_rule_str)
                     for temp_rule_int in range(len(tmp_rule_list)):
                         rule_source_address_l.append(tmp_rule_list[temp_rule_int])
-                # elif '  source-address' == tempStr1[:16]:
-                #     rule_source_address = rule_source_address + tempStr1[16+13:]
-                #     rule_source_address = rule_source_address.strip()
-                #     rule_source_address_l = getAddressList(blocked_list, block_child_list, rule_source_address)
 
                 elif '  destination-address' == tempStr1[:21]:
                     tmp_rule_str = tempStr1[21+13:]
@@ -449,7 +428,7 @@ def save_xls_file(blocked_list, block_child_list):
                     rule_action = rule_action.strip()
 
                 else:
-                    print('Unknow keywork.')
+                    print('Unknow keywork.'+ tempStr1)
 # Edit sheet "rule" end
     try:
         workbook.save('hw_new.xlsx')
