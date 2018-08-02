@@ -308,9 +308,7 @@ def save_xls_file(blocked_list, block_child_list):
                 tempStr1 = blocked_list[i]
                 if tempStr1[0] != " ":
                     in_security_polich = False
-                    continue
                 if ' rule name' == tempStr1[:10] :
-                    cellcolumn = 1
 #                    print (type(rule_source_address_l))
 
                     for tempInt4 in range(len(rule_source_address_l)):
@@ -339,6 +337,7 @@ def save_xls_file(blocked_list, block_child_list):
                         if rule_service == '':
                             rule_service = 'any'
 
+                        cellcolumn = 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
                         cellcolumn += 1
                         sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
@@ -429,7 +428,48 @@ def save_xls_file(blocked_list, block_child_list):
 
                 else:
                     print('Unknow keywork.'+ tempStr1)
-# Edit sheet "rule" end
+
+            #process last line begin
+            for tempInt4 in range(len(rule_source_address_l)):
+                rule_source_address_d = rule_source_address_d + rule_source_address_l[tempInt4]
+                if tempInt4 < len(rule_source_address_l) - 1:
+                    rule_source_address_d = rule_source_address_d + '\n'
+            for tempInt4 in range(len(rule_destination_address_l)):
+                rule_destination_address_d = rule_destination_address_d + rule_destination_address_l[tempInt4]
+                if tempInt4 < len(rule_destination_address_l) - 1:
+                    rule_destination_address_d = rule_destination_address_d + '\n'
+
+            for tempInt4 in range(len(rule_service_l)):
+                rule_service_d = rule_service_d + rule_service_l[tempInt4]
+                if tempInt4 < len(rule_service_l) - 1:
+                    rule_service_d = rule_service_d + '、'
+
+            cellcolumn = 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = cellrow - 2
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_name
+            cellcolumn += 1
+
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_zone
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_zone
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_source_address_d
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_address_d
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_d
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
+            # process last line end
+
+    # Edit sheet "rule" end
     try:
         workbook.save('hw_new.xlsx')
     except:
