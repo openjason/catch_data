@@ -566,6 +566,7 @@ def cfgxlsproc():
 
     confile_blocked = []
     swcfgfile = 'vrpcfg.cfg'
+    print('Loading config file: '+ str(swcfgfile))
 
     get_block(swcfgfile, confile_blocked, 'hw_block.txt')
 
