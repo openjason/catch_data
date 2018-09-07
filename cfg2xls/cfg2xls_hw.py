@@ -48,7 +48,7 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getServiceList(blocked_list, block_child_list,sname):
     #获取具体服务对应的服务名和端口号
-    standard_service = ['ftp','ssh','ntp','http','icmp']
+    standard_service = ['ftp','ssh','ntp','http','icmp','sqlnet']
     return_service_list = []
     if sname in standard_service:
         return_service_list.append(sname)
