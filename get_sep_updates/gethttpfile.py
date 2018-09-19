@@ -93,6 +93,7 @@ class MyHTMLParser(HTMLParser):
 
 if __name__ == "__main__":
     urls = ['https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sep',\
+            'https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sep14',\
             'https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=ips',\
             'https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sonar']
 
