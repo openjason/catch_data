@@ -97,6 +97,8 @@ if __name__ == "__main__":
             'https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=ips',\
             'https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sonar']
 
+    #urls = ['https://www.symantec.com/security_response/definitions/download/detail.jsp?gid=sep14']
+
     md5file = getmd5file('')
     for url in urls:
 #        print ("下载目标地址：",url)
@@ -110,8 +112,9 @@ if __name__ == "__main__":
         hp.feed(htmlFile)
         hp.close()
         for link in hp.links:
-            if ('http' in link) and (not('core' in link)):
- #               print('正在下载文件 : ',link)
+#            if ('http' in link) and (not('core' in link)):
+            if ('http' in link):
+    #               print('正在下载文件 : ',link)
                 logging.info('正在下载文件 : ' + link)
                 retry = 0
                 while retry < 3 :
