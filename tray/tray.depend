@@ -1,0 +1,20 @@
+# depslib dependency file v1.0
+1514140582 source:f:\dev\github\test\tray\resource.rc
+	<windows.h>
+	<commctrl.h>
+	<richedit.h>
+	"resource.h"
+
+1514140582 f:\dev\github\test\tray\resource.h
+
+1538205931 source:f:\dev\github\catch_data\tray\main.cpp
+	<windows.h>
+
+1514140582 source:f:\dev\github\catch_data\tray\resource.rc
+	<windows.h>
+	<commctrl.h>
+	<richedit.h>
+	"resource.h"
+
+1514140582 f:\dev\github\catch_data\tray\resource.h
+

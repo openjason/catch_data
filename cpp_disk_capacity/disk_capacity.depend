@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1538209903 source:f:\dev\github\catch_data\cpp_disk_capacity\main.cpp
+	<iostream>
+	<windows.h>
+	<stdio.h>
+

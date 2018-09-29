@@ -1,8 +1,9 @@
 #include <iostream>
 #include <windows.h>
+#include <stdio.h>
 using namespace std;
 
-int main()
+char* get_disk_capacity()
 {
      int DiskCount = 0;
      DWORD DiskInfo = GetLogicalDrives();
@@ -84,5 +85,14 @@ int main()
          si+=4;
      }
 
-     system("pause");
+     return "pause";
+}
+
+int main()
+{
+//    char* disk_capatity;
+//    disk_capatity =
+    get_disk_capacity();
+//    printf("d:%s",disk_capatity);
+
 }
