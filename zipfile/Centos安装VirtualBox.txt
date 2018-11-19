@@ -1,0 +1,123 @@
+centos7安装virtualbox:
+ centos7 安装选择安装Delvelopment and creative（拼写可能有误）
+ yum install gcc
+ yum install kernel-devel
+ 到官网下载安装包，yum install 安装包就没有提示出错信息了。
+ 
+
+
+ 1> 下载VirtualBox的RHEL软件库配置文件：
+[cpp] view plaincopyprint?
+ 
+
+    cd /etc/yum.repos.d  
+    wget http://download.virtualbox.org/virtualbox/rpm/rhel/virtualbox.repo  
+
+    2> 安装RPMForge.
+
+      首先从http://pkgs.repoforge.org/rpmforge-release/上下载相应的rpm文件，我下载的是rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm，具体版本
+
+      信息请参考：http://wiki.centos.org/zh/AdditionalResources/Repositories/RPMForge。
+[cpp] view plaincopyprint?
+ 
+
+    rpm -ivh rpmforge-release-0.5.3-1.el7.rf.x86_64.rpm  
+
+    3> 安装DKMS（Dynamic Kernel Module）    
+[python] view plaincopyprint?
+ 
+
+    yum install dkms  
+
+    4> 安装开发环境和内核：
+[cpp] view plaincopyprint?
+ 
+
+    yum groupinstall "Development Tools"   
+    yum install kernel-devel  
+
+     5> 安装qt和qt-
+[cpp] view plaincopyprint?
+ 
+
+    yum install qt qt-x11  
+
+    6> 安装VirtualBox
+
+      我是先在官网下载下来的，版本是VirtualBox-4.3-4.3.26_98988_el7-1.x86_64.rpm， https://www.virtualbox.org/wiki/Downloads
+[cpp] view plaincopyprint?
+ 
+
+    yum install VirtualBox-4.3-4.3.26_98988_el7-1.x86_64.rpm  
+
+    7> 安装扩展：    
+[cpp] view plaincopyprint?
+ 
+
+    VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-4.3.16-95972.vbox-extpack   
+
+      这个地方就出问题了。
+
+VBoxManage: error: Details: code NS_ERROR_FAILURE (0x80004005), component ExtPackFile, interface IExtPackFile, callee nsISupports
+VBoxManage: error: Context: "Install(fReplace, NULL, ptrProgress.asOutParam())" at line 1140 of file VBoxManageMisc.cpp
+
+但此时系统中已有virtualbox了，所以说这个问题可以忽略，继续接下来的。  
+[cpp] view plaincopyprint?
+ 
+
+          8> /etc/init.d/vboxdrv setup  
+
+     这里又出现了错误：
+
+Building the VirtualBox Guest Additions kernel modules [FAILED] 
+Your system does not seem to be set up to build kernel modules. 
+Look at /var/log/vboxadd-install.log to find out what went wrong. 
+Once you have corrected it, you can run /etc/init.d/vboxadd setup to build them. 
+查看错误日志：
+/tmp/vbox.o/Makefile.include.header:97: *** 
+Error: unable to find the source of your current Linux kernel.Specify KERN_DIR=<directory> and run make again. Stop.
+
+    解决办法：
+
+ 
+[cpp] view plaincopyprint?
+ 
+
+        yum install kernel  
+        yum install kernel-devel<span><span>  
+        yum install kernel-headers   
+    </span></span>     yum install gcc*   
+        yum install make  
+        reboot  
+
+  重启
+[cpp] view plaincopyprint?
+ 
+
+    /etc/init.d/vboxdrv setup  
+
+   大功告成!
+
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+VirtualBox：解决VirtualBox安装时libSDL-1.2.so.0()错误的问题。
+
+为Centos 安装VirtualBox的时候，遇到了这样的错误:
+error: Failed dependencies:
+libSDL-1.2.so.0()(64bit) is needed by VirtualBox-4.2-4.2.4_81684_el6-1.x86_64
+原来安装VirtualBox需要SDL这个包，可以用yum安装，
+
+yum install compat-libstdc++-33 SDL
+
+其实，除了上面的以外还需要gcc， kernel-devel，make， libGL, qt, qt-devel, libXmu，例如，
+yum install gcc kernel-devel make libGL qt qt-devel libXmu
+好了，现在就可以安装VirtuaBox的rpm包了，
+
+[root@SCTS-PC-DEV Downloads]# rpm -ivh VirtualBox-5.1-5.1.28_117968_el7-1.x86_64.rpm
+warning: VirtualBox-5.1-5.1.28_117968_el7-1.x86_64.rpm: Header V4 DSA/SHA1 Signature, key ID 98ab5139: NOKEY
+Preparing... ################################# [100%]
+Updating / installing...
+1:VirtualBox-5.1-5.1.28_117968_el7-################################# [100%]
+
+Creating group 'vboxusers'. VM users must be member of that group!
