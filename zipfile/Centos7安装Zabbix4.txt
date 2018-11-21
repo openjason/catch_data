@@ -1,0 +1,70 @@
+ Centos7安装Zabbix4.0步骤
+
+ 点击返回：自学Zabbix之路
+
+ 点击返回：自学Zabbix4.0之路
+Centos7安装Zabbix4.0步骤
+
+官方搭建zabbix4.0的环境要求：
+1.1 搭建之前的操作
+    yum -y update
+
+1.1.2 关闭selinux 
+vi /etc/selinux/config    #将SELINUX=enforcing改为SELINUX=disabled 设置后需要重启才能生效
+临时设置：setenforce 0     
+1.1.3 关闭防火墙
+firewall-cmd --state    #查看默认防火墙状态，关闭后显示not running，开启后显示running
+systemctl stop firewalld.service    #临时关闭firewall
+systemctl disable firewalld.service #禁止firewall开机启动
+
+1.2 搭建LAMP环境
+
+ 1.2.1 安装所需所有软体仓库
+
+ Zabbix是建立在LAMP或者LNMP环境之上，在此为了方便就使用yum安装LAMP环境。
+yum install -y httpd mariadb-server mariadb php php-mysql php-gd libjpeg* php-ldap php-odbc php-pear php-xml php-xmlrpc php-mhash
+rpm -qa httpd php mariadb            #安装完成后检查应用版本
+
+1.2.2 编辑httpd
+vi /etc/httpd/conf/httpd.conf
+ServerName www.zabbixyk.com      #修改为主机名
+DirectoryIndex index.html index.php   # 添加首页支持格式　
+
+
+systemctl start httpd   #启动并加入开机自启动httpd
+systemctl enable httpd
+systemctl start mariadb  #启动并加入开机自启动mysqld
+systemctl enable mariadb
+	
+ss -anplt | grep httpd   #查看httpd启动情况，80端口监控表示httpd已启动
+ss -naplt | grep mysqld  #查看mysqld启动情况，3306端口监控表示mysqld已启动　
+
+1.2.5 创建一个测试页，测试LAMP是否搭建成功
+vi /var/www/html/index.php #创建一个测试页，并编辑
+<?php
+phpinfo()
+?>
+
+mysql_secure_instalaltion   #数据库环境安全环境配置
+
+mysql -u root -p        #root用户登陆数据库
+CREATE DATABASE zabbix character set utf8 collate utf8_bin;       #创建zabbix数据库（中文编码格式）
+GRANT all ON zabbix.* TO 'zabbix'@'%' IDENTIFIED BY 'Admin@007';  #授予zabbix用户zabbix数据库的所有权限，密码ykadmin123
+grant all privileges on zabbix.* to zabbix@localhost identified by 'Admin@007'; #来自官网
+flush privileges;    #刷新权限
+quit       
+
+2. 安装zabbix
+（应查看官网的指引，以官网为准）
+2.1  安装依赖包 + 组件
+	
+yum -y install net-snmp net-snmp-devel curl curl-devel libxml2 libxml2-devel libevent-devel.x86_64 javacc.noarch  javacc-javadoc.noarch javacc-maven-plugin.noarch javacc*
+
+yum install php-bcmath php-mbstring -y #安装php支持zabbix组件
+ 
+rpm -ivh http://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-1.el7.noarch.rpm  #会自动生成yum源文件，保证系统可以上网
+rpm -ivh https://repo.zabbix.com/zabbix/4.0/rhel/7/x86_64/zabbix-release-4.0-1.el7.noarch.rpm
+yum install zabbix-server-mysql zabbix-web-mysql -y    #安装zabbix组件
+ 
+zcat /usr/share/doc/zabbix-server-mysql-4.0.0/create.sql.gz | mysql -uzabbix -p -h 172.18.20.224 zabbix   #导入数据到数据库zabbix中(最后一个zabbix是数据库zabbix)，且因为用户zabbix是%(任意主机)，所以登录时需要加上当前主机ip(-h 172.18.20.224),密码是用户zabbix登陆密码ykadmin123
+   
