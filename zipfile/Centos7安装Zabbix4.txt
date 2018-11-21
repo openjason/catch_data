@@ -68,3 +68,23 @@ yum install zabbix-server-mysql zabbix-web-mysql -y    #安装zabbix组件
  
 zcat /usr/share/doc/zabbix-server-mysql-4.0.0/create.sql.gz | mysql -uzabbix -p -h 172.18.20.224 zabbix   #导入数据到数据库zabbix中(最后一个zabbix是数据库zabbix)，且因为用户zabbix是%(任意主机)，所以登录时需要加上当前主机ip(-h 172.18.20.224),密码是用户zabbix登陆密码ykadmin123
    
+Importing data
+
+Now import initial schema and data for the server with MySQL:
+
+# zcat /usr/share/doc/zabbix-server-mysql*/create.sql.gz | mysql -uzabbix -p zabbix
+
+Configure database for Zabbix server/proxy
+Edit zabbix_server.conf or zabbix_proxy.conf to use the created database. For example:
+
+# vi /etc/zabbix/zabbix_server.conf
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=<password>
+
+vi /etc/httpd/conf.d/zabbix.conf     //修改时区
+将# php_value date.timezone Europe/Riga 变更成php_value date.timezone Asia/Shanghai
+
+rpm -ivh 安装时提示没有zabbix用户和组，重装都一样提示，手动新增用户后，重装就OK了。
+useradd -d /var/lib/zabbix -s /sbin/nologin -c 'Zabbix Monitoring System' zabbix
