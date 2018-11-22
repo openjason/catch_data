@@ -88,3 +88,8 @@ vi /etc/httpd/conf.d/zabbix.conf     //修改时区
 
 rpm -ivh 安装时提示没有zabbix用户和组，重装都一样提示，手动新增用户后，重装就OK了。
 useradd -d /var/lib/zabbix -s /sbin/nologin -c 'Zabbix Monitoring System' zabbix
+
+zabbix中文乱码问题
+将字体文件simkai.ttf上传进容器目录：/usr/share/fonts/dejavu
+进入目录：/usr/share/zabbix/fonts，运行命令：
+mv graphfont.ttf graphfont.ttf.backup && ln -s /usr/share/fonts/dejavu/simkai.ttf ./ && mv simkai.ttf graphfont.ttf
