@@ -14,14 +14,16 @@ MySQLÄ¬ÈÏµÄÊı¾İÎÄ¼ş´æ´¢Ä¿Â¼Îª/var/lib/mysql¡£¼ÙÈçÒª°ÑÄ¿Â¼ÒÆµ½/home/dataÏÂĞèÒª½øĞ
 ¡¡¡¡2¡¢°ÑMySQL·şÎñ½ø³ÌÍ£µô£º
 ¡¡¡¡mysqladmin -u root -p shutdown
 ¡¡¡¡3¡¢°Ñ/var/lib/mysqlÕû¸öÄ¿Â¼ÒÆµ½/home/data
-¡¡¡¡mv /var/lib/mysql¡¡/home/data/ »òÕßÖ±½Ócp    -R /var/lib/mysql¡¡/home/data/
+mv /var/lib/mysql¡¡/home/data/ 
+»òÕßÖ±½Ócp    -R /var/lib/mysql¡¡/home/data/
 ¡¡¡¡ÕâÑù¾Í°ÑMySQLµÄÊı¾İÎÄ¼şÒÆ¶¯µ½ÁË/home/data/mysqlÏÂ
 ¡¡¡¡4¡¢ÕÒµ½my.cnfÅäÖÃÎÄ¼ş
 ¡¡¡¡Èç¹û/etc/Ä¿Â¼ÏÂÃ»ÓĞmy.cnfÅäÖÃÎÄ¼ş£¬Çëµ½/usr/share/mysql/ÏÂÕÒµ½*.cnfÎÄ¼ş£¬¿½±´ÆäÖĞÒ»¸öµ½/etc/²¢¸ÄÃûÎªmy.cnf)ÖĞ¡£ÃüÁîÈçÏÂ£º
 ¡¡¡¡ [root@test1 mysql]# cp /usr/share/mysql/my-medium.cnf¡¡/etc/my.cnf
 ¡¡¡¡5¡¢±à¼­MySQLµÄÅäÖÃÎÄ¼ş/etc/my.cnf
 ¡¡¡¡Îª±£Ö¤MySQLÄÜ¹»Õı³£¹¤×÷£¬ĞèÒªÖ¸Ã÷mysql.sockÎÄ¼şµÄ²úÉúÎ»ÖÃ¡£ĞŞ¸Äsocket=/var/lib/mysql/mysql.sockÒ»ĞĞÖĞµÈºÅÓÒ±ßµÄÖµÎª£º/home/mysql/mysql.sock ¡£²Ù×÷ÈçÏÂ£º
-¡¡¡¡ vi¡¡ my.cnf¡¡¡¡¡¡ (ÓÃvi¹¤¾ß±à¼­my.cnfÎÄ¼ş£¬ÕÒµ½ÏÂÁĞÊı¾İĞŞ¸ÄÖ®)
+¡¡¡¡ vi¡¡ my.cnf¡¡¡¡¡¡ 
+(ÓÃvi¹¤¾ß±à¼­my.cnfÎÄ¼ş£¬ÕÒµ½ÏÂÁĞÊı¾İĞŞ¸ÄÖ®)
 ¡¡¡¡ # The MySQL server
 ¡¡¡¡¡¡ [mysqld]
 ¡¡¡¡¡¡ port¡¡¡¡¡¡= 3306
