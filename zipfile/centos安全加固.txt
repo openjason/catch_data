@@ -31,10 +31,10 @@ sed -i ''$WARNDAY's/.*PASS_WARN_AGE.*/PASS_WARN_AGE 7/' /etc/login.defs
 #############################################################################
 
 #							pam_faildelay.so delay=2000000
-auth        required      pam_faillock.so preauth silent audit deny=3 unlock_time=600
+#auth        required      pam_faillock.so preauth silent audit deny=3 unlock_time=600
 
-ATTEMP=`cat -n /etc/pam.d/system-auth | grep -v ".*#.*" | grep pam_faildelay.so | awk '{print $1}'`
-sed -i ''$ATTEMP's/.*auth        required      pam_faildelay.so.*/auth        required      pam_faildelay.so preauth silent audit deny=3 unlock_time=600/' /etc/pam.d/system-auth
+#ATTEMP=`cat -n /etc/pam.d/password-auth | grep -v ".*#.*" | grep pam_faildelay.so | awk '{print $1}'`
+#sed -i ''$ATTEMP's/.*auth        required      pam_faildelay.so.*/auth        required      pam_faildelay.so preauth silent audit deny=3 unlock_time=600/' /etc/pam.d/password-auth
 
 ##############################################################################
 ##修复历史命令设置

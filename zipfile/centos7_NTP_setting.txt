@@ -1,0 +1,104 @@
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<   CentOS7安装MySQL  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  在CentOS中默认安装有MariaDB，这个是MySQL的分支，但为了需要，还是要在系统中安装MySQL，而且安装完成之后可以直接覆盖掉MariaDB。
+1 下载并安装MySQL官方的 Yum Repository
+
+[root@localhost ~]# wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
+  使用上面的命令就直接下载了安装用的Yum Repository，大概25KB的样子，然后就可以直接yum安装了。
+
+[root@localhost ~]# yum -y install mysql57-community-release-el7-10.noarch.rpm
+  之后就开始安装MySQL服务器。
+
+[root@localhost ~]# yum -y install mysql-community-server
+  这步可能会花些时间，安装完成后就会覆盖掉之前的mariadb。
+至此MySQL就安装完成了，然后是对MySQL的一些设置。
+2 MySQL数据库设置
+  首先启动MySQL
+
+[root@localhost ~]# systemctl start  mysqld.service
+  查看MySQL运行状态，运行状态如图：
+
+[root@localhost ~]# systemctl status mysqld.service
+  此时MySQL已经开始正常运行，不过要想进入MySQL还得先找出此时root用户的密码，通过如下命令可以在日志文件中找出密码：
+[root@localhost ~]# grep "password" /var/log/mysqld.log
+
+运行mysql_secure_installtion
+  
+[root@localhost ~]# mysql -uroot -p
+
+
+
+<<<<<<<<<<<<<<<<<<<<<<<< centos7安装zabbix-agent >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+2017年08月11日 16:23:04 jasonliuu 阅读数：5738更多
+个人分类： zabbix笔记
+版权声明：本文为博主原创文章，欢迎转载学习，只需要注明出处 : ) https://blog.csdn.net/Jas0n_Liu/article/details/77099626
+手工安装法
+
+关闭SELinux
+
+sed -i "s/SELINUX=enforcing/SELINUX=disabled/" /etc/selinux/config
+setenforce 0
+
+防火墙设置，允许zabbix-agent的10050端口通过
+
+firewall-cmd --permanent --add-port=10050/tcp
+firewall-cmd --reload
+
+当然。你也可以关闭防火墙：
+
+systemctl stop firewalld
+systemctl disable firewalld
+
+
+安装zabbix 软件源
+
+rpm -ivh http://repo.zabbix.com/zabbix/3.2/rhel/7/x86_64/zabbix-release-3.2-1.el7.noarch.rpm
+
+
+安装zabbix-agent
+
+yum install zabbix-sender zabbix-agent zabbix-get
+
+
+这里如果报错建议多试几次，可能是网络不好或者rp太差，亲测是可以用的。
+
+在 /etc/zabbix/zabbix_agentd.conf 中更改：
+
+Server=<zbx-server的ip>
+ServerActive=<zbx-server的ip>
+Hostname=<本机的名字>
+
+设置启动和开机项
+
+systemctl start zabbix-agent.service
+systemctl enable zabbix-agent.service
+
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ntp centos7 ntp server client: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+1. yum install ntp ntpdate
+
+2. edit /etc/ntp.conf
+# Use public servers from the pool.ntp.org project.
+# Please consider joining the pool (http://www.pool.ntp.org/join.html).
+server 203.107.6.88
+server 202.112.31.197
+server 183.177.72.202
+server 127.127.1.0
+fudge 127.127.1.0 stratum 10
+#127.127.1.0 当网络异常，服务器可以以本机时间作为源，进行同步。
+
+
+3.systemctl start ntpd
+systemctl enable ntpd.service 设置开机启动服务
+
+4.ntpq -p
+ntpstat
+
+#同时建议修改一下 /etc/sysconfig/ntpd 文件
+# vi /etc/sysconfig/ntpd
+SYNC_HWCLOCK=yes 
+# 改成 yes 吧！这样主机 BIOS 的时间也会跟着一起改变的 ！
+
+crontab -e
+00 01 * * * root /usr/sbin/ntpdate 10.55.104.2; /sbin/hwclock -w

@@ -1,0 +1,55 @@
++++++++++++++++++++10.55.103.2
+[root@localhost ~]# crontab -l
+
+00 1 * * * /usr/sbin/ntpdate 10.55.104.2
+
+50 3 * * * /usr/bin/python36 /usr/py/clamav_dl.py
+00 4 * * * \cp /root/*.cvd /var/lib/clamav/
+10 4 * * * /usr/bin/date >> /var/log/clamscan.log
+10 4 * * * /usr/bin/clamscan --infected -r / --remove --exclude-dir=/sys -l /var/log/clamscan.log
+
+
+++++++++++++++++++10.55.104.2
+[root@mysqlserver1 ~]# crontab -l
+40 3 * * * \cp /home/itcheck/*.cvd /var/lib/clamav/
+40 3 * * * \cp /home/itcheck/*.cvd /usr/share/nginx/html/
+10 4 * * * /usr/bin/date >> /var/log/clamscan.log
+10 4 * * * /usr/bin/clamscan --infected -r / --remove --exclude-dir=/sys -l /var/log/clamscan.log
+
+[itcheck@localhost clamav]$ crontab -l
+10 3 * * * /usr/bin/python36 /home/itcheck/clamav_dl.py
+
+nginx.conf
+
+# Load configuration files for the default server block.
+include /etc/nginx/default.d/*.conf;
+location / {
+    if ($request_filename ~* ^.*?\.(txt|doc|pdf|rar|gz|zip|docx|exe|xlsx|ppt|pptx)$){
+    add_header Content-Disposition: 'attachment;';
+    }
+}
+
+#CENTOS7 修改当前网络连接对应的DNS服务器，这里的网络连接可以用名称或者UUID来标识
+nmcli con mod eno1 ipv4.dns "114.114.114.114 8.8.8.8"
+
+#将dns配置生效
+nmcli con up eno1
+
+用timedatectl命令查看当前服务器时区设置：
+查看所有时区timedatectl list-timezones
+更改成上海时区timedatectl set-timezone Asia/Shanghai
+设置NTP开启timedatectl set-ntp yes
+timedatectl命令也可以设置时间和日期
+设置日期格式timedatectl set-time YYYY-MM-DD
+设置时间格式timedatectl set-time HH:MM:SS
+同步阿里云时间服务器/usr/sbin/ntpdate ntp1.aliyun.com
+
+rpm -ivh epel-release-7-11.noarch.rpm
+rpm -ivh json-c-0.11-4.el7_0.x86_64.rpm
+rpm -ivh libtool-ltdl-2.4.2-22.el7_3.x86_64.rpm
+rpm -ivh pcre2-10.23-2.el7.x86_64.rpm
+yum install clam*.rpm
+
+yum install python3*.rpm
+#python36-3.6.6-1.el7.x86_64.rpm
+#python36-libs-3.6.6-1.el7.x86_64.rpm
