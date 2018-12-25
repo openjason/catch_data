@@ -1,9 +1,14 @@
  Centos7安装Zabbix4.0步骤
 
- 点击返回：自学Zabbix之路
 
- 点击返回：自学Zabbix4.0之路
-Centos7安装Zabbix4.0步骤
+firewall-cmd --permanent --zone=public --add-port=9008/tcp
+
+vi /etc/httpd/conf/httpd.conf
+# Change this to Listen on specific IP addresses as shown below to 
+# prevent Apache from glomming onto all bound IP addresses.
+#Listen 12.34.56.78:80
+Listen 9008
+
 
 官方搭建zabbix4.0的环境要求：
 1.1 搭建之前的操作
