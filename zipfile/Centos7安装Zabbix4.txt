@@ -14,9 +14,22 @@ Listen 9008
 1.1 搭建之前的操作
     yum -y update
 
+cat /var/log/audit/audit.log | grep zabbix | audit2allow -M zabbix_server
+
+semanage permissive -a zabbix_t
+
+#SELinux configuration
+setsebool httpd_can_connect_zabbix 1
+setsebool -P httpd_can_network_connect on
+setsebool -P httpd_can_network_connect=true
+setsebool -P httpd_can_connect_zabbix on
+setsebool -P httpd_can_network_connect_db on
+setsebool -P zabbix_can_network on
+
 1.1.2 关闭selinux 
 vi /etc/selinux/config    #将SELINUX=enforcing改为SELINUX=disabled 设置后需要重启才能生效
 临时设置：setenforce 0     
+
 1.1.3 关闭防火墙
 firewall-cmd --state    #查看默认防火墙状态，关闭后显示not running，开启后显示running
 systemctl stop firewalld.service    #临时关闭firewall
