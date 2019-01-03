@@ -1,5 +1,7 @@
  Centos7安装Zabbix4.0步骤
 
+log[/var/log/clamscan.log,"files|Sun|Mon|Tue|Wed|Thu|Fri|Sat",,,skip,]
+增加监控项，正则匹配内容，skip跳过旧日志。
 
 firewall-cmd --permanent --zone=public --add-port=9008/tcp
 
