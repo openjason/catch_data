@@ -1,7 +1,11 @@
  Centos7安装Zabbix4.0步骤
 
 log[/var/log/clamscan.log,"files|Sun|Mon|Tue|Wed|Thu|Fri|Sat",,,skip,]
-增加监控项，正则匹配内容，skip跳过旧日志。
+log[/var/log/clamscan.log,"files|Sun|Mon|Tue|Wed|Thu|Fri|Sat",,20,,]
+增加监控项，正则匹配内容，skip跳过旧日志；处理20条日志。
+
+It's called SELinux.
+semanage permissive -a zabbix_agent_t
 
 firewall-cmd --permanent --zone=public --add-port=9008/tcp
 
@@ -17,6 +21,7 @@ semanage port -a -t http_port_t -p tcp 9008
 
 timedatectl  set-timezone Asia/Shanghai
 官方搭建zabbix4.0的环境要求：
+
 1.1 搭建之前的操作
     yum -y update
 
