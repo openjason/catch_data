@@ -1,0 +1,81 @@
+移动mysql数据文件目录(datadir)以及selinux的一些经验
+2012年10月24日 20:43:15 lanxe 阅读数：1861
+
+mysql 数据文件原来在/var/lib/mysql目录。随着数据库的增加以及数据库内容的增加，希望把数据文件移动到其他磁盘。因为操作系统启用了selinux，所以费了一番折腾，最终解决。方法如下：
+
+    关闭mysql: service mysqld stop
+    复制文件：cp -R /vqr/lib/mysql /xvdb1/
+    重命名目录： mv /var/lib/mysql /var/lib/mysql-backup
+    链接文件： ln -s /xvdb1/mysql /var/lib/mysql
+    修改目录权限：
+        chown mysql:mysql /xvdb1/mysql -R
+        chown -h mysql:mysql /var/lib/mysql
+    修改selinux的content type
+        chcon -R -t mysqld_db_t /xvdb1/mysql
+        chcon -h mysqld_db_t /var/lib/mysql
+    重新启动mysql: service mysqld start
+
+在linux中用ln -s 创建链接时，如上面的 ln -s /xvdb1/mysql /var/lib/mysql，对每个链接，同时关联两个对象，即链接本身以及链接所指向的文件。如/var/lib/mysql，本身是一个链接，同时指向一个实际的目录 /xvdb1/mysql。当在链接上使用chown或chcon时，默认修改的是链接指向的对象，即/xvdb1/mysql，而不是链接本身。为了修改链接本身的owner或context type，需要加上 -h 参数。因此上面chown和chcon都用了两遍。
+
+
+
+
+
+
+
+
+
+SELinux下更改mysql端口
+
+默认情况下 mysql更改端口后是不能通过selinux的
+
+提示启动错误，那么首先就要看mysql的错误日志
+
+可是我不知道mysql错误日志的位置
+
+首先，更改selinux的模式为passive 然后启动mysql(passive模式下是能够启动mysql的)
+
+setenforce 0
+
+然后是用ps命令查看日志位置：
+
+ps ax|grep mysql
+或者
+ps ax|grep "[m]ysql"
+
+从输出中找到--log-error
+
+然后打开错误日志
+
+提示：
+
+[ERROR] Can't start server: Bind on TCP/IP port: Permission denied
+150210 19:57:52 [ERROR] Do you already have another mysqld server running on port: 3308 ？
+
+明显是绑定到3308端口的时候提示错误了！
+
+那么就要更改selinux对mysql开启3308端口
+
+网上搜索后说是需要使用semanage
+
+但是centos里面并没有找到semanage命令
+
+那么查看哪个包提供了semanage
+
+yum provides /usr/sbin/semanage
+
+发现是policycoreutils-python包
+
+于是安装policycoreutils-python包
+
+yum install policycoreutils-python
+
+安装完成后，为mysql绑定3308端口
+
+semanage port -a -t mysqld_port_t -p tcp 3308
+
+然后设置selinux为强制模式然后重启mysql就可以了
+
+setenfoce Enforcing
+service mysql restart
+
