@@ -104,46 +104,6 @@ chmod 644 /etc/ssh_banner
 echo " Authorized only. All activity will be monitored and reported " > /etc/ssh_banner
 sed -i 's/.*Banner.*/Banner \/etc\/ssh_banner'/g /etc/ssh/sshd_config
 #######################################################################################
-##修复禁止root用户远程登录
-#ROOT=`cat /etc/ssh/sshd_config | grep -v "^#" | grep PermitRootLogin`
-#if [ -z "$ROOT" ]
-#then
-#echo "PermitRootLogin no" >>/etc/ssh/sshd_config
-#else
-#LINEROOT=`cat -n /etc/ssh/sshd_config | grep -v ".*#.*" | grep PermitRootLogin | awk '{print $1}'`
-#sed -i ''$LINEROOT's/.*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-#fi
-#修复已修改系统banner信息
-# mv /etc/issue.net /etc/issue.net.bak
-# mv /etc/issue /etc/issue.bak
-# ## 别名文件更改修复
-# sed -i 's/games/#games/g' /etc/aliases
-# sed -i 's/games/#system/g' /etc/aliases
-# sed -i 's/games/#uucp/g' /etc/aliases
-# sed -i 's/games/#dumper/g' /etc/aliases
-# sed -i 's/games/#decode/g' /etc/aliases
-# sed -i 's/games/#ingres/g' /etc/aliases
-# sed -i 's/games/#toor/g' /etc/aliases
-# sed -i 's/games/#manager/g' /etc/aliases
-# sed -i 's/games/#operator/g' /etc/aliases
-#hosts.allow 和 hosts.deny 限制配置修复
-# echo "sshd:192.168.0.0/255.255.0.0 172.21.0.0/255.255.0.0 10.0.0.0/255.0.0.0" >>/etc/hosts.allow
-# echo "sshd:all" >>/etc/hosts.deny
-#core dump 配置安全修改
-#echo "ulimit -S -c unlimited">>/etc/profile
-#log 日至文件权限修改
-# if [ -f /etc/syslog.conf ]
-# then
-# LOGDIR=`cat /etc/syslog.conf | grep -v "^[ ]*#"|sed '/^#/d' |sed '/^$/d' |awk '(($2!~/@/) && ($2!~/*/) && ($2!~/-/)) {print $2}'`
-# chmod 600 $LOGDIR
-# fi
-# if [ -f /etc/rsyslog.conf ]
-# then
-# LOGDIR=`cat /etc/rsyslog.conf | grep -v "^[ ]*#"|sed '/^#/d' |sed '/^$/d' |awk '(($2!~/@/) && ($2!~/*/) && ($2!~/-/)) {print $2}'`
-# chmod 600 $LOGDIR
-# fi
-# ###############################################################################################################
-# for i in daemon bin sys adm lp uucp nuucp smmsp games ftp mail sync shutdown halt news operator gopher nobody
-# do
-# sed -i s/''$i':.:'/''$i':!!:'/g 2.txt
-# done
+
+chmod 0700 /etc/rc*
+chmod 0700 /etc/init.d*
