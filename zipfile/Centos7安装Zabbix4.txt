@@ -1,7 +1,13 @@
+ 问题：1. 磁盘分区不合理（自动），zabbix主要数据/var/lib/mysql空间不够。
+ 2. 为方便系统安装，禁用安全策略，selinux，firewalld，启用不顺利，只好重装系统。
+ 3. 数据备份不及时，系统崩溃数据无法恢复。（不一定是无法恢复，也可能是我不懂恢复）
+
+
  Centos7安装Zabbix4.0步骤
 
 log[/var/log/clamscan.log,"files|Sun|Mon|Tue|Wed|Thu|Fri|Sat",,,skip,]
 log[/var/log/clamscan.log,"files|Sun|Mon|Tue|Wed|Thu|Fri|Sat",,20,,]
+log[/var/log/clamscan.log,"files|CST",,20,,]
 增加监控项，正则匹配内容，skip跳过旧日志；处理20条日志。
 
 It's called SELinux.
@@ -26,7 +32,6 @@ timedatectl  set-timezone Asia/Shanghai
     yum -y update
 
 cat /var/log/audit/audit.log | grep zabbix | audit2allow -M zabbix_server
-
 semanage permissive -a zabbix_t
 
 #SELinux configuration
@@ -36,15 +41,6 @@ setsebool -P httpd_can_network_connect=true
 setsebool -P httpd_can_connect_zabbix on
 setsebool -P httpd_can_network_connect_db on
 setsebool -P zabbix_can_network on
-
-1.1.2 关闭selinux 
-vi /etc/selinux/config    #将SELINUX=enforcing改为SELINUX=disabled 设置后需要重启才能生效
-临时设置：setenforce 0     
-
-1.1.3 关闭防火墙
-firewall-cmd --state    #查看默认防火墙状态，关闭后显示not running，开启后显示running
-systemctl stop firewalld.service    #临时关闭firewall
-systemctl disable firewalld.service #禁止firewall开机启动
 
 firewall-cmd --permanent --zone=public --add-port=10050-10051/tcp
 firewall-cmd --reload

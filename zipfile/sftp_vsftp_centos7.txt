@@ -1,3 +1,27 @@
+安装vsFTPd软件包
+1 ：安装软件包：  yum install vsftpd -y
+2：安装完后，有/etc/vsftpd/vsftpd.conf文件，该文件是vsftp的配置文件。
+禁用匿名访问，修改日志路径等。
+
+1：建立用户：
+命令：useradd ftpuser  新增一个用户ftpuser
+passwd  ftpuser  为ftpuser设定密码
+iptable:
+ftp默认端口是21，而centos默认是没有开启的，所以要修改iptables文件 
+    vi /etc/sysconfig/iptables
+-A INPUT -p tcp -m state --state NEW -m tcp --dport 21 -j ACCEPT   最后:wq 保存
+firewall:
+firewall-cmd --permanent --zone=public --add-service=ftp
+
+getsebool -a | grep ftp 查看selinux设置。
+
+selinux:
+[root@bogon ~]# setsebool -P allow_ftpd_full_access on
+[root@bogon ~]# setsebool -P ftp_home_dir on
+在centos7 下没有ftp_home_dir
+		centos7：setsebool -P tftp_home_dir on
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 Subsystem sftp internal-sftp
 Match Group sftp
 ChrootDirectory /data
