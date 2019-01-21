@@ -104,7 +104,7 @@ chmod 644 /etc/ssh_banner
 echo " Authorized only. All activity will be monitored and reported " > /etc/ssh_banner
 sed -i 's/.*Banner.*/Banner \/etc\/ssh_banner'/g /etc/ssh/sshd_config
 #######################################################################################
-
+#chmod 06755 /bin/su              #chmod 02750 /bin/su 反操作
 chmod 0700 /etc/rc*
 chmod 0700 /etc/init.d*
 chattr +a .bash_history           #避免删除.bash_history或者重定向到/dev/null
@@ -119,6 +119,7 @@ chmod 0700 /etc/sysctl.conf
 chmod 0700 /etc/inittab
 
 chmod 02750 /bin/su
+#chmod 06750 /bin/su              #chmod 02750 /bin/su 反操作
 chmod 02750 /bin/sudo
 chmod 02750 /bin/ping
 chmod 02750 /sbin/ifconfig
