@@ -1,6 +1,7 @@
 #!/bin/bash
 #https://www.sans.org/score/checklists
 #检查是否设置口令更改最小间隔天数
+#USB驱动路径/lib/modules/3.10.0-862.14.4.el7.x86_64/kernel/drivers/usb/storage/usb-storage.ko.xz
 #检查是否设置口令过期前警告天数
 ##检查历史命令设置
 #检查密码重复使用次数限制
@@ -14,23 +15,14 @@
 ##############################################################################
 #脚本运行前备份所有涉及到的文件，共17个
 cp /etc/login.defs /etc/login.defs.epbak
-cp /etc/security/limits.conf /etc/security/limits.conf.epbak
 cp /etc/profile /etc/profile.epbak
 cp /etc/pam.d/system-auth /etc/pam.d/system-auth.epbak
 cp /etc/inittab /etc/inittab.epbak
 cp /etc/motd /etc/motd.epbak
-cp /etc/xinetd.conf /etc/xinetd.conf.epbak
-cp /etc/group /etc/group.epbak
-cp /etc/shadow /etc/shadow.epbak
-cp /etc/services /etc/services.epbak
 cp /etc/security /etc/security.epbak
-cp /etc/passwd /etc/passwd.epbak
-cp /etc/grub.conf /etc/grub.conf.epbak
-cp /boot/grub/grub.conf /boot/grub/grub.conf.epbak
 cp /etc/lilo.conf /etc/lilo.conf.epbak
 cp /etc/ssh_banner /etc/ssh_banner.epbak
 cp /etc/ssh/sshd_config /etc/ssh/sshd_config.epbak
-cp /etc/aliases /etc/aliases.epbak
 cp /etc/security/pwquality.conf /etc/security/pwquality.conf.epbak
 #############################################################################
 #修改最复设置口令更小间隔天数
@@ -110,9 +102,10 @@ chmod 0700 /etc/init.d*
 chattr +a .bash_history           #避免删除.bash_history或者重定向到/dev/null
 chattr +i .bash_history           #给系统服务端口列表文件加锁,防止未经许可的删除或添加服务
 #chattr -i .bash_history           #取消：给系统服务端口列表文件加锁,防止未经许可的删除或添加服务
-chmod 0700 /etc/profile
+#chmod 0700 /etc/profile
 chmod 0700 /etc/hosts.allow
-chmod 0700 /etc/utmp				#无此文件夹
+chmod 0700 /etc/mtab
+
 chmod 0700 /var/log/wtmp
 
 chmod 0700 /etc/sysctl.conf
