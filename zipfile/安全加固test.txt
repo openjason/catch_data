@@ -4,8 +4,22 @@
 #USB驱动路径/lib/modules/3.10.0-862.14.4.el7.x86_64/kernel/drivers/usb/storage/usb-storage.ko.xz
 #rmmod -f usb_storage 提示出错，依赖uas，尝试先rmmod uas
 #rmmod -f uas 
+#参考 lsmod  查看已经安装好的模块、modinfo 显示模块信息、insmod 加载模块 、 depmod 检查系统中模块之间的依赖关系
+#modprobe  不需要指定路径，它会到默认路径下寻找模块。模块也存在依赖性问题: 比如你要加载msdos.ko, 需要先加载fat.ko. modprobe查看/lib/module/version/modules.dep得知模块的依赖关系
+#
+#关闭 631 端口 ， systemctl stop cups.path;systemctl stop cups.socket;systemctl stop cups;
+#ss -anltp | grep 25 #查看哪个进程开启25端口
+#ps -ef | grep xxxx 进程号或名字，上面查到的是master
+#关闭 25 端口，vi /etc/postfix/master.cf
+# =========================================  
+# service type  private unpriv  chroot  wakeup  maxproc command + args
+#               (yes)   (yes)   (yes)   (never) (100)  
+# ====================================================================  
+#smtp      inet  n   -   n   -   -   smtpd  
+#把上面的smtpd服务注释，就可停用smtpd # systemctl restart postfix
+#
 #检查是否设置口令过期前警告天数
-##检查历史命令设置
+#检查历史命令设置
 #检查密码重复使用次数限制
 #检查是否设置口令生存周期
 #检查口令最小长度
