@@ -1,3 +1,20 @@
+贴文：磁盘目录改变，selinux拒绝的问题，参考
+    确认了是SELinux引发的问题，接下来我查看了/var/log/audit/audit.log，发现有如下日志：
+type=AVC msg=audit(1362560807.992:320): avc: denied { search } for pid=1595 comm="sshd" name="/" dev=sda3 ino=2 scontext=unconfined_u:system_r:sshd_t:s0-s0:c0.c1023 tcontext=system_u:object_r:file_t:s0 tclass=dir
+
+这条日志与网上案例唯一不同的地方在于案例中是sshd对分区dm-0中的authorized_keys文件没有read权限，而我的机器上是sshd对分区sda3的根没有search权限。 
+
+确认了问题所在，我仔细回忆了系统的安装过程与其它机器有什么不同之处。日志中提到的sda3是系统的/home分区，当时装系统的时候由于操作失误/home分区只有200M，装完系统以后发现了这个问题，于是我把sda3分区删除重建，然后挂载到/home。这么一折腾，/home目录上的context就不对了。
+
+之后我对/home目录的context进行恢复：
+[root@data ~]# restorecon -r -vv /home/
+restorecon reset /home context system_u:object_r:file_t:s0->system_u:object_r:home_root_t:s0
+restorecon reset /home/lost+found context system_u:object_r:file_t:s0->system_u:object_r:lost_found_t:s0
+restorecon reset /home/sw/.pki context unconfined_u:object_r:user_home_t:s0->unconfined_u:object_r:home_cert_t:s0
+restorecon reset /home/sw/.pki/nssdb context unconfined_u:object_r:user_home_t:s0->unconfined_u:object_r:home_cert_t:s0
+然后setenforce 1打开SELinux，重新连接SSH，认证成功，问题解决。
+
+==============================================================
 移动mysql数据文件目录(datadir)以及selinux的一些经验
 2012年10月24日 20:43:15 lanxe 阅读数：1861
 
@@ -19,12 +36,6 @@ mysql 数据文件原来在/var/lib/mysql目录。随着数据库的增加以及
 
 
 
-
-
-
-
-
-
 SELinux下更改mysql端口
 
 默认情况下 mysql更改端口后是不能通过selinux的
@@ -34,7 +45,6 @@ SELinux下更改mysql端口
 可是我不知道mysql错误日志的位置
 
 首先，更改selinux的模式为passive 然后启动mysql(passive模式下是能够启动mysql的)
-
 setenforce 0
 
 然后是用ps命令查看日志位置：
@@ -44,11 +54,9 @@ ps ax|grep mysql
 ps ax|grep "[m]ysql"
 
 从输出中找到--log-error
-
 然后打开错误日志
 
 提示：
-
 [ERROR] Can't start server: Bind on TCP/IP port: Permission denied
 150210 19:57:52 [ERROR] Do you already have another mysqld server running on port: 3308 ？
 
@@ -73,9 +81,6 @@ yum install policycoreutils-python
 安装完成后，为mysql绑定3308端口
 
 semanage port -a -t mysqld_port_t -p tcp 3308
-
 然后设置selinux为强制模式然后重启mysql就可以了
-
 setenfoce Enforcing
 service mysql restart
-
