@@ -28,6 +28,10 @@
 #net.ipv6.conf.enp0s3.disable_ipv6 =1
 #执行下面的命令来使设置生效。：    sysctl -p
 #ifdown enp0s3, 有的没有效果，用ifconfig enp0s3 down 可以，#ifconfig，禁用的设备不列出，ifconfig -a，全部列出
+#另外一种方式为 使用useradd命令，运行 useradd --help 看看帮助文件
+#
+#useradd -o -u 0 -g 0 -M -d /root -s /bin/bash username(使用root用户一样的家目录) username就有root的权限了
+#passwd username
 #检查是否设置口令过期前警告天数
 #检查历史命令设置
 #检查密码重复使用次数限制
