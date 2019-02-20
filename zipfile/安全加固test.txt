@@ -1,5 +1,6 @@
 #!/bin/bash
 #https://www.sans.org/score/checklists
+#https://www.sans.org/media/score/checklists/LinuxCheatsheet_2.pdf
 #检查是否设置口令更改最小间隔天数
 #USB驱动路径/lib/modules/3.10.0-862.14.4.el7.x86_64/kernel/drivers/usb/storage/usb-storage.ko.xz
 #rmmod -f usb_storage 提示出错，依赖uas，尝试先rmmod uas
