@@ -15,6 +15,8 @@ flogin = open('成功登陆.txt','a+')
 flogin.write('\n'+'='*40)
 ffailed = open('登录验证失败.txt','a+')
 ffailed.write('\n'+'='*40)
+fillegal = open('非法用户登录.txt','a+')
+fillegal.write('\n非法用户登录'+'='*40)
 
 rootdir = 'log'
 logfilelist = os.listdir(rootdir) #列出文件夹下所有的目录与文件
@@ -37,30 +39,33 @@ for filename in logfilelist:
                 continue
 
             if ctag['name'] == 'I_LOGON_AUTH_SUCCEEDED' :
-                print('child-tag:',child.tag,',child.attrib：',child.attrib,',child.text：',child.text)
+#                print('child-tag:',child.tag,',child.attrib：',child.attrib,',child.text：',child.text)
                 for sub in child:
                     ctag = sub.attrib
                     if sub.tag == 'authentication':
-                        print('sub-tag:',sub.tag,',sub.attrib：',sub.attrib,',sub.text：',sub.text)
+#                        print('sub-tag:',sub.tag,',sub.attrib：',sub.attrib,',sub.text：',sub.text)
                         try:
-                                c_tag = ctag['userName']
+                                c_tag = ctag['userName'].lower()
                                 print('OK_:',c_tag,'TT:',c_time)
                                 if c_tag.lower() in user_dict:
                                     flogin.write('\n'+'正常用户:'+c_tag+'   登录时间:'+c_time)
-                                    if  c_time > user_dict[c_tag]:
-                                        flogin.write('\n' + '正常用户:' + c_tag + '   更新最新登录时间:' + user_dict[c_tag] + ' >> ' + c_time)
-                                        user_dict[c_tag] = c_time
+#                                    if  c_time > user_dict[c_tag]:
+                                    flogin.write('\n' + '正常用户:' + c_tag + '           更新最新登录时间:' + user_dict[c_tag] + ' >> ' + c_time)
+                                    user_dict[c_tag] = c_time
+#                                    print('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+#                                    print(c_time)
                                 else:
-                                    flogin.write('\n'+'注意，非法用户登录:' + c_tag + '  登录时间:' + c_time )
+                                    fillegal.write('\n'+'注意，非法用户登录:' + c_tag + '  登录时间:' + c_time )
                         except:
+                            print("except 异常")
                             continue
 
             elif ctag['name'] == 'I_LOGON_AUTH_FAILED' or ctag['name'] == 'I_LOGON_AUTH_CACHE_ASSISTED_LOGON_FAILED':
-                print('child-tag:',child.tag,',child.attrib：',child.attrib,',child.text：',child.text)
+#                print('child-tag:',child.tag,',child.attrib：',child.attrib,',child.text：',child.text)
                 for sub in child:
                     ctag = sub.attrib
                     if sub.tag == 'authentication':
-                        print('sub-tag:',sub.tag,',sub.attrib：',sub.attrib,',sub.text：',sub.text)
+#                        print('sub-tag:',sub.tag,',sub.attrib：',sub.attrib,',sub.text：',sub.text)
                         try:
                             c_tag = ctag['userName']
                             print('Fail_:', c_tag, 'TT:', c_time)
@@ -78,20 +83,26 @@ for filename in logfilelist:
 
 flogin.close()
 ffailed.close()
+fillegal.close()
 f = open('用户列表.txt','w')
 f.write(str(user_dict))
 f.close()
 
 
 
-f = open('用户最近一次登录时间.txt','w')
+f = open('用户最近一次登录时间.txt','a+')
 for u in user_dict:
     daystr = user_dict[u]
     try:
         day1 =  datetime.datetime.now()
         day2 = datetime.datetime.strptime(daystr[:19], "%Y-%m-%d %H:%M:%S")
         days = (day1 - day2).days
+        if days > 999:
+            days = 999
+            f.write('\n用户登录时间距今 '+str(days) + ' 天，用户名：'+u+ ' 登录时间：')
+        else:
+            f.write('\n用户登录时间距今 '+str(days) + ' 天，用户名：'+u+ ' 登录时间：'+str(user_dict[u]))
     except:
-        days = 9999
-    f.write('\n用户登录时间距今 '+str(days) + ' 天，用户名：'+u+ ' 登录时间：'+str(user_dict[u]))
+        days = 999
+        f.write('\n用户登录时间距今 '+str(days) + ' 天，用户名：'+u+ ' 登录时间：')
 f.close()
