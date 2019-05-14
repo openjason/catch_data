@@ -22,19 +22,20 @@ import os
 import sys
 import configparser
 import time
+import string
 
 def set_logging(logfile_path):
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
-                        filename = logfile_path + '\\foderclean.log',
+                        filename = logfile_path + '\\folderclean.log',
                         filemode='a')
 
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     logging.getLogger('').addHandler(console)
 
-def check_dir(work_dir,dtime):
+def check_dir(work_dir, dtime, filepatten_list):
     source_dir = work_dir
     FileList = []
     if not os.path.exists(source_dir):
@@ -48,11 +49,14 @@ def check_dir(work_dir,dtime):
             file_ctime = time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(statinfo.st_ctime))
             print(fullname + ' 文件创建时间:' + file_ctime)
             if abs(howlong/60) > dtime :
-                try:
-                    os.remove(fullname)
-                    logging.info('删除文件' + fullname + ' 文件创建时间:' + file_ctime)
-                except:
-                    logging.info(fullname + ' 文件删除失败')
+                for j in range(len(filepatten_list)):
+                    if filepatten_list[j] in os.path.basename(fullname):
+                        print(fullname + ' match patten:' + filepatten_list[j])
+                        try:
+                            os.remove(fullname)
+                            logging.info('删除文件' + fullname + ' 文件创建时间:' + file_ctime)
+                        except:
+                            logging.info(fullname + ' 文件删除失败')
         return FileList
 
 if __name__ == '__main__':
@@ -63,13 +67,14 @@ if __name__ == '__main__':
     set_logging(realpathname)
 
     cf = configparser.ConfigParser()
-    try:
-        cf.read(dirname + "foderclean.conf")
-        work_dir = cf.get("setting", "folder")
-        dtimestr = cf.get("setting", "dtime")
-        dtimestr = cf.get("setting", "filepatten")
-        dtime = int(dtimestr)
-    except:
-        print('missing file folderclean.conf or parser error.')
-        exit(2)
-    check_dir(work_dir,dtime)
+#    try:
+    cffile = os.path.join(realpathname,"folderclean.conf")
+    cf.read(cffile,encoding='utf-8')
+    work_dir = cf.get("setting", "folder")
+    dtimestr = cf.get("setting", "dtime")
+    filepatten = cf.get("setting", "filepatten")
+    dtime = int(dtimestr)
+    filepatten = filepatten.replace('*','')
+    filepatten_list = filepatten.split('|')
+
+    check_dir(work_dir,dtime,filepatten_list)
