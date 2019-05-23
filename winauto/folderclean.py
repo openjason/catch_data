@@ -24,6 +24,10 @@ import configparser
 import time
 import string
 
+
+def GetDesktopPath():
+    return os.path.join(os.path.expanduser("~"), 'Desktop')
+
 def set_logging(logfile_path):
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
@@ -80,6 +84,8 @@ if __name__ == '__main__':
     except Exception as e:
         logging.info(e)
         exit(1)
+    work_dir = GetDesktopPath()
+    check_dir(work_dir, dtime, filepatten_list)
     for im in range(len(folder_list)):
         work_dir = folder_list[im]
         check_dir(work_dir,dtime,filepatten_list)
