@@ -39,7 +39,7 @@ def check_dir(work_dir, dtime, filepatten_list):
     source_dir = work_dir
     FileList = []
     if not os.path.exists(source_dir):
-        print('无法打开文件夹：' + source_dir)
+        logging.info('无法打开文件夹：' + source_dir)
     else:
         have_jdb_file = False
         for i in os.listdir(source_dir):
@@ -67,14 +67,19 @@ if __name__ == '__main__':
     set_logging(realpathname)
 
     cf = configparser.ConfigParser()
-#    try:
     cffile = os.path.join(realpathname,"folderclean.conf")
-    cf.read(cffile,encoding='utf-8')
-    work_dir = cf.get("setting", "folder")
-    dtimestr = cf.get("setting", "dtime")
-    filepatten = cf.get("setting", "filepatten")
-    dtime = int(dtimestr)
-    filepatten = filepatten.replace('*','')
-    filepatten_list = filepatten.split('|')
-
-    check_dir(work_dir,dtime,filepatten_list)
+    try:
+        cf.read(cffile,encoding='GBK')
+        folder_str = cf.get("setting", "folder")
+        dtimestr = cf.get("setting", "dtime")
+        filepatten = cf.get("setting", "filepatten")
+        dtime = int(dtimestr)
+        filepatten = filepatten.replace('*','')
+        filepatten_list = filepatten.split('|')
+        folder_list = folder_str.split('|')
+    except Exception as e:
+        logging.info(e)
+        exit(1)
+    for im in range(len(folder_list)):
+        work_dir = folder_list[im]
+        check_dir(work_dir,dtime,filepatten_list)
