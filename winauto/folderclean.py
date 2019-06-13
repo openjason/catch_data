@@ -27,13 +27,6 @@ import string
 import platform
 
 
-def GetDesktopPath():
-    platform_string = platform.platform()
-    logging.info(platform_string)
-    if 'Windows-7' in platform_string:
-        return os.path.join(os.path.expanduser("~"), 'Desktop')
-    if 'Windows-XP' in platform_string:
-        return os.path.join(os.path.expanduser("~"), '桌面')
 
 def set_logging(logfile_path):
     global logger
@@ -43,6 +36,17 @@ def set_logging(logfile_path):
     logger.addHandler(handler)
     formatter = logging.Formatter('%(asctime)-12s  %(message)s')
     handler.setFormatter(formatter)
+
+def GetDesktopPath():
+    platform_string = platform.platform()
+    logger.info(platform_string)
+    if 'Windows-7' in platform_string:
+        return os.path.join(os.path.expanduser("~"), 'Desktop')
+    elif 'Windows-XP' in platform_string:
+        return os.path.join(os.path.expanduser("~"), '桌面')
+    else:
+        return os.path.join(os.path.expanduser("~"), 'Desktop')
+
 
 def check_dir(work_dir, dtime, filepatten_list):
     source_dir = work_dir
@@ -95,8 +99,8 @@ if __name__ == '__main__':
     except Exception as e:
         logger.info(e)
         exit(1)
-    work_dir = GetDesktopPath()
-    check_dir(work_dir, dtime, filepatten_list)
     for im in range(len(folder_list)):
         work_dir = folder_list[im]
         check_dir(work_dir,dtime,filepatten_list)
+    work_dir = GetDesktopPath()
+    check_dir(work_dir, dtime, filepatten_list)
