@@ -1,10 +1,13 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# author:jason
+# author:jasonc
+# August,2019
+# 条码枪读取内容匹配工具：
+# 对待检测内容采样，作为匹配比对样本
+# 读取条码枪扫码结果，与样本进行匹配，正确提示，出差错提示。
+
 
 import tkinter as tk  # 使用Tkinter前需要先导入
 import tkinter.messagebox
-import pickle
 from tkinter import scrolledtext # 导入滚动文本框的模块
 import time
 import logging
@@ -13,6 +16,7 @@ import os.path
 import sys
 
 
+#设置日志文件，可循环文件大小。
 def set_logging(logfile_path):
     global logger
     logger = logging.getLogger('my_logger')
@@ -23,7 +27,7 @@ def set_logging(logfile_path):
     handler.setFormatter(formatter)
 
 
-# 第1步，实例化object，建立窗口window
+# 实例化object，建立窗口window
 window = tk.Tk()
 
 # 第2步，给窗口的可视化起名字
@@ -46,10 +50,11 @@ canvas.pack(side='top')
 canvas.place(x=700,y=5)
 #tk.Label(window, text='Wellcome', font=('Arial', 16)).pack()
 # 第5步，用户信息
-tk.Label(window, text='标准二维码内容:', font=('Arial', 14)).place(x=20, y=25)
+tk.Label(window, text='二维码检测内容:', font=('Arial', 14)).place(x=20, y=25)
 
 sampling_entry_context = ''
 sampling_entry_context_len = 2
+str_test_catch_ch = ''
 
 int_compare_count =0
 int_compare_ok =0
@@ -65,9 +70,16 @@ entry_sampling_standard.place(x=20, y=55)
 
 svar_sampling_curr = tk.StringVar()
 svar_sampling_curr.set('采样...')
-
 entry_sampling_curr = tk.Entry(window, textvariable=svar_sampling_curr, width= 64, font=('Arial', 12))
-entry_sampling_curr.place(x=20, y=140)
+entry_sampling_curr.place(x=20, y=120)
+
+svar_label_prompt = tk.StringVar()
+svar_label_prompt.set('等待扫码...')
+label_prompt = tk.Label(window, textvariable=svar_label_prompt, font=('Arial', 10))
+label_prompt.place(x=20, y=140)
+
+label_author = tk.Label(window, text='by流程与信息化部ITjc. August,2019', font=('Arial', 9))
+label_author.place(x=20, y=580)
 
 
 scr = scrolledtext.ScrolledText(window)
@@ -94,13 +106,31 @@ def barcode_check():
 
 def processKeyboardEvent(ke):
     global sampling_entry_context_len
-    str_sampling_curr =  entry_sampling_curr.get() #ke.char  # 按键对应的字符
+    global str_test_catch_ch
+    global svar_label_prompt
+
+    str_test_catch_ch = str_test_catch_ch + ke.char
+    
+    if len(str_test_catch_ch)> 0 :
+        svar_label_prompt.set('内容长度不足...等待中...')
+    #logger.info('test:'+str_test_catch_ch)
+    #str_sampling_curr =  entry_sampling_curr.get() # 按键对应的字符
     #logger.info('s_len ' + str(sampling_entry_context_len))
-    if len(str_sampling_curr) > (sampling_entry_context_len - 1) :
-        #str_sampling_curr = str_sampling_curr + ke.char
-        logger.info("chars:" + str_sampling_curr)  # 按键对应的字符
-        string_compare(str_sampling_curr)
-        entry_sampling_curr.selection_range(0,len(entry_sampling_curr.get()))
+
+#这种方式读取entry控件的方法，在按键快的时候出错，不可使用
+#    if len(str_sampling_curr) > (sampling_entry_context_len - 1) : 
+#        #str_sampling_curr = str_sampling_curr + ke.char
+#        logger.info("chars:" + str_sampling_curr)  # 按键对应的字符
+#        string_compare(str_sampling_curr)
+#        entry_sampling_curr.selection_range(0,len(entry_sampling_curr.get()))
+
+    if len(str_test_catch_ch) > (sampling_entry_context_len -1):
+        string_compare(str_test_catch_ch)
+        #entry_sampling_curr.selection_range(0,len(entry_sampling_curr.get()))
+        entry_sampling_curr.delete(0,tk.END)
+        str_test_catch_ch = ''
+        svar_label_prompt.set('等待扫码...')
+
     #else:
     #    logger.info("ch, len:" + str_sampling_curr + str(len(str_sampling_curr)))
     
@@ -126,9 +156,11 @@ def string_compare(str_curr):
         int_compare_diff = int_compare_diff +1
         #scr.insert(tk.INSERT, ': 注意：扫码内容与样本不匹配.\n')
         scr.insert(1.0, str_action_time+': 注意：扫码内容与样本不匹配.\n')
-        logger.info(str_curr + ' :注意：扫码内容与样本不匹配.')
+        logger.info(':注意：扫码内容与样本不匹配.' +str_curr )
         svar_label_checkfailed.set('二维码检测匹配失败 ' + str(int_compare_diff) + '次。')
-        
+    if int_compare_count % 4444 == 0:
+        scr.delete(444.0,tk.END)
+        logger.info('excute delete scrolledtext content.') 
 
 def get_standard_content():
     def button_caiyang():
@@ -176,10 +208,6 @@ def get_standard_content():
     button_caiyang()
 
 
-
-
-
-# 第7步，login and sign up 按钮
 btn_login = tk.Button(window, text='  二维码内容检测  ', command=barcode_check)
 btn_login.place(x=650, y=460)
 btn_sign_up = tk.Button(window, text='初始化二维码内容', command=get_standard_content)
