@@ -30,7 +30,7 @@ def set_logging(logfile_path):
 window = tk.Tk()
 
 # 给窗口的可视化起名字
-window.title('二维码内容检测工具')
+window.title('二维码内容检测工具 v19080514')
 
 # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
 sw = window.winfo_screenwidth()
@@ -134,7 +134,8 @@ def processKeyboardEvent(ke):
 #        entry_sampling_curr.selection_range(0,len(entry_sampling_curr.get()))
 
     if len(str_test_catch_ch) > (sampling_entry_context_len -1):
-        string_compare(str_test_catch_ch)
+        string_compare(entry_sampling_curr.get())
+        #string_compare(str_test_catch_ch)
         #entry_sampling_curr.selection_range(0,len(entry_sampling_curr.get()))
         entry_sampling_curr.delete(0,tk.END)
         str_test_catch_ch = ''
@@ -158,8 +159,8 @@ def string_compare(str_curr):
 
     # 一奇怪的情况，扫码结果将： 转为了 ； ，原因不明，替换，
     # 存在隐患，扫描内容含‘；’‘\’ 将出错；
-    str_curr = str_curr.replace(';',':')
-    str_curr = str_curr.replace('\\','|')
+    #str_curr = str_curr.replace(';',':')
+    #str_curr = str_curr.replace('\\','|')
 
     if sampling_entry_context == str_curr:
         print(sampling_entry_context ,str_curr)
@@ -195,7 +196,7 @@ def get_standard_content():
         sampling_entry_context_len = len(sampling_entry_context)
         svar_sampling_curr.set(sampling_entry_context_len)
         svar_sampling_curr.set('请点击二维码内容检测')
-        print(sampling_entry_context_len)
+        print(sampling_entry_context)
         window_sign_up.destroy()
 
     # 定义长在窗口上的窗口
