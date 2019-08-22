@@ -7,7 +7,7 @@ class JXCimportor:
 
     def __init__(self):
         self.customers = ['jtyh','gsnx']
-        self.sqlconn = sqlite3connect("F:\\dev\\kefu\\jinxiaocun.db3")
+        self.sqlconn = sqlite3connect("balance_jtyh.db3")
         self.sqlconn.isolation_level = None  # 这个就是事务隔离级别，默认是需要自己commit才能修改数据库，置为None则自动每次修改都提交,否则为""
 
     def xls_db(self, customer, xlsfilename):
