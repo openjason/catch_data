@@ -385,7 +385,7 @@ fuwuleixinbiaoshi,xinpianka,gongyiqueren)"
 
         #判断是否存在合同2（对账周期内存在2份合同，价格不同）
         hetong2riqi = list_price[0][7]
-        logging.info('合同二日期：' + str(hetong2riqi) +';time1: '+ time1_proc +';time2:'+ time2_proc)
+        logger.info('合同二日期：' + str(hetong2riqi) +';time1: '+ time1_proc +';time2:'+ time2_proc)
         self.scr.insert(1.0, '合同二日期：' + str(hetong2riqi) +';time1: '+ time1_proc +';time2:'+ time2_proc+ '\n')
         print('合同二日期：' , str(hetong2riqi), ';time1: '+ time1_proc +';time2:'+ time2_proc)
         if hetong2riqi > time1_proc and hetong2riqi < time2_proc:
@@ -406,7 +406,7 @@ fuwuleixinbiaoshi,xinpianka,gongyiqueren)"
                         curr_cell_price = price_from_list[4]
                         break
                 if curr_cell_price ==0 :
-                    logging.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
+                    logger.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
                     self.scr.insert(1.0,'汇总按合同1查找价格，找不到对应的价格' + str(row[0]) + '\n')
                 worksheetj.cell(row_kamian+1, col_kamian + int_index_kamian).value = curr_cell_price     #单价
                 worksheetj.cell(row_kamian+2, col_kamian + int_index_kamian).value = curr_cell_price*row[1]     #小计
@@ -441,7 +441,7 @@ fuwuleixinbiaoshi,xinpianka,gongyiqueren)"
                         curr_cell_price = price_from_list[4]
                         break
                 if curr_cell_price ==0 :
-                    logging.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
+                    logger.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
                     self.scr.insert(1.0,'汇总按合同1查找价格，找不到对应的价格' + str(row[0]) + '\n')
                 worksheetj.cell(row_kamian+1, col_kamian + int_index_kamian).value = curr_cell_price     #单价
                 worksheetj.cell(row_kamian+2, col_kamian + int_index_kamian).value = curr_cell_price*row[1]     #小计
@@ -483,7 +483,7 @@ fuwuleixinbiaoshi,xinpianka,gongyiqueren)"
                         curr_cell_price = price_from_list[4]
                         break
                 if curr_cell_price ==0 :
-                    logging.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
+                    logger.info('汇总按合同1查找价格，找不到对应的价格：' + str(row[0]))
                     self.scr.insert(1.0,'汇总按合同1查找价格，找不到对应的价格' + str(row[0]) + '\n')
                 worksheetj.cell(row_kamian+1, col_kamian + int_index_kamian).value = curr_cell_price     #单价
                 worksheetj.cell(row_kamian+2, col_kamian + int_index_kamian).value = curr_cell_price*row[1]     #小计
