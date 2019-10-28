@@ -52,7 +52,6 @@ def getjdbfile(url):
             time.sleep(10)
             md5 = GetFileMd5(fname)
             logging.info('save file: '+fname+' md5: '+md5)
-            f.close()
             logging.info(url)
             f = urllib.request.urlopen(url,timeout=60)
             pos1=url.rfind('/')
@@ -65,7 +64,7 @@ def getjdbfile(url):
             logging.info('save file: '+fname+' md5: '+md52)
             
         except:
-            logging.warning("下载cvd文件exception，retry.get " + url)
+            logging.warning("下载cvd文件exception，retry. get " + url)
         if md52 == md5:
             md5 = md5.upper()
             break
