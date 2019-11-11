@@ -48,13 +48,16 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getServiceList(blocked_list, block_child_list,sname):
     #获取具体服务对应的服务名和端口号
-    standard_service = ['ftp','ssh','ntp','http','icmp','sqlnet']
+    standard_service = ['ftp','ssh','ntp','http','icmp','sqlnet','https','telnet']
     return_service_list = []
     if sname in standard_service:
         return_service_list.append(sname)
         return return_service_list
     target_string = 'ip service-set ' + sname + ' '
     target_str_len = len(target_string)
+
+    #if sname == 'EMS服务':								排错用
+    #    a = 3
 
     for i in range(len(blocked_list)):
         tempStr_raw = blocked_list[i]
