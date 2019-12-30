@@ -44,8 +44,8 @@ class App():
         self.file_from_fuliaokucun = ''
         self.curr_month = ''
         self.initWidgets(master)
-        self.work_dir = '..\\'
-        self.savefile_dir = '..\\'
+        self.work_dir = ''
+        self.savefile_dir = ''
 
 # 按文件夹统计符合条件文件列表，逐个文件导入数据库
     def proc_folder(self, customer, work_dir):
@@ -153,6 +153,7 @@ class App():
 
         if not os_path_exists(xlsfilename):
             print("文件不存在：", xlsfilename)
+            logger.info("文件不存在："+ xlsfilename)
             return_message = messagebox.askquestion(title='提示',
                                                     message='无找到文件' + xlsfilename + '，继续？')  # return yes/no
             return (return_message)
@@ -165,17 +166,19 @@ class App():
 
         print("打开数据文件...")
         print(xlsfilename)
+        logger.info(xlsfilename)
         self.scr.insert(1.0, "打开Excel表格数据...\n")
         self.master.update()
 
         workbook = xlrd.open_workbook(xlsfilename)
         sheet_curr = workbook.sheet_by_name('空白卡')
-
+        logger.info('sheet 空白卡')
         int_sheet_nrows = sheet_curr.nrows
         int_sheet_ncols = sheet_curr.ncols
         print('sheetname & lines:', sheet_curr, int_sheet_nrows)
         str_split_string = '|&|'
         data_line_count  = 0
+
 
         # 首行日期查找
         date_position = 0
@@ -194,13 +197,13 @@ class App():
             compare_data_str = self.svar_proc_time1.get()
             if date_str == compare_data_str:
                 date_position = j
-            print(date_str)
-            print(type(date_str))
 
         if date_position == 0 :
             self.scr.insert(1.0, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
             self.master.update()
             return ('no')
+
+        txt_open_file = open(txtfilename,'w+')
 
         for i in range(int_first_row, int_sheet_nrows):
             cell_curr_value = sheet_curr.cell(i, 0).value
@@ -211,12 +214,9 @@ class App():
 
                 int_rukushuliang = 0
                 rukushuliang = '0.0'
-                for j in range(0,int_sheet_ncols-14):
-                    cell_value_rukushuliang = sheet_curr.cell(i, 14+j).value
-                    if cell_value_rukushuliang == '':
-                        break
-                    else:
-                        rukushuliang = cell_value_rukushuliang
+
+                cell_value_rukushuliang = sheet_curr.cell(i, date_position).value
+                rukushuliang = cell_value_rukushuliang
                 if isinstance(rukushuliang,float):
                     int_rukushuliang = round(rukushuliang)
 
@@ -224,91 +224,132 @@ class App():
                 if int_rukushuliang >0:
                     txt_open_file.writelines(str_merge)
                     txt_open_file.writelines('\n')
+                    data_line_count = data_line_count + 1
 
-                if int(order_id) > 0:  # testing
-                    # 插入数据
-                    data_line_count = data_line_count +1
-                    print(order_id)
-                    self.scr.insert(1.0, "shuju: " + str(str_merge) + ".\n")
+                    self.scr.insert(1.0, str(str_merge) + "\n")
                     self.master.update()
+                    logger.info(str_merge)
 
         str_merge = 'TLRL' + str_split_string + str(data_line_count) + str_split_string
         txt_open_file.writelines(str_merge)
         txt_open_file.writelines('\n')
+        logger.info(str_merge)
 
         txt_open_file.close()
         print('=' * 40)
-        #print('共导入了 ', i - int_first_row + 1, '行数据.')
-        self.scr.insert(1.0, "基础数据表（price）数据导入.." ) #+ str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(1.0, "文件输出..\n" )
+        self.scr.insert(1.0, txtfilename + '\n' )
         self.master.update()
+
 
     # 辅料出库反馈文件处理：
     def fuliao_chuku_file_proc(self, txtfilename, xlsfilename):
 
         if not os_path_exists(xlsfilename):
             print("文件不存在：", xlsfilename)
+            logger.info("文件不存在：" + xlsfilename)
             return_message = messagebox.askquestion(title='提示',
                                                     message='无找到文件' + xlsfilename + '，继续？')  # return yes/no
             return (return_message)
 
         txtfilename = os.path.join(self.savefile_dir,txtfilename)
-        txt_open_file = open(txtfilename,'w+')
 
         int_first_row = 2
         # day_column_start = 7  # 日数据开始位置
 
-        print("清空原有对账价格基础表（price）数据...")
         print(xlsfilename)
-        self.scr.insert(1.0, "清空原有对账价格基础表（price）数据...\n")
+        logger.info(xlsfilename)
+        self.scr.insert(1.0, "开始读取数据...   "+xlsfilename+"\n")
         self.master.update()
 
+        str_proc_date = self.svar_proc_time1.get()
+        if str_proc_date[4] == '1':
+            str_proc_date_month = str_proc_date[:4]+'.'+str_proc_date[4:6]
+        else:
+            str_proc_date_month = str_proc_date[:4] + '.' + str_proc_date[5:6]
+
         workbook = xlrd.open_workbook(xlsfilename)
-        sheet_curr = workbook.sheet_by_name('2019.11')
+        try:
+            sheet_curr = workbook.sheet_by_name(str_proc_date_month)
+            logger.info('打开表格sheet: ' + str_proc_date_month)
+            self.scr.insert(1.0, ('打开表格sheet : ' + str_proc_date_month) + "\n")
+        except:
+            logger.info('无法打开表格sheet: ' + str_proc_date_month)
+            self.scr.insert(1.0, ('无法打开表格sheet : ' + str_proc_date_month) + "\n")
+            self.scr.update()
+            return 'can not open sheet.'
 
         int_sheet_nrows = sheet_curr.nrows
         int_sheet_ncols = sheet_curr.ncols
         print('sheetname & lines:', sheet_curr, int_sheet_nrows)
+        logger.info('sheetname & lines:')
+        logger.info(str_proc_date_month)
+        logger.info(int_sheet_nrows)
         str_split_string = '|&|'
         data_line_count  = 0
+
+        # 首行日期查找
+        date_position = 0
+        for j in range(15, int_sheet_ncols,3): #步长为3
+            cell_value_rukuriqi = sheet_curr.cell(0, j).value
+            xls_date = xldate_as_tuple(cell_value_rukuriqi, 0)
+            date_str = str(xls_date[0])
+            if xls_date[1] < 10:
+                date_str = date_str + '0' + str(xls_date[1])
+            else:
+                date_str = date_str + str(xls_date[1])
+            if xls_date[2] < 10:
+                date_str = date_str + '0' + str(xls_date[2])
+            else:
+                date_str = date_str + str(xls_date[2])
+            compare_data_str = self.svar_proc_time1.get()
+            if date_str == compare_data_str:
+                date_position = j
+
+        if date_position == 0 :
+            self.scr.insert(1.0, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
+            self.master.update()
+            return ('no')
+
+        txt_open_file = open(txtfilename,'w+')
+
         for i in range(int_first_row, int_sheet_nrows):
-            cell_curr_value = sheet_curr.cell(i, 0).value
-            # print('i: ',i)
+            cell_curr_value = sheet_curr.cell(i, 1).value
             if True:  # not isinstance(cell_curr_value,str):         #判断数据是否最后一行
                 yinhang_fuliaobianhao = sheet_curr.cell(i, 2).value #'银行辅料编号'
                 fuliaobianhao = sheet_curr.cell(i, 1).value
+                dangqiankucun = sheet_curr.cell(i, 14).value #现库存量（仓库+车间库存数）
 
-                int_rukushuliang = 0
-                rukushuliang = '0.0'
-                for j in range(0,int_sheet_ncols-14):
-                    cell_value_rukushuliang = sheet_curr.cell(i, 14+j).value
-                    if cell_value_rukushuliang == '':
-                        break
-                    else:
-                        rukushuliang = cell_value_rukushuliang
-                if isinstance(rukushuliang,float):
-                    int_rukushuliang = round(rukushuliang)
+                if isinstance(dangqiankucun,float):
+                    int_dangqiankucun = round(dangqiankucun)
 
-                str_merge = 'DATA' + str_split_string + yinhang_fuliaobianhao + str_split_string + fuliaobianhao + str_split_string + str(int_rukushuliang) +str_split_string
-                if int_rukushuliang >0:
+
+                chejianmeirichukuliang = sheet_curr.cell(i, date_position+2).value #数值在右移 2 位
+                chejianmeirichukuliang = chejianmeirichukuliang
+                if isinstance(chejianmeirichukuliang,float):
+                    int_chejianmeirichukuliang = round(chejianmeirichukuliang)
+
+                str_merge = 'DATA' + str_split_string + yinhang_fuliaobianhao + str_split_string + fuliaobianhao + str_split_string + str(int_chejianmeirichukuliang) +str_split_string
+                str_merge = str_merge + str(int_dangqiankucun) + str_split_string
+                if int_chejianmeirichukuliang >0 and len(yinhang_fuliaobianhao) > 0:
                     txt_open_file.writelines(str_merge)
                     txt_open_file.writelines('\n')
 
-                if len(yinhang_fuliaobianhao) > 0:  # testing
-                    # 插入数据
                     data_line_count = data_line_count +1
-                    self.scr.insert(1.0, "shuju: " + str(str_merge) + ".\n")
+                    self.scr.insert(1.0, str(str_merge) + "\n")
+                    logger.info(str_merge)
                     self.master.update()
 
         str_merge = 'TLRL' + str_split_string + str(data_line_count) + str_split_string
+        logger.info(str_merge)
         txt_open_file.writelines(str_merge)
         txt_open_file.writelines('\n')
+        self.scr.insert(1.0, str_merge)
 
         txt_open_file.close()
-        print('=' * 40)
-        #print('共导入了 ', i - int_first_row + 1, '行数据.')
-        self.scr.insert(1.0, "基础数据表（price）数据导入.." ) #+ str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(1.0, "\n数据已写入文件...\n" )
+        self.scr.insert(1.0, txtfilename + '\n' )
         self.master.update()
-
 
     #按字符查找符合条件文件名，返回文件列表
     def find_filename(self, curr_path, curr_filename_path):
@@ -329,8 +370,6 @@ class App():
             return (None)
 
     # 从数据库导出价格（基础表），返回含价格信息列表
-
-
     def excel_cell_rowcell_to_position(self,int_row,int_column):
         if int_row < 26:
             str_excel_cell_pos = chr(64+int_row)
@@ -345,14 +384,13 @@ class App():
         cp = ConfigParser()
         cp.read('配置文件.ini', encoding='gbk')
         str_kehu_name = cp.get('客户', '客户名称')
-        work_dir = '..\\'
 
         try:
             self.customer_sname = cp.get('客户', 'sname')
             self.file_from_fuliaokucun = cp.get(str_kehu_name, '辅料库存表')
             #self.Holiday = cp.get(str_kehu_name, '节假日')
             self.file_from_dingdangenzong = cp.get(str_kehu_name, '订单跟踪表')
-            #self.file_from_youjiqingdan = cp.get(str_kehu_name, '邮寄清单')
+            self.work_dir = cp.get(str_kehu_name, '工作目录')
             #self.file_from_fuliaokucun = cp.get(str_kehu_name, '辅料库存表')
         except Exception as err_message:
             print(err_message)
@@ -378,18 +416,10 @@ class App():
         entry_proc_time1 = Entry(fm1, textvariable=self.svar_proc_time1, width=20, font=('Arial', 12))
         entry_proc_time1.place(x=240, y=55)
 
-#        label_proc_time = Label(fm1, text='-', font=('Arial', 12))
-#        label_proc_time.place(x=420, y=55)
-
-#        self.svar_proc_time2.set('20190630')
-#        entry_proc_time2 = Entry(fm1, textvariable=self.svar_proc_time2, width=12, font=('Arial', 12))
-#        entry_proc_time2.place(x=440, y=55)
-
-
         label_dingdangenzong_filename = Label(fm1, text='订单跟踪表：', font=('Arial', 12))
         label_dingdangenzong_filename.place(x=620, y=30)
 
-        str_temp_find_filename = self.find_filename(work_dir,self.file_from_dingdangenzong)
+        str_temp_find_filename = self.find_filename(self.work_dir,self.file_from_dingdangenzong)
         if str_temp_find_filename == None:
             self.svar_dingdanggenzong_filename.set('没有找到文件'+self.file_from_dingdangenzong)
         else:
@@ -402,7 +432,7 @@ class App():
         label_fuliaokucun_filename = Label(fm1, text='辅料库存表：', font=('Arial', 12))
         label_fuliaokucun_filename.place(x=620, y=100)
 
-        str_temp_find_filename = self.find_filename(work_dir,self.file_from_fuliaokucun)
+        str_temp_find_filename = self.find_filename(self.work_dir,self.file_from_fuliaokucun)
         if str_temp_find_filename == None:
             self.svar_fuliaokucun_filename.set('没有找到文件'+self.file_from_dingdangenzong)
         else:
@@ -415,7 +445,7 @@ class App():
         svar_label_prompt.set('客户名称：')
 
         label_author = Label(fm1, text='by流程与信息化部IT. Dec,2019', font=('Arial', 9))
-        label_author.place(x=820, y=770)
+        label_author.place(x=820, y=740)
 
         self.scr = scrolledtext.ScrolledText(fm1, width=80, height=48)
         self.scr.place(x=20, y=100)
@@ -450,14 +480,15 @@ class App():
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         str_ru_filename = '01_'+str_temp_last_datetime + '_frrsp.txt'
 
-        if self.fuliaoruku_file_proc(str_ru_filename, self.file_from_dingdangenzong) == 'no':
-            return (1)
-
-        #work_dir = '..\\'
-        #self.proc_folder(self.customer_sname, work_dir)
-        #甘肃农信有多个文件夹、多个文件excel需导入到数据库，使用处理文件夹方式导入明细数据
-
-        #self.db_xls(self.customer_sname, 'gsnxxykdz.xlsx')
+        try:
+            if self.fuliaoruku_file_proc(str_ru_filename, self.file_from_dingdangenzong) == 'no':
+                return (1)
+        except Exception as err_message:
+            print(err_message)
+            self.scr.insert(1.0, err_message )
+            self.scr.update()
+            logger.error(err_message.__str__())
+            logger.exception(sys.exc_info())
 
         label_tips1_filename = Label(self.master, text='完成...                     ', font=('Arial', 12))
         label_tips1_filename.place(x=620, y=430)
@@ -476,14 +507,19 @@ class App():
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         str_chu_filename = '01_' + str_temp_last_datetime + '_fs.txt'
 
-        if self.fuliao_chuku_file_proc(str_chu_filename, self.file_from_fuliaokucun) == 'no':
-            return (1)
+        try:
+            if self.fuliao_chuku_file_proc(str_chu_filename, self.file_from_fuliaokucun) == 'no':
+                return (1)
+        except Exception as err_message:
+            print(err_message)
+            self.scr.insert(1.0, err_message)
+            self.scr.update()
+            logger.error(err_message.__str__())
+            logger.exception(sys.exc_info())
 
         label_tips1_filename = Label(self.master, text='完成...                     ', font=('Arial', 12))
         label_tips1_filename.place(x=620, y=430)
-
         return 0
-
 
 if __name__ == '__main__':
 
@@ -496,7 +532,7 @@ if __name__ == '__main__':
     sw = main_window.winfo_screenwidth()
     sh = main_window.winfo_screenheight()
     ww = 1024
-    wh = 800
+    wh = 770
     x = (sw - ww) / 2
     y = (sh - wh) / 2
     main_window.geometry("%dx%d+%d+%d" % (ww, wh, x, y))  # 这里的乘是小x
