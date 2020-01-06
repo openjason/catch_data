@@ -171,8 +171,8 @@ class App():
         self.master.update()
 
         workbook = xlrd.open_workbook(xlsfilename)
-        sheet_curr = workbook.sheet_by_name('空白卡')
-        logger.info('sheet 空白卡')
+        sheet_curr = workbook.sheet_by_name('辅料')
+        logger.info('sheet 辅料')
         int_sheet_nrows = sheet_curr.nrows
         int_sheet_ncols = sheet_curr.ncols
         print('sheetname & lines:', sheet_curr, int_sheet_nrows)
@@ -182,7 +182,7 @@ class App():
 
         # 首行日期查找
         date_position = 0
-        for j in range(14, int_sheet_ncols ):
+        for j in range(12, int_sheet_ncols ):
             cell_value_rukuriqi = sheet_curr.cell(0, j).value
             xls_date = xldate_as_tuple(cell_value_rukuriqi, 0)
             date_str = str(xls_date[0])
@@ -210,7 +210,7 @@ class App():
             # print('i: ',i)
             if True:  # not isinstance(cell_curr_value,str):         #判断数据是否最后一行
                 order_id = sheet_curr.cell(i, 0).value
-                waibaoshangkucunbianhao = sheet_curr.cell(i, 1).value
+                waibaoshangkucunbianhao = sheet_curr.cell(i, 2).value
 
                 int_rukushuliang = 0
                 rukushuliang = '0.0'
@@ -218,7 +218,16 @@ class App():
                 cell_value_rukushuliang = sheet_curr.cell(i, date_position).value
                 rukushuliang = cell_value_rukushuliang
                 if isinstance(rukushuliang,float):
-                    int_rukushuliang = round(rukushuliang)
+                    if round(rukushuliang*100) == round(rukushuliang) * 100 :
+                        int_rukushuliang = round(rukushuliang)
+                    else:
+                        self.scr.insert(1.0, '包含小数，请注意。。。' + "\n")
+                if isinstance(rukushuliang,str):
+                    if rukushuliang.isdigit():
+                        int_rukushuliang = int(rukushuliang)
+                    else:
+                        int_rukushuliang = 0
+
 
                 str_merge = 'DATA' + str_split_string + order_id + str_split_string + waibaoshangkucunbianhao + str_split_string + str(int_rukushuliang) + str_split_string
                 if int_rukushuliang >0:
@@ -451,14 +460,14 @@ class App():
         self.scr.place(x=20, y=100)
 
         btn_barcode_init = Button(fm1, text='入库反馈文件', command=self.command_btn_run_ruku)
-        btn_barcode_init.place(x=620, y=200)
+        btn_barcode_init.place(x=620, y=240)
 
         btn_barcode_init = Button(fm1, text='出库反馈文件', command=self.command_btn_run_chuku)
         btn_barcode_init.place(x=620, y=300)
 
 
         btn_barcode_init = Button(fm1, text=' 退  出 ', command=self.command_btn_exit)
-        btn_barcode_init.place(x=620, y=500)
+        btn_barcode_init.place(x=620, y=420)
 
     # 退出键
     def command_btn_exit(self):
@@ -470,7 +479,7 @@ class App():
         self.scr.delete(1.0,END)
 
         label_tips1_filename = Label(self.master, text='读取订单跟踪表... ', font=('Arial', 12))
-        label_tips1_filename.place(x=620, y=430)
+        label_tips1_filename.place(x=620, y=530)
 
         self.file_from_dingdangenzong = self.svar_dingdanggenzong_filename.get()
         self.file_from_fuliaokucun = self.svar_fuliaokucun_filename.get()
@@ -491,15 +500,15 @@ class App():
             logger.exception(sys.exc_info())
 
         label_tips1_filename = Label(self.master, text='完成...                     ', font=('Arial', 12))
-        label_tips1_filename.place(x=620, y=430)
+        label_tips1_filename.place(x=620, y=530)
 
         return 0
 
     def command_btn_run_chuku(self):
 
         self.scr.delete(1.0,END)
-        label_tips1_filename = Label(self.master, text='读取订单跟踪表... ', font=('Arial', 12))
-        label_tips1_filename.place(x=620, y=430)
+        label_tips1_filename = Label(self.master, text='读取辅料库存表... ', font=('Arial', 12))
+        label_tips1_filename.place(x=620, y=530)
         self.file_from_dingdangenzong = self.svar_dingdanggenzong_filename.get()
         self.file_from_fuliaokucun = self.svar_fuliaokucun_filename.get()
         str_timestamp = self.svar_proc_time1.get()
@@ -518,7 +527,7 @@ class App():
             logger.exception(sys.exc_info())
 
         label_tips1_filename = Label(self.master, text='完成...                     ', font=('Arial', 12))
-        label_tips1_filename.place(x=620, y=430)
+        label_tips1_filename.place(x=620, y=530)
         return 0
 
 if __name__ == '__main__':
@@ -526,7 +535,7 @@ if __name__ == '__main__':
     set_logging()
 
     main_window = Tk()
-    main_window.title('光大制卡业务库存反馈文件生成工具 v.1912271059')
+    main_window.title('光大制卡业务库存反馈文件生成工具 v.2001031701')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
