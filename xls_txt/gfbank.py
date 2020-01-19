@@ -3,6 +3,7 @@
 功能：广发制卡业务库存反馈文件自动生成工具。
 '''
 from tkinter import *
+#import tkinter
 from configparser import ConfigParser
 from tkinter import messagebox,scrolledtext,Canvas,PhotoImage,Label,StringVar,Entry, Button,END, DISABLED, Toplevel  # 导入滚动文本框的模块
 from os.path import exists as os_path_exists
@@ -270,16 +271,15 @@ class App():
                     worksheetj.cell(i+2,6).value = shangyuechejianjiecun + mxb_jiecunshuliang
 
 
-
             # d)“上月发出总量”=T - 1月物料进销存日报的“本月发出总数”。
-            xlsfilename = '广发银行物料进销存日报.xlsx'
+            xlsfilename = '广发银行物料进销存日报'+curr_proc_time_last_str+'.xlsx'
             if not os_path_exists(xlsfilename):
                 print("文件不存在：", xlsfilename)
                 logger.info("文件不存在："+ xlsfilename + '\n')
-                self.scr.insert("文件不存在：" + xlsfilename)
+                self.scr.insert(1.0,"文件不存在：" + xlsfilename+'\n')
                 self.scr.update()
                 return (return_message)
-
+            l
             workbook = xlrd.open_workbook(xlsfilename)
             sheet_curr = workbook.sheet_by_index(0)
 
@@ -335,9 +335,8 @@ class App():
         # 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算7天的“订单使用（不含更新卡）”之和除以7。
         # h)“截止T月MM日库存量”=同一物料代码“物料进销存日报”的“库存总数”。
 
-
-
-        workbook.save('物料进销存日报表'+self.svar_proc_time1.get()+'.xlsx')
+        temp_proc_time1 = self.svar_proc_time1.get()
+        workbook.save('物料进销存日报表'+temp_proc_time1[:6]+'.xlsx')
 
         print('=' * 40)
         self.scr.insert(1.0, "文件输出..\n" )
@@ -392,21 +391,21 @@ class App():
 
         # 首行日期查找
         date_position = 0
-        for j in range(15, int_sheet_ncols,3): #步长为3
-            cell_value_rukuriqi = sheet_curr.cell(0, j).value
-            xls_date = xldate_as_tuple(cell_value_rukuriqi, 0)
-            date_str = str(xls_date[0])
-            if xls_date[1] < 10:
-                date_str = date_str + '0' + str(xls_date[1])
-            else:
-                date_str = date_str + str(xls_date[1])
-            if xls_date[2] < 10:
-                date_str = date_str + '0' + str(xls_date[2])
-            else:
-                date_str = date_str + str(xls_date[2])
-            compare_data_str = self.svar_proc_time1.get()
-            if date_str == compare_data_str:
-                date_position = j
+        # for j in range(15, int_sheet_ncols,3): #步长为3
+        #     cell_value_rukuriqi = sheet_curr.cell(0, j).value
+        #     xls_date = xldate_as_tuple(cell_value_rukuriqi, 0)
+        #     date_str = str(xls_date[0])
+        #     if xls_date[1] < 10:
+        #         date_str = date_str + '0' + str(xls_date[1])
+        #     else:
+        #         date_str = date_str + str(xls_date[1])
+        #     if xls_date[2] < 10:
+        #         date_str = date_str + '0' + str(xls_date[2])
+        #     else:
+        #         date_str = date_str + str(xls_date[2])
+        #     compare_data_str = self.svar_proc_time1.get()
+        #     if date_str == compare_data_str:
+        #         date_position = j
 
         if date_position == 0 :
             self.scr.insert(1.0, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
