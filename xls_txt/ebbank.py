@@ -26,7 +26,6 @@ def set_logging():
 #定义类，脚本主要更能
 class App():
     def __init__(self, master):
-
         self.svar_proc_time1 = StringVar()
         self.svar_dingdanggenzong_filename = StringVar()
         self.svar_kehumingcheng = StringVar()
@@ -34,7 +33,6 @@ class App():
         self.svar_youjiqingdan_filename = StringVar()
         self.svar_fuliaokucun_filename = StringVar()
         self.svar_label_prompt = StringVar()
-    # 脚本指定数据库名称sqlite3("db_dz.db3")
         self.master = master
         self.customer_sname = ''
         self.Holiday = []
@@ -46,6 +44,7 @@ class App():
         self.initWidgets(master)
         self.work_dir = ''
         self.savefile_dir = ''
+        #程序是修改的，有部分变量没有用上
 
 # 按文件夹统计符合条件文件列表，逐个文件导入数据库
     def proc_folder(self, customer, work_dir):
@@ -74,7 +73,7 @@ class App():
 
             print("清空原有对账价格基础表（price）数据...")
             print(xlsfilename)
-            self.scr.insert(1.0, "清空原有对账价格基础表（price）数据...\n")
+            self.scr.insert(END, "清空原有对账价格基础表（price）数据...\n")
             self.master.update()
 
             workbook = xlrd.open_workbook(xlsfilename)
@@ -139,18 +138,17 @@ class App():
                     if int(priceid) > 0:  # testing
                         # 插入数据
                         print(kapianmingcheng)
-                        self.scr.insert(1.0, "基础数据表（price）数据导入: " + str(kapianmingcheng) + ".\n")
+                        self.scr.insert(END, "基础数据表（price）数据导入: " + str(kapianmingcheng) + ".\n")
                         self.master.update()
 
             print('=' * 40)
             print('共导入了 ', i - int_first_row + 1, '行数据.')
-            self.scr.insert(1.0, "基础数据表（price）数据导入.." + str(i - int_first_row + 1) + "行数据..\n")
+            self.scr.insert(END, "基础数据表（price）数据导入.." + str(i - int_first_row + 1) + "行数据..\n")
             self.master.update()
 
 
     # 辅料入库反馈文件处理
     def fuliaoruku_file_proc(self, txtfilename, xlsfilename):
-
         if not os_path_exists(xlsfilename):
             print("文件不存在：", xlsfilename)
             logger.info("文件不存在："+ xlsfilename)
@@ -159,7 +157,7 @@ class App():
             return (return_message)
 
         txtfilename = os.path.join(self.savefile_dir,txtfilename)
-        txt_open_file = open(txtfilename,'w+')
+        #txt_open_file = open(txtfilename,'w+')
 
         int_first_row = 2
         # day_column_start = 7  # 日数据开始位置
@@ -167,7 +165,7 @@ class App():
         print("打开数据文件...")
         print(xlsfilename)
         logger.info(xlsfilename)
-        self.scr.insert(1.0, "打开Excel表格数据...\n")
+        self.scr.insert(END, "打开Excel表格数据...\n")
         self.master.update()
 
         workbook = xlrd.open_workbook(xlsfilename)
@@ -199,7 +197,7 @@ class App():
                 date_position = j
 
         if date_position == 0 :
-            self.scr.insert(1.0, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
+            self.scr.insert(END, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
             self.master.update()
             return ('no')
 
@@ -221,21 +219,20 @@ class App():
                     if round(rukushuliang*100) == round(rukushuliang) * 100 :
                         int_rukushuliang = round(rukushuliang)
                     else:
-                        self.scr.insert(1.0, '包含小数，请注意。。。' + "\n")
+                        self.scr.insert(END, '包含小数，请注意。。。' + "\n")
                 if isinstance(rukushuliang,str):
                     if rukushuliang.isdigit():
                         int_rukushuliang = int(rukushuliang)
                     else:
                         int_rukushuliang = 0
 
-
-                str_merge = 'DATA' + str_split_string + order_id + str_split_string + waibaoshangkucunbianhao + str_split_string + str(int_rukushuliang) + str_split_string
+                str_merge = 'DATA' + str_split_string + order_id + str_split_string + str(int_rukushuliang) + str_split_string + waibaoshangkucunbianhao + str_split_string
                 if int_rukushuliang >0:
                     txt_open_file.writelines(str_merge)
                     txt_open_file.writelines('\n')
                     data_line_count = data_line_count + 1
 
-                    self.scr.insert(1.0, str(str_merge) + "\n")
+                    self.scr.insert(END, str(str_merge) + "\n")
                     self.master.update()
                     logger.info(str_merge)
 
@@ -246,10 +243,9 @@ class App():
 
         txt_open_file.close()
         print('=' * 40)
-        self.scr.insert(1.0, "文件输出..\n" )
-        self.scr.insert(1.0, txtfilename + '\n' )
+        self.scr.insert(END, "文件输出..\n" )
+        self.scr.insert(END, txtfilename + '\n' )
         self.master.update()
-
 
     # 辅料出库反馈文件处理：
     def fuliao_chuku_file_proc(self, txtfilename, xlsfilename):
@@ -268,7 +264,7 @@ class App():
 
         print(xlsfilename)
         logger.info(xlsfilename)
-        self.scr.insert(1.0, "开始读取数据...   "+xlsfilename+"\n")
+        self.scr.insert(END, "开始读取数据...   "+xlsfilename+"\n")
         self.master.update()
 
         str_proc_date = self.svar_proc_time1.get()
@@ -281,10 +277,10 @@ class App():
         try:
             sheet_curr = workbook.sheet_by_name(str_proc_date_month)
             logger.info('打开表格sheet: ' + str_proc_date_month)
-            self.scr.insert(1.0, ('打开表格sheet : ' + str_proc_date_month) + "\n")
+            self.scr.insert(END, ('打开表格sheet : ' + str_proc_date_month) + "\n")
         except:
             logger.info('无法打开表格sheet: ' + str_proc_date_month)
-            self.scr.insert(1.0, ('无法打开表格sheet : ' + str_proc_date_month) + "\n")
+            self.scr.insert(END, ('无法打开表格sheet : ' + str_proc_date_month) + "\n")
             self.scr.update()
             return 'can not open sheet.'
 
@@ -316,15 +312,18 @@ class App():
                 date_position = j
 
         if date_position == 0 :
-            self.scr.insert(1.0, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
+            self.scr.insert(END, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
             self.master.update()
             return ('no')
 
         txt_open_file = open(txtfilename,'w+')
 
         for i in range(int_first_row, int_sheet_nrows):
-            cell_curr_value = sheet_curr.cell(i, 1).value
-            if True:  # not isinstance(cell_curr_value,str):         #判断数据是否最后一行
+            cell_curr_value = sheet_curr.cell(i, 0).value
+            logger.info(cell_curr_value)
+            #int_chejianmeirichukuliang = 0
+            #if True:  # not isinstance(cell_curr_value,str):         #判断数据是否最后一行
+            if len(str(cell_curr_value)) > 0:  # not isinstance(cell_curr_value,str):         #判断数据是否最后一行
                 yinhang_fuliaobianhao = sheet_curr.cell(i, 2).value #'银行辅料编号'
                 fuliaobianhao = sheet_curr.cell(i, 1).value
                 dangqiankucun = sheet_curr.cell(i, 14).value #现库存量（仓库+车间库存数）
@@ -332,33 +331,39 @@ class App():
                 if isinstance(dangqiankucun,float):
                     int_dangqiankucun = round(dangqiankucun)
 
-
                 chejianmeirichukuliang = sheet_curr.cell(i, date_position+2).value #数值在右移 2 位
                 chejianmeirichukuliang = chejianmeirichukuliang
                 if isinstance(chejianmeirichukuliang,float):
                     int_chejianmeirichukuliang = round(chejianmeirichukuliang)
-
+                else:
+                    int_chejianmeirichukuliang = 0
                 str_merge = 'DATA' + str_split_string + yinhang_fuliaobianhao + str_split_string + fuliaobianhao + str_split_string + str(int_chejianmeirichukuliang) +str_split_string
                 str_merge = str_merge + str(int_dangqiankucun) + str_split_string
-                if int_chejianmeirichukuliang >0 and len(yinhang_fuliaobianhao) > 0:
+                #if int_chejianmeirichukuliang >0 and len(fuliaobianhao) > 0:
+                if int_chejianmeirichukuliang >0:
                     txt_open_file.writelines(str_merge)
                     txt_open_file.writelines('\n')
 
                     data_line_count = data_line_count +1
-                    self.scr.insert(1.0, str(str_merge) + "\n")
+                    self.scr.insert(END, str(str_merge) + "\n")
                     logger.info(str_merge)
                     self.master.update()
 
-        str_merge = 'TLRL' + str_split_string + str(data_line_count) + str_split_string
-        logger.info(str_merge)
-        txt_open_file.writelines(str_merge)
-        txt_open_file.writelines('\n')
-        self.scr.insert(1.0, str_merge)
+        if data_line_count <1 :
+            self.scr.insert(END, "\n注意： 0 条数据数据写入文件...\n" )
+            self.scr.insert(END, txtfilename + '\n' )
+            self.master.update()
+        else:
+            str_merge = 'TLRL' + str_split_string + str(data_line_count) + str_split_string
+            logger.info(str_merge)
+            txt_open_file.writelines(str_merge)
+            txt_open_file.writelines('\n')
+            self.scr.insert(END, str_merge)
 
         txt_open_file.close()
-        self.scr.insert(1.0, "\n数据已写入文件...\n" )
-        self.scr.insert(1.0, txtfilename + '\n' )
-        self.master.update()
+        self.scr.insert(END, "\n数据已写入文件...\n" )
+        self.scr.insert(END, txtfilename + '\n' )
+        self.scr.update()
 
     #按字符查找符合条件文件名，返回文件列表
     def find_filename(self, curr_path, curr_filename_path):
@@ -487,14 +492,14 @@ class App():
         str_timestamp = self.svar_proc_time1.get()
 
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-        str_ru_filename = '01_'+str_temp_last_datetime + '_frrsp.txt'
+        str_ru_filename = '02_'+str_temp_last_datetime + '_frrsp.txt'
 
         try:
             if self.fuliaoruku_file_proc(str_ru_filename, self.file_from_dingdangenzong) == 'no':
                 return (1)
         except Exception as err_message:
             print(err_message)
-            self.scr.insert(1.0, err_message )
+            self.scr.insert(END, err_message )
             self.scr.update()
             logger.error(err_message.__str__())
             logger.exception(sys.exc_info())
@@ -514,14 +519,14 @@ class App():
         str_timestamp = self.svar_proc_time1.get()
 
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-        str_chu_filename = '01_' + str_temp_last_datetime + '_fs.txt'
+        str_chu_filename = '02_' + str_temp_last_datetime + '_fs.txt'
 
         try:
             if self.fuliao_chuku_file_proc(str_chu_filename, self.file_from_fuliaokucun) == 'no':
                 return (1)
         except Exception as err_message:
             print(err_message)
-            self.scr.insert(1.0, err_message)
+            self.scr.insert(END, err_message)
             self.scr.update()
             logger.error(err_message.__str__())
             logger.exception(sys.exc_info())
@@ -535,7 +540,7 @@ if __name__ == '__main__':
     set_logging()
 
     main_window = Tk()
-    main_window.title('光大制卡业务库存反馈文件生成工具 v.2001031701')
+    main_window.title('光大制卡业务库存反馈文件生成工具 v.2001191026')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
