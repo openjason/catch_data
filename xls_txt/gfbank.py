@@ -117,7 +117,6 @@ class App():
 
         logger.info('sheet 广发')
         int_sheet_nrows = sheet_curr.nrows
-        int_sheet_ncols = sheet_curr.ncols
         print('sheetname & lines:', sheet_curr, int_sheet_nrows)
 
         self.scr.insert(END,"\n")
@@ -150,7 +149,6 @@ class App():
 
             logger.info('sheet 广发')
             int_sheet_nrows = sheet_curr.nrows
-            int_sheet_ncols = sheet_curr.ncols
             print('sheetname & lines:', sheet_curr, int_sheet_nrows)
 
             shiyongqingkuang_int_first_row = 3
@@ -239,6 +237,9 @@ class App():
             month_range = monthrange(xls_date.year, xls_date.month)
             logger.info(str(month_range))
 
+            self.scr.insert(END,'复制ABCDE. ')
+            self.scr.update()
+
             for j in range(0,5):
                 logger.info('复制ABCDE：')
                 logger.info(i)
@@ -246,25 +247,64 @@ class App():
                 logger.info(sheet_curr_from.cell(i, j).value)
                 worksheetj.cell(i+2,j+1).value = sheet_curr_from.cell(i, j).value
 
+        # i)“出库数量”=同一时间日期、同一物料代码的物料使用情况记录表的“订单使用”+“订单使用（不含更新卡）”+“消耗”。
+            day_curr_proc_time_str = curr_proc_time_str[6:8]
+            for j in range(int(day_curr_proc_time_str)):
+                data_date = sheet_curr.cell(1,j*4+7).value
+                #print(data_date)
+                xls_date = xlrd.xldate_as_datetime(data_date,0)
+                if i == int_first_row:              #显示一行日期数据
+                    print(xls_date)
+
+                try:
+                    cell_value_temp = sheet_curr.cell(i, j * 4 + 7).value
+                except:
+                    logging.info('明细数据格式错, excel位置：')
+                    logging.info(i)
+                    logging.info(j)
+                cell_value_ruku = cell_value_temp
+
+                try:
+                    cell_value_temp = sheet_curr.cell(i, j * 4 + 7+1).value
+                except:
+                    logging.info('明细数据格式错, excel位置：')
+                    logging.info(i)
+                    logging.info(j)
+                cell_value_dingdanshiyong = cell_value_temp
+
+                try:
+                    cell_value_temp = sheet_curr.cell(i, j * 4 + 7+2).value
+                except:
+                    logging.info('明细数据格式错, excel位置：')
+                    logging.info(i)
+                    logging.info(j)
+                cell_value_buhangengxinka = cell_value_temp
+
+                try:
+                    cell_value_temp = sheet_curr.cell(i, j * 4 + 7+3).value
+                except:
+                    logging.info('明细数据格式错, excel位置：')
+                    logging.info(i)
+                    logging.info(j)
+                cell_value_xiaohao = cell_value_temp
+
+                worksheetj.cell(i+2,j * 2 +20).value = cell_value_dingdanshiyong + cell_value_buhangengxinka + cell_value_xiaohao
+
         # b)“上月仓库结存”=同一物料代码的使用情况记录表的“上月车间结存量”+物料出入库明细表的“结存数量”。
             wuliaodaima_fromexcel = sheet_curr_from.cell(i, 2).value
             shangyuechejianjiecun = sheet_curr_from.cell(i, 6).value
             logger.info(wuliaodaima_fromexcel)
             for k in range(len(wuliaochurukumxb_list)):
                 mxb_jiecunshuliang_match = 0
-                temp_compare = wuliaochurukumxb_list[k][0]
-                if wuliaodaima_fromexcel == temp_compare:
-                    mxb_jiecunshuliang_match = 1
-                    mxb_jiecunshuliang = wuliaochurukumxb_list[k][1]
-                    break
-                else:
-                    mxb_jiecunshuliang = 0
-            if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
-                self.scr.insert(END,wuliaodaima_fromexcel)
-                self.scr.update()
-            else:
+                #temp_compare = wuliaochurukumxb_list[k][0]
+                mxb_jiecunshuliang = wuliaochurukumxb_list[k][1]
+
                 worksheetj.cell(i+2,6).value = shangyuechejianjiecun + mxb_jiecunshuliang
+            self.scr.insert(END,'物料明细表_物料：')
+            self.scr.insert(END,wuliaodaima_fromexcel)
+            self.scr.insert(END,'\n')
+
+            self.scr.update()
 
         # c)“上月余下订单数”、“本月订单数”、“未入库数量”无需处理，由客服填写。
         # d)“上月发出总量”=T - 1月物料进销存日报的“本月发出总数”。
@@ -300,19 +340,9 @@ class App():
             for k in range(len(wuliaochurukumxb_list)):
                 mxb_jiecunshuliang_match = 0
                 temp_compare = wuliaochurukumxb_list[k][0]
-                if wuliaodaima_fromexcel == temp_compare:
-                    mxb_jiecunshuliang_match = 1
-                    mxb_jiecunshuliang = wuliaochurukumxb_list[k][1]
-                    break
-                else:
-                    mxb_jiecunshuliang = 0
-            if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
-                self.scr.insert(END,wuliaodaima_fromexcel)
-                self.scr.update()
-            else:
                 worksheetj.cell(k+5,13).value = shangyue_benyuefachuzongshu   #上月数据，保存到本月文件
                 logger.info("写入上月发出总数: " + str(shangyue_benyuefachuzongshu))
+
             self.scr.insert(END,'上月发出总数...\n')
             self.scr.update()
 
@@ -361,7 +391,7 @@ class App():
                 mxb_jiecunshuliang_match = 0
                 temp_compare = wuliaoshiyong_grid_buhangengxinka[k][0]
                 if wuliaodaima_fromexcel == temp_compare:
-                    mxb_jiecunshuliang_match == 1
+                    mxb_jiecunshuliang_match = 1
                     worksheetj.cell(i, 15).value = wuliaoshiyong_grid_buhangengxinka[k][1]
                     worksheetj.cell(i, 16).value = wuliaoshiyong_grid_buhangengxinka[k][2]
                     worksheetj.cell(i, 17).value = wuliaoshiyong_grid_buhangengxinka[k][3]
@@ -369,15 +399,16 @@ class App():
                 else:
                     mxb_jiecunshuliang = 0
             if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
+                self.scr.insert(END,'物料明细表71484无法匹配 物料：')
                 self.scr.insert(END,str(wuliaodaima_fromexcel))
                 self.scr.update()
+                logger.info('物料明细表71484无法匹配 物料：')
+                logger.info(wuliaodaima_fromexcel)
             else:
                 logger.info("写入7 14 84天数据: ")
                 logger.info(wuliaoshiyong_grid_buhangengxinka[k])
-
-            self.scr.insert(END,'写入7 14 84天数据.\n')
-            self.scr.update()
+                self.scr.insert(END,'写入7 14 84天数据\n')
+                self.scr.update()
 
         # h)“入库数量”=同一时间日期、同一物料代码的物料出入库明细表的“入库数量”。
         curr_churukumingxibiao_xlsfilename = '广发银行物料出入库明细表.xlsx'
@@ -403,10 +434,8 @@ class App():
                 if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
                     break
 
-            print(wuliaodaima_xuhao_fromexcel)
-
-            wuliaodaima_fromexcel = sheet_churukumingxibiao.cell(i, 2).value
-            churukumingxibiao_rukushuliang = sheet_churukumingxibiao.cell(i, 16).value
+            wuliaodaima_fromexcel = sheet_churukumingxibiao.cell(i, 3).value
+            churukumingxibiao_rukushuliang = sheet_churukumingxibiao.cell(i, 17).value
             logger.info(wuliaodaima_fromexcel)
             logger.info(churukumingxibiao_rukushuliang)
             for k in range(len(wuliaochurukumxb_list)):
@@ -419,33 +448,17 @@ class App():
                 else:
                     mxb_jiecunshuliang = 0
             if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
+                self.scr.insert(END,'物料明细表h无法匹配 物料：')
                 self.scr.insert(END,wuliaodaima_fromexcel)
                 self.scr.update()
+                logger.info('物料明细表h无法匹配 物料：')
+                logger.info(wuliaodaima_fromexcel)
             else:
-                worksheetj.cell(k+5,13).value = shangyue_benyuefachuzongshu   #来自物料出入库明细表，保存到进销存日报
-                logger.info("进销存日报入库数量: " + str(shangyue_benyuefachuzongshu))
-            self.scr.insert(END,'上月发出总数...\n')
+                worksheetj.cell(k+5,int(day_curr_proc_time_str)*2 +17).value = churukumingxibiao_rukushuliang   #来自物料出入库明细表，保存到进销存日报
+                logger.info("进销存日报h入库数量: ")
+                logger.info(churukumingxibiao_rukushuliang)
+            self.scr.insert(END,'进销存日报h入库数量...'+str(churukumingxibiao_rukushuliang)+'\n')
             self.scr.update()
-
-
-
-        # i)“出库数量”=同一时间日期、同一物料代码的物料使用情况记录表的“订单使用”+“订单使用（不含更新卡）”+“消耗”。
-        # 3、物料预警表各字段取值规则：
-        # a)取“物料进销存日报”的A到E列填充到“物料预警表”的A - E列。
-        # b)“使用状态”=同一物料代码的“物料使用情况记录表”的“使用状态”。
-        # c)“YYYYMM - 2
-        # 成品数（不含更新卡）”=同一物料代码T - 2
-        # 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # d)“YYYYMM - 1
-        # 成品数（不含更新卡）”=同一物料代码T - 1
-        # 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # e)“YYYYMM成品数（不含更新卡）”=同一物料代码T月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # f)“14
-        # 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算14天的“订单使用（不含更新卡）”之和除以14。
-        # g)“7
-        # 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算7天的“订单使用（不含更新卡）”之和除以7。
-        # h)“截止T月MM日库存量”=同一物料代码“物料进销存日报”的“库存总数”。
 
         temp_proc_time1 = self.svar_proc_time1.get()
         temp_write_filename = '广发银行物料进销存日报'+temp_proc_time1[:6]+'.xlsx'
@@ -455,7 +468,9 @@ class App():
         self.scr.insert(END, temp_write_filename + '\n' )
         self.master.update()
     #===========================jxc end
-    # 辅料出库反馈文件处理：
+
+
+    # 物料预警表 文件处理：
     def wuliao_yujingbiao_file_proc(self, txtfilename, xlsfilename):
         return_message = 'err'
         curr_proc_time_str = self.svar_proc_time1.get()
@@ -463,6 +478,9 @@ class App():
             date_p = datetime.datetime.strptime(curr_proc_time_str, '%Y%m%d').date()
             this_month_start = datetime.datetime(int(curr_proc_time_str[:4]), int(curr_proc_time_str[4:6]), 1)
             #today = datetime.datetime.today().date()
+            next_month_anyday = this_month_start + datetime.timedelta(days=31)
+            next_month_start =  datetime.datetime(next_month_anyday.year, next_month_anyday.month, 1)
+            this_month_end = next_month_start  - datetime.timedelta(days=1)
             last_month_end = this_month_start - datetime.timedelta(days=1)
             last_month_start = datetime.datetime(last_month_end.year, last_month_end.month, 1)
             last2_month_end = last_month_start - datetime.timedelta(days=1)
@@ -524,7 +542,7 @@ class App():
 
         logger.info('sheet 广发')
         int_sheet_nrows = sheet_curr.nrows
-        int_sheet_ncols = sheet_curr.ncols
+        #int_sheet_ncols = sheet_curr.ncols
         print('sheetname & lines:', sheet_curr, int_sheet_nrows)
 
         self.scr.insert(END,"\n")
@@ -622,18 +640,18 @@ class App():
         logger.info('当月excel情况表')
         logger.info(xlsfilename)
 
-        xlsfilename = '配置\\模板-物料进销存日报表.xlsx'
+        xlsfilename = '东信物料预警表-模板.xlsx'
         workbook = load_workbook(xlsfilename)  # 打开excel文件
         # 导出明细表begin
-        logger.info('导出 ~明细表~ 表')
-        self.scr.insert(END, "导出 ~明细表~ 表" + "\n")
-        worksheetj = workbook['sheet1']  # 根据Sheet1这个sheet名字来获取该sheet
-        #i = 0
-        worksheetj.cell(1, 1).value = str(xls_date.year)+'年广发银行'+str(xls_date.month)+' 月物料收发进销存日报表'
-        worksheetj.cell(3, 19).value = datetime.datetime.strptime(curr_proc_time_str[:6]+'01','%Y%m%d')
+        logger.info('东信物料预警表-模板.xlsx')
+        self.scr.insert(END, "东信物料预警表-模板.xlsx" + "\n")
+        worksheetj = workbook['预警表']  # 根据Sheet1这个sheet名字来获取该sheet
+        #无表头：worksheetj.cell(1, 1).value = str(xls_date.year)+'年广发银行'+str(xls_date.month)+' 月物料收发进销存日报表'
+        #worksheetj.cell(3, 19).value = datetime.datetime.strptime(curr_proc_time_str[:6]+'01','%Y%m%d')
+        
         int_first_row = 3
 
-        # a)取“物料使用情况记录表”中的A列到E列填充到“物料进销存日报”的A—E列。
+        # a)取“物料进销存日报”的A到E列填充到“物料预警表”的A - E列。
         for i in range(int_first_row, int_sheet_nrows):
             wuliaodaima_fromexcel = sheet_curr_from.cell(i, 2).value
             if wuliaodaima_fromexcel == '':
@@ -646,17 +664,33 @@ class App():
             month_range = monthrange(xls_date.year, xls_date.month)
             logger.info(str(month_range))
 
+            self.scr.insert(END,'复制ABCDE.')
+            self.scr.update()
             for j in range(0,5):
                 logger.info('复制ABCDE：')
                 logger.info(i)
                 logger.info(j)
                 logger.info(sheet_curr_from.cell(i, j).value)
-                worksheetj.cell(i+2,j+1).value = sheet_curr_from.cell(i, j).value
+                worksheetj.cell(i-1,j+1).value = sheet_curr_from.cell(i, j).value
 
-        # b)“上月仓库结存”=同一物料代码的使用情况记录表的“上月车间结存量”+物料出入库明细表的“结存数量”。
-            wuliaodaima_fromexcel = sheet_curr_from.cell(i, 2).value
-            shangyuechejianjiecun = sheet_curr_from.cell(i, 6).value
+        # b)“使用状态”=同一物料代码的“物料使用情况记录表”的“使用状态”。
+        curr_month_shiyongqingkuangjlb = '广发银行物料使用情况记录表'+curr_proc_time_str[:6]+'.xlsx'
+        if not os_path_exists(curr_month_shiyongqingkuangjlb):
+            print("文件不存在：", curr_month_shiyongqingkuangjlb)
+            logger.info("文件不存在："+ curr_month_shiyongqingkuangjlb + '\n')
+            self.scr.insert(END,"文件不存在：" + curr_month_shiyongqingkuangjlb+'\n')
+            self.scr.update()
+            return (return_message)
+        workbook_wuliaoyjb_shiyongqingkuangjlb = xlrd.open_workbook(curr_month_shiyongqingkuangjlb)
+        sheet_wuliaoyjb_shiyongqingkuangjlb = workbook_wuliaoyjb_shiyongqingkuangjlb.sheet_by_name('广发')
+        int_sheet_nrows = sheet_wuliaoyjb_shiyongqingkuangjlb.nrows
+        
+        wuliaoshiyong_int_first_row = 3
+        for i in range(wuliaoshiyong_int_first_row, int_sheet_nrows):
+            wuliaodaima_fromexcel = sheet_wuliaoyjb_shiyongqingkuangjlb.cell(i, 2).value
+            yjb_shiyongzhuangtai = sheet_wuliaoyjb_shiyongqingkuangjlb.cell(i, 5).value
             logger.info(wuliaodaima_fromexcel)
+            logger.info(yjb_shiyongzhuangtai)
             for k in range(len(wuliaochurukumxb_list)):
                 mxb_jiecunshuliang_match = 0
                 temp_compare = wuliaochurukumxb_list[k][0]
@@ -667,28 +701,22 @@ class App():
                 else:
                     mxb_jiecunshuliang = 0
             if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
-                self.scr.insert(END,wuliaodaima_fromexcel)
+                self.scr.insert(END,'物料明细表yjb-b无匹配 物料：')
+                self.scr.insert(END,str(wuliaodaima_fromexcel)+'\n')
                 self.scr.update()
             else:
-                worksheetj.cell(i+2,6).value = shangyuechejianjiecun + mxb_jiecunshuliang
-
-        # c)“上月余下订单数”、“本月订单数”、“未入库数量”无需处理，由客服填写。
-        # d)“上月发出总量”=T - 1月物料进销存日报的“本月发出总数”。
-        last_month_xlsfilename = '广发银行物料进销存日报'+curr_proc_time_last_str+'.xlsx'
-        if not os_path_exists(last_month_xlsfilename):
-            print("文件不存在：", last_month_xlsfilename)
-            logger.info("文件不存在："+ last_month_xlsfilename + '\n')
-            self.scr.insert(END,"文件不存在：" + last_month_xlsfilename+'\n')
+                worksheetj.cell(i-1,6).value = yjb_shiyongzhuangtai   #上月数据，保存到本月文件
+                logger.info("yjb使用状态: " + str(yjb_shiyongzhuangtai))
+            self.scr.insert(END,'写入使用状态...\n')
             self.scr.update()
-            return (return_message)
-        workbook_wuliaojxc_lastmonth = xlrd.open_workbook(last_month_xlsfilename)
-        sheet_wuliaojxc_lastmonth = workbook_wuliaojxc_lastmonth.sheet_by_index(0)
-        int_sheet_nrows = sheet_wuliaojxc_lastmonth.nrows
-        
-        wuliaojxc_int_first_row = 4
-        for i in range(wuliaojxc_int_first_row, int_sheet_nrows):
-            wuliaodaima_xuhao_fromexcel = sheet_wuliaojxc_lastmonth.cell(i, 0).value
+
+        # e)“YYYYMM成品数（不含更新卡）”=同一物料代码T月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
+        # 对同一文件文件操作，将此项目提前
+        worksheetj.cell(1,9).value = wuliaoshiyongqingkjilubiao[-11:-5] + '成品数（不含更新卡）'
+        this_month_int_days = int(this_month_end.day)
+        wuliaoyjb_int_first_row = 3
+        for i in range(wuliaoyjb_int_first_row, int_sheet_nrows):
+            wuliaodaima_xuhao_fromexcel = sheet_wuliaoyjb_shiyongqingkuangjlb.cell(i, 0).value
             if wuliaodaima_xuhao_fromexcel == '':
                 break
             if isinstance(wuliaodaima_xuhao_fromexcel,float):
@@ -698,12 +726,11 @@ class App():
                 if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
                     break
 
-            print(wuliaodaima_xuhao_fromexcel)
-
-            wuliaodaima_fromexcel = sheet_wuliaojxc_lastmonth.cell(i, 2).value
-            shangyue_benyuefachuzongshu = sheet_wuliaojxc_lastmonth.cell(i, 11).value
+            print('ysb-c,xuhao:',wuliaodaima_xuhao_fromexcel)
+            wuliaodaima_fromexcel = sheet_wuliaoyjb_shiyongqingkuangjlb.cell(i, 2).value
+            shangyue_buhangengxinka = sheet_wuliaoyjb_shiyongqingkuangjlb.cell(i, 6+this_month_int_days*4+3).value
             logger.info(wuliaodaima_fromexcel)
-            logger.info(shangyue_benyuefachuzongshu)
+            logger.info(shangyue_buhangengxinka)
             for k in range(len(wuliaochurukumxb_list)):
                 mxb_jiecunshuliang_match = 0
                 temp_compare = wuliaochurukumxb_list[k][0]
@@ -718,14 +745,116 @@ class App():
                 self.scr.insert(END,wuliaodaima_fromexcel)
                 self.scr.update()
             else:
-                worksheetj.cell(k+5,13).value = shangyue_benyuefachuzongshu   #上月数据，保存到本月文件
-                logger.info("写入上月发出总数: " + str(shangyue_benyuefachuzongshu))
-            self.scr.insert(END,'上月发出总数...\n')
+                worksheetj.cell(i-1,9).value = shangyue_buhangengxinka   #上月数据，保存到本月文件
+                logger.info("T,dingdanshiyong(buhangengxinka)zongliang: " + str(shangyue_buhangengxinka))
+            self.scr.insert(END,'T订单使用上月发出总数...\n')
             self.scr.update()
 
-        # e)“前1周周用量”=T日所在星期的前1个自然周（7天）的用量之和。
-        # f)“前2周周用量”=T日所在星期的前2个自然周（14天）的用量之和。
-        # g)“前12周周用量”=T日所在星期的前12个自然周（84天）的用量之和。
+
+
+        # c)“YYYYMM - 2 成品数（不含更新卡）”=同一物料代码T - 2 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
+        #wuliaoshiyongqingkjilubiao_last2
+        worksheetj.cell(1,7).value = wuliaoshiyongqingkjilubiao_last2[-11:-5] + '成品数（不含更新卡）'
+        last2_month_int_days = int(last2_month_end.day)
+        if not os_path_exists(wuliaoshiyongqingkjilubiao_last2):
+            print("文件不存在：", wuliaoshiyongqingkjilubiao_last2)
+            logger.info("文件不存在："+ wuliaoshiyongqingkjilubiao_last2 + '\n')
+            self.scr.insert(END,"文件不存在：" + wuliaoshiyongqingkjilubiao_last2+'\n')
+            self.scr.update()
+            return (return_message)
+        workbook_wuliaoyjb_lastmonth2 = xlrd.open_workbook(wuliaoshiyongqingkjilubiao_last2)
+        sheet_wuliaoyjb_lastmonth = workbook_wuliaoyjb_lastmonth2.sheet_by_name('广发')
+        int_sheet_nrows = sheet_wuliaoyjb_lastmonth.nrows
+        
+        wuliaoyjb_int_first_row = 3
+        for i in range(wuliaoyjb_int_first_row, int_sheet_nrows):
+            wuliaodaima_xuhao_fromexcel = sheet_wuliaoyjb_lastmonth.cell(i, 0).value
+            if wuliaodaima_xuhao_fromexcel == '':
+                break
+            if isinstance(wuliaodaima_xuhao_fromexcel,float):
+                if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
+                    break
+            if isinstance(wuliaodaima_xuhao_fromexcel,int):
+                if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
+                    break
+
+            print('ysb-c,xuhao:',wuliaodaima_xuhao_fromexcel)
+
+            wuliaodaima_fromexcel = sheet_wuliaoyjb_lastmonth.cell(i, 2).value
+            shangyue_buhangengxinka = sheet_wuliaoyjb_lastmonth.cell(i, 6+last2_month_int_days*4+3).value
+            logger.info(wuliaodaima_fromexcel)
+            logger.info(shangyue_buhangengxinka)
+            for k in range(len(wuliaochurukumxb_list)):
+                mxb_jiecunshuliang_match = 0
+                temp_compare = wuliaochurukumxb_list[k][0]
+                if wuliaodaima_fromexcel == temp_compare:
+                    mxb_jiecunshuliang_match = 1
+                    mxb_jiecunshuliang = wuliaochurukumxb_list[k][1]
+                    break
+                else:
+                    mxb_jiecunshuliang = 0
+            if mxb_jiecunshuliang_match == 0 :
+                self.scr.insert(END,'物料明细表无法匹配 物料：')
+                self.scr.insert(END,wuliaodaima_fromexcel)
+                self.scr.update()
+            else:
+                worksheetj.cell(i-1,7).value = shangyue_buhangengxinka   #上月数据，保存到本月文件
+                logger.info("T-2,dingdanshiyong(buhangengxinka)zongliang: " + str(shangyue_buhangengxinka))
+            self.scr.insert(END,'T-2订单使用上月发出总数...\n')
+            self.scr.update()
+ 
+        # d)“YYYYMM - 1 成品数（不含更新卡）”=同一物料代码T - 1 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
+        worksheetj.cell(1,8).value = wuliaoshiyongqingkjilubiao_last[-11:-5] + '成品数（不含更新卡）'
+        last_month_int_days = int(last_month_end.day)
+        if not os_path_exists(wuliaoshiyongqingkjilubiao_last):
+            print("文件不存在：", wuliaoshiyongqingkjilubiao_last)
+            logger.info("文件不存在："+ wuliaoshiyongqingkjilubiao_last + '\n')
+            self.scr.insert(END,"文件不存在：" + wuliaoshiyongqingkjilubiao_last+'\n')
+            self.scr.update()
+            return (return_message)
+        workbook_wuliaoyjb_lastmonth = xlrd.open_workbook(wuliaoshiyongqingkjilubiao_last)
+        sheet_wuliaoyjb_lastmonth = workbook_wuliaoyjb_lastmonth.sheet_by_name('广发')
+        int_sheet_nrows = sheet_wuliaoyjb_lastmonth.nrows
+        
+        wuliaoyjb_int_first_row = 3
+        for i in range(wuliaoyjb_int_first_row, int_sheet_nrows):
+            wuliaodaima_xuhao_fromexcel = sheet_wuliaoyjb_lastmonth.cell(i, 0).value
+            if wuliaodaima_xuhao_fromexcel == '':
+                break
+            if isinstance(wuliaodaima_xuhao_fromexcel,float):
+                if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
+                    break
+            if isinstance(wuliaodaima_xuhao_fromexcel,int):
+                if len(str(wuliaodaima_xuhao_fromexcel)) < 1:
+                    break
+
+            print('ysb-c,xuhao:',wuliaodaima_xuhao_fromexcel)
+
+            wuliaodaima_fromexcel = sheet_wuliaoyjb_lastmonth.cell(i, 2).value
+            shangyue_buhangengxinka = sheet_wuliaoyjb_lastmonth.cell(i, 6+last2_month_int_days*4+3).value
+            logger.info(wuliaodaima_fromexcel)
+            logger.info(shangyue_buhangengxinka)
+            for k in range(len(wuliaochurukumxb_list)):
+                mxb_jiecunshuliang_match = 0
+                temp_compare = wuliaochurukumxb_list[k][0]
+                if wuliaodaima_fromexcel == temp_compare:
+                    mxb_jiecunshuliang_match = 1
+                    mxb_jiecunshuliang = wuliaochurukumxb_list[k][1]
+                    break
+                else:
+                    mxb_jiecunshuliang = 0
+            if mxb_jiecunshuliang_match == 0 :
+                self.scr.insert(END,'物料明细表无法匹配 物料：')
+                self.scr.insert(END,wuliaodaima_fromexcel)
+                self.scr.update()
+            else:
+                worksheetj.cell(i-1,8).value = shangyue_buhangengxinka   #上月数据，保存到本月文件
+                logger.info("T-1,dingdanshiyong(buhangengxinka)zongliang: " + str(shangyue_buhangengxinka))
+            self.scr.insert(END,'T-1订单使用上月发出总数...\n')
+            self.scr.update()
+
+        # f)“14 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算14天的“订单使用（不含更新卡）”之和除以14。
+        # g)“7 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算7天的“订单使用（不含更新卡）”之和除以7。
         last_1_day = datetime.datetime.strptime(curr_proc_time_str,'%Y%m%d') + datetime.timedelta(days=-1)
         logger.info(last_1_day)
         
@@ -749,7 +878,7 @@ class App():
         logger.info('物料使用不含更新卡7 14 84 合计')
         logger.info(wuliaoshiyong_grid_buhangengxinka)
 
-        wuliaojxc_int_first_row = 4
+        wuliaojxc_int_first_row = 2
         #worksheetj 此变量只用于用openpyxl打开的excel表格
         for i in range(wuliaojxc_int_first_row, wuliaojxc_int_first_row + len(wuliaoshiyong_grid_buhangengxinka)+1):
             wuliaodaima_xuhao_fromexcel = worksheetj.cell(i, 1).value
@@ -768,39 +897,40 @@ class App():
                 mxb_jiecunshuliang_match = 0
                 temp_compare = wuliaoshiyong_grid_buhangengxinka[k][0]
                 if wuliaodaima_fromexcel == temp_compare:
-                    mxb_jiecunshuliang_match == 1
-                    worksheetj.cell(i, 15).value = wuliaoshiyong_grid_buhangengxinka[k][1]
-                    worksheetj.cell(i, 16).value = wuliaoshiyong_grid_buhangengxinka[k][2]
-                    worksheetj.cell(i, 17).value = wuliaoshiyong_grid_buhangengxinka[k][3]
+                    mxb_jiecunshuliang_match = 1
+                    worksheetj.cell(i, 12).value = wuliaoshiyong_grid_buhangengxinka[k][1]
+                    worksheetj.cell(i, 11).value = wuliaoshiyong_grid_buhangengxinka[k][2]
                     break
                 else:
                     mxb_jiecunshuliang = 0
             if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
+                self.scr.insert(END,'物料明细表714无法匹配 物料：')
                 self.scr.insert(END,str(wuliaodaima_fromexcel))
                 self.scr.update()
+                logger.info('物料明细表714无法匹配 物料：')
+                logger.info(wuliaodaima_fromexcel)
             else:
-                logger.info("写入7 14 84天数据: ")
+                logger.info("写入7 14 天数据: ")
                 logger.info(wuliaoshiyong_grid_buhangengxinka[k])
+                self.scr.insert(END,'写入7 14 天数据\n')
+                self.scr.update()
 
-            self.scr.insert(END,'写入7 14 84天数据.\n')
-            self.scr.update()
-
-        # h)“入库数量”=同一时间日期、同一物料代码的物料出入库明细表的“入库数量”。
-        curr_churukumingxibiao_xlsfilename = '广发银行物料出入库明细表.xlsx'
-        if not os_path_exists(curr_churukumingxibiao_xlsfilename):
-            print("文件不存在：", curr_churukumingxibiao_xlsfilename)
-            logger.info("文件不存在："+ curr_churukumingxibiao_xlsfilename + '\n')
-            self.scr.insert(END,"文件不存在：" + curr_churukumingxibiao_xlsfilename+'\n')
+        # h)“截止T月MM日库存量”=同一物料代码“物料进销存日报”的“库存总数”。
+        worksheetj.cell(1,14).value = '截止'+curr_proc_time_str[4:6]+'月'+curr_proc_time_str[6:8]+'日库存量'
+        curr_wuliaojxcribao_xlsfilename = '广发银行物料进销存日报' + curr_proc_time_str[:6] + '.xlsx'
+        if not os_path_exists(curr_wuliaojxcribao_xlsfilename):
+            print("文件不存在：", curr_wuliaojxcribao_xlsfilename)
+            logger.info("文件不存在："+ curr_wuliaojxcribao_xlsfilename + '\n')
+            self.scr.insert(END,"文件不存在：" + curr_wuliaojxcribao_xlsfilename+'\n')
             self.scr.update()
             return (return_message)
-        workbook_churukumingxibiao = xlrd.open_workbook(curr_churukumingxibiao_xlsfilename)
-        sheet_churukumingxibiao = workbook_churukumingxibiao.sheet_by_index(0)
-        int_sheet_nrows_churukumingxibiao = sheet_churukumingxibiao.nrows
+        workbook_wuliaojxcribao = xlrd.open_workbook(curr_wuliaojxcribao_xlsfilename)
+        sheet_wuliaojxcribao = workbook_wuliaojxcribao.sheet_by_index(0)
+        int_sheet_nrows_wuliaojxcribao = sheet_wuliaojxcribao.nrows
         
-        churukumingxibiao_int_first_row = 3
-        for i in range(churukumingxibiao_int_first_row, int_sheet_nrows_churukumingxibiao):
-            wuliaodaima_xuhao_fromexcel = sheet_churukumingxibiao.cell(i, 0).value
+        wuliaojxcribao_int_first_row = 4
+        for i in range(wuliaojxcribao_int_first_row, int_sheet_nrows_wuliaojxcribao):
+            wuliaodaima_xuhao_fromexcel = sheet_wuliaojxcribao.cell(i, 0).value
             if wuliaodaima_xuhao_fromexcel == '':
                 break
             if isinstance(wuliaodaima_xuhao_fromexcel,float):
@@ -812,8 +942,8 @@ class App():
 
             print(wuliaodaima_xuhao_fromexcel)
 
-            wuliaodaima_fromexcel = sheet_churukumingxibiao.cell(i, 2).value
-            churukumingxibiao_rukushuliang = sheet_churukumingxibiao.cell(i, 16).value
+            wuliaodaima_fromexcel = sheet_wuliaojxcribao.cell(i, 2).value
+            churukumingxibiao_rukushuliang = sheet_wuliaojxcribao.cell(i, 10).value
             logger.info(wuliaodaima_fromexcel)
             logger.info(churukumingxibiao_rukushuliang)
             for k in range(len(wuliaochurukumxb_list)):
@@ -826,43 +956,25 @@ class App():
                 else:
                     mxb_jiecunshuliang = 0
             if mxb_jiecunshuliang_match == 0 :
-                self.scr.insert(END,'物料明细表无法匹配 物料：')
-                self.scr.insert(END,wuliaodaima_fromexcel)
+                logger.info('进销存日报库存总数')
+                logger.info(churukumingxibiao_rukushuliang)
+                self.scr.insert(END,'进销存日报库存总数\n')
                 self.scr.update()
             else:
-                worksheetj.cell(k+5,13).value = shangyue_benyuefachuzongshu   #来自物料出入库明细表，保存到进销存日报
-                logger.info("进销存日报入库数量: " + str(shangyue_benyuefachuzongshu))
-            self.scr.insert(END,'上月发出总数...\n')
-            self.scr.update()
-
-
-
-        # i)“出库数量”=同一时间日期、同一物料代码的物料使用情况记录表的“订单使用”+“订单使用（不含更新卡）”+“消耗”。
-        # 3、物料预警表各字段取值规则：
-        # a)取“物料进销存日报”的A到E列填充到“物料预警表”的A - E列。
-        # b)“使用状态”=同一物料代码的“物料使用情况记录表”的“使用状态”。
-        # c)“YYYYMM - 2
-        # 成品数（不含更新卡）”=同一物料代码T - 2
-        # 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # d)“YYYYMM - 1
-        # 成品数（不含更新卡）”=同一物料代码T - 1
-        # 月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # e)“YYYYMM成品数（不含更新卡）”=同一物料代码T月份“物料使用情况记录表”的“订单使用（不含更新卡）总量”
-        # f)“14
-        # 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算14天的“订单使用（不含更新卡）”之和除以14。
-        # g)“7
-        # 天日均用量”=同一物料代码“物料使用情况记录表”T日往前推算7天的“订单使用（不含更新卡）”之和除以7。
-        # h)“截止T月MM日库存量”=同一物料代码“物料进销存日报”的“库存总数”。
+                logger.info('进销存日报库存总数')
+                logger.info(churukumingxibiao_rukushuliang)
+                worksheetj.cell(k+2,14).value = churukumingxibiao_rukushuliang   #来自物料出入库明细表，保存到进销存日报
+                logger.info("进销存日报入库数量: " + str(churukumingxibiao_rukushuliang))
+                self.scr.insert(END,'进销存日报库存总数\n')
 
         temp_proc_time1 = self.svar_proc_time1.get()
-        #temp_write_filename = '广发银行物料进销存日报'+temp_proc_time1[:6]+'.xlsx'
-        temp_write_filename = '广发银行物料进销存日报.xlsx'
+        temp_write_filename = '东信物料预警表' + temp_proc_time1 +'.xlsx'
         workbook.save(temp_write_filename)
         print('=' * 40)
         self.scr.insert(END, "文件输出..\n" )
         self.scr.insert(END, temp_write_filename + '\n' )
         self.master.update()
-    #===========================yujing end
+    #===========================yujingbiao end
 
     #按字符查找符合条件文件名，返回文件列表
     def find_filename(self, curr_path, curr_filename_path):
@@ -907,7 +1019,7 @@ class App():
             #self.file_from_fuliaokucun = cp.get(str_kehu_name, '辅料库存表')
         except Exception as err_message:
             print(err_message)
-            return_message = messagebox.showinfo(title='提示',message='无法打开配置文件.ini或配置有误!' )
+            logger.info('无法打开配置文件.ini或配置有误!' )
             exit(2)
 
         print('host: ', str_kehu_name)
@@ -988,21 +1100,21 @@ class App():
         #self.file_from_wuliaoshiyong = self.svar_wuliaoshiyong_filename.get()
         #self.file_from_fuliaokucun = self.svar_nnnnnnnnnnnnnnn_filename.get()
 
-        str_timestamp = self.svar_proc_time1.get()
+        #str_timestamp = self.svar_proc_time1.get()
 
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         str_wuliaojxc_filename = '广发银行物料进销存日报'+'.xlsx'
 
-        self.wuliaojxc_file_proc(str_wuliaojxc_filename, self.file_from_wuliaoshiyong)
-        # try:
-        #     if self.wuliaojxc_file_proc(str_wuliaojxc_filename, self.file_from_wuliaoshiyong) == 'no':
-        #         return (1)
-        # except Exception as err_message:
-        #     print(err_message)
-        #     self.scr.insert(END, err_message )
-        #     self.scr.update()
-        #     logger.error(err_message.__str__())
-        #     logger.exception(sys.exc_info())
+        # self.wuliaojxc_file_proc(str_wuliaojxc_filename, self.file_from_wuliaoshiyong)
+        try:
+            if self.wuliaojxc_file_proc(str_wuliaojxc_filename, self.file_from_wuliaoshiyong) == 'no':
+                return (1)
+        except Exception as err_message:
+            print(err_message)
+            self.scr.insert(END, err_message )
+            self.scr.update()
+            logger.error(err_message.__str__())
+            logger.exception(sys.exc_info())
 
         label_tips1_filename = Label(self.master, text='完成...                     ', font=('Arial', 12))
         label_tips1_filename.place(x=540, y=530)
@@ -1014,13 +1126,13 @@ class App():
         self.scr.delete(1.0,END)
         label_tips1_filename = Label(self.master, text='读取辅料库存表... ', font=('Arial', 12))
         label_tips1_filename.place(x=540, y=530)
-        self.file_from_wuliaoshiyong = self.svar_wuliaoshiyong_filename.get()
+        #self.file_from_wuliaoshiyong = self.svar_wuliaoshiyong_filename.get()
         self.file_from_fuliaokucun = self.svar_nnnnnnnnnnnnnnn_filename.get()
-        str_timestamp = self.svar_proc_time1.get()
+        #str_timestamp = self.svar_proc_time1.get()
+        #str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+        str_chu_filename = 'temp'
 
-        str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
-        str_chu_filename = '01_' + str_temp_last_datetime + '_fs.txt'
-
+        #self.wuliao_yujingbiao_file_proc(str_chu_filename, self.file_from_fuliaokucun)
         try:
             if self.wuliao_yujingbiao_file_proc(str_chu_filename, self.file_from_fuliaokucun) == 'no':
                 return (1)
