@@ -223,7 +223,9 @@ class App():
                 if len(cell_value)>0:
                     daka_line = daka_line+ str(cell_value)+'@'+str(j-5) +'#'
                     click_one_times = cell_value.split('*')
-                    for click_one_time in click_one_times:                    
+                    for click_one_time in click_one_times:
+                        if '外勤' in click_one_time:
+                            continue                    
                         if (j-5) > 9:
                             curr_day = str(j-5)
                         else:
@@ -426,7 +428,7 @@ if __name__ == '__main__':
     set_logging()
 
     main_window = Tk()
-    main_window.title('临时考勤数据处理工具 v.02292315')
+    main_window.title('临时考勤数据处理工具 v.03010845')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
