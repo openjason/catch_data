@@ -2,12 +2,17 @@
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2018-04-08
+2020-03-11 16:28
 '''
 # import os
 import openpyxl
 
 import re
+
+var_global_MGMT_IP = 'none'
+var_global_host_dict = {'1.1.1.101':'GSM第一道sonicwall防火墙',
+    '1.1.1.102':'GSM第二道sonicwall防火墙',
+    '192.168.168.168':'SM 外部 sonicwall防火墙'}
 
 def judge_legal_ip(one_str):
     '''''
@@ -187,6 +192,8 @@ def getAddressList(blocked_list, block_child_list,aname):
 
 def save_xls_file(blocked_list, block_child_list):
     #保存配置文件，保存配置文件文件名
+    global var_global_MGMT_IP
+    var_system_time = 'none'
     xlsfile = 'sonicwall.xlsx'
 
     workbook = openpyxl.load_workbook(xlsfile)
@@ -195,14 +202,18 @@ def save_xls_file(blocked_list, block_child_list):
     wb = workbook
     writecell = []
 
-#Edit sheet "interface" begin
-    sheet = wb.get_sheet_by_name('interface')
+    #Edit sheet "interface" begin
+    sheet = wb['interface']
     cellrow = 2
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
             continue
 
         tempStr1 = blocked_list[i]
+
+        if 'system-time' ==tempStr1[:11]:
+            var_system_time = tempStr1[13:-1]
+
         if 'interface' == tempStr1[:9] :
             interface_name = tempStr1[10:len(tempStr1)]
             tempList1 = interface_name.split()
@@ -252,10 +263,13 @@ def save_xls_file(blocked_list, block_child_list):
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = interface_comment
             cellrow += 1
-# Edit sheet "interface" end
+            if interface_name == 'MGMT':
+                var_global_MGMT_IP = interface_ip
+    # Edit sheet "interface" end
 
-# Edit sheet "route" begin
-    sheet = wb.get_sheet_by_name('route')
+    print('cfg file create time:',var_system_time)
+    # Edit sheet "route" begin
+    sheet = wb['route']
     cellrow = 2
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -333,8 +347,9 @@ def save_xls_file(blocked_list, block_child_list):
 #        print(str(cellrow) + interface_name+':'+interface_alias + interface_ip+';'+ interface_netmask + interface_comment)
 
 # Edit sheet "rule" begin
-    sheet = wb.get_sheet_by_name('rule')
-    cellrow = 2
+    print('MGMT: ',var_global_MGMT_IP)
+    sheet = wb['rule']
+    cellrow = 3
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:   #remove include "ipv6" string
             continue
@@ -431,7 +446,7 @@ def save_xls_file(blocked_list, block_child_list):
             format_rule_str = format_service_list(rule_service_port)
 #            format_rule_str = rule_service_port
 
-            if rule_from == rule_to or rule_from == 'VPN' or \
+            if rule_from == rule_to or rule_from == 'VPN' or rule_from == 'SSLVPN' or rule_to == 'SSLVPN' or\
                     (rule_source_address == 'any' and rule_destination_address == 'any' and rule_service == 'any') or \
                     rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"':
                 pass
@@ -489,6 +504,10 @@ def save_xls_file(blocked_list, block_child_list):
                     sheet.row_dimensions[cellrow].height = 16 * rule_destination_address_row
 
                 cellrow +=1
+
+    var_system_time = var_system_time[:10]
+    date_p_ = datetime.datetime.strptime(var_system_time, '%m/%d/%Y').date()
+    sheet.cell(1,1).value = var_system_time[7:11]+'年'+'月' var_global_host_dict[var_global_MGMT_IP]
 
 # Edit sheet "rule" end
     try:
