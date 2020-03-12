@@ -6,20 +6,20 @@ author:jason chan
 '''
 # import os
 import openpyxl
-
+import datetime
 import re
 
 var_global_MGMT_IP = 'none'
-var_global_host_dict = {'1.1.1.101':'GSM第一道sonicwall防火墙',
-    '1.1.1.102':'GSM第二道sonicwall防火墙',
-    '192.168.168.168':'SM 外部 sonicwall防火墙'}
+var_global_host_dict = {'1.1.1.101':'GSM第一道sonicwall防火墙策略',
+    '1.1.1.102':'GSM第二道sonicwall防火墙墙策略',
+    '192.168.168.168':'SM外部sonicwall防火墙策略'}
 
 def judge_legal_ip(one_str):
     '''''
     正则匹配方法
     判断一个字符串是否是合法IP地址
     '''
-    compile_ip = re.compile('^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
+    compile_ip = re.compile(r'^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?)$')
     if compile_ip.match(one_str):
         return True
     else:
@@ -27,7 +27,7 @@ def judge_legal_ip(one_str):
 
 def fix_address_string(add_str):
     #停用    return add_str
-    fix_addr_str = "地址有误"
+    fix_addr_str = "无IP地址"
     if add_str[0]=='"':
         tmp_pos = add_str[1:].find('"')
         aname = add_str[0:tmp_pos+2]
@@ -45,12 +45,18 @@ def fix_address_string(add_str):
 
     if 'network' == tmp_list[1]:
         if '255.255.255.0' == tmp_list [3]:
-            netmaskstr = '/24'
+            netmaskstr = '24'
+        elif '255.255.255.248' == tmp_list [3]:
+            netmaskstr = '29'
+        elif '255.255.255.128' == tmp_list [3]:
+            netmaskstr = '25'
         else:
             netmaskstr = tmp_list [3]
-        fix_addr_str = tmp_list[2] + netmaskstr
-
-#    return aname + ":" +fix_addr_str
+        fix_addr_str = tmp_list[2] +'/'+ netmaskstr
+    if 'RemoteAccess Networks' in add_str:
+        fix_addr_str = 'RemoteAccessNetworks'
+    if fix_addr_str == '无IP地址':
+        print('无IP地址:' ,add_str)
     return fix_addr_str
 
 
@@ -164,29 +170,29 @@ def getServiceList(blocked_list, block_child_list,sname):
 def getAddressList(blocked_list, block_child_list,aname):
     #获取具体地址对应的地址名和地址
     address_detail = ''
+    aname = aname.strip()
     if aname =='any':
         return '0.0.0.0'
 
+    if re.search(r'[XU]\d+ IP',aname):
+        return('systeminterface')
+    #if '新加坡分公司' in aname :
+    #    print('aname')
+
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
         tempStr_raw = blocked_list[i]
-        # temp_str_zone_pos = tempStr_raw.find('zone')
-        # if temp_str_zone_pos > 0:
-        #     tempStr1 = tempStr_raw[:temp_str_zone_pos]
-        # else:
         tempStr1 = tempStr_raw
-        if 'address-object' == tempStr1[:14]:
+        if 'address-object ipv4' == tempStr1[:19]:
             if aname == tempStr1[20:20+len(aname)] and tempStr1[20+len(aname):21+len(aname)]== ' ':
-                # try:
-                #     first_space = tempStr1[21 + len(aname):len(tempStr1)].index(' ')
-                # except:
-                #     first_space = 0
-                #address_detail = tempStr1[21+1 + len(aname)+first_space:len(tempStr1)]
                 address_detail = tempStr_raw[len("address-object ipv4 ") :len(tempStr_raw)]
                 address_detail = fix_address_string(address_detail)
                 break
-    #    return aname +":"+ address_detail
+            #不处理 'ipv6' 
+        #处理偶尔出现在address-object前多一个空格情况，另外，如果前面有4个空格以上将是group下的，所以只处理多一个空格
+        #上面提及问题处理已在ver652_conv.py中处理
+    #print(address_detail)
+    if address_detail == '':
+        print('ip address not found...',aname)
     return address_detail
 
 
@@ -468,11 +474,6 @@ def save_xls_file(blocked_list, block_child_list):
 
                 row_diaplay = rule_address_detail.split('\n')
                 rule_source_address_row = len(row_diaplay)
-                # if len(row_diaplay) >1:
-                #     for i in range(len(row_diaplay)):
-                #         sheet.cell(row=cellrow + rule_source_address_row, column=cellcolumn).value = row_diaplay[i]
-                #         rule_source_address_row +=1
-                # else:
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_address_detail
 
                 cellcolumn += 1
@@ -483,11 +484,6 @@ def save_xls_file(blocked_list, block_child_list):
 
                 row_diaplay = rule_destination_detail.split('\n')
                 rule_destination_address_row = len(row_diaplay)
-                # if len(row_diaplay) > 1:
-                #     for i in range(len(row_diaplay)):
-                #         sheet.cell(row=cellrow + rule_destination_address_row, column=cellcolumn).value = row_diaplay[i]
-                #         rule_destination_address_row += 1
-                # else:
                 sheet.cell(row=cellrow, column=cellcolumn).value = rule_destination_detail
 
                 cellcolumn += 1
@@ -505,9 +501,18 @@ def save_xls_file(blocked_list, block_child_list):
 
                 cellrow +=1
 
+    sheet.row_dimensions[cellrow].height = 16 * 4
+    sheet.merge_cells(start_row=cellrow, start_column=1, end_row=cellrow, end_column=11)
+    ending_string='''                                                              检查人：                                     检查日期：
+
+                                                              审核人：                                     审核日期：'''
+    sheet.cell(cellrow,1).value=ending_string
     var_system_time = var_system_time[:10]
     date_p_ = datetime.datetime.strptime(var_system_time, '%m/%d/%Y').date()
-    sheet.cell(1,1).value = var_system_time[7:11]+'年'+'月' var_global_host_dict[var_global_MGMT_IP]
+    sheet.cell(1,1).value = var_system_time[6:]+'年'+var_system_time[:2]+'月  ' +var_global_host_dict[var_global_MGMT_IP]
+
+    for i in range(cellrow+1,300):
+        sheet.delete_rows(cellrow+1)
 
 # Edit sheet "rule" end
     try:
