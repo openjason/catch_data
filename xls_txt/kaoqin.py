@@ -641,7 +641,7 @@ if __name__ == '__main__':
     set_logging()
 
     main_window = Tk()
-    main_window.title('临时考勤数据处理工具 v.03111444')
+    main_window.title('临时考勤数据处理工具 v.03141400')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
