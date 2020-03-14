@@ -25,14 +25,14 @@ def version653():
         return False
 
 def cover653():
-    os.rename('sw.log','sw_raw.log')
-    fw = open('sw.log','w')
-    print('sw.log ->sw_raw; Convert sonicwall configure file to low version file format...')
+    #os.rename('sw.log','sw_raw.log')
+    fw = open('sw_ready.log','w')
+    print('sw.log ->sw_ready; Convert sonicwall configure file to low version file format...')
     cover_switch = False
     add_string = ''
     address_string = ''
     zone_string = ''
-    with open('sw_raw.log','r') as fp:
+    with open('sw.log','r') as fp:
         for oneline in fp:
             fw.write(oneline)
 
@@ -101,11 +101,11 @@ def cover652():
     fw.close()
 
 if __name__ == '__main__':
-    if os.path.exists('sw_raw.log'):
-        os.remove('sw_raw.log')
-    if version652():
+    if os.path.exists('sw_ready.log'):
+        os.remove('sw_ready.log')
+    if version652() or version653():
         cover653()
-    if version653():
-        cover653()
+        print('\nProcessing completed.')
+    else:
+        print('configura file version is not 652 or 653...pls check it.')
 
-    exit()
