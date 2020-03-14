@@ -2,16 +2,19 @@
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2020-03-11 16:28
+2020-03-13 10:08
 '''
 # import os
+from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
+from openpyxl import Workbook
 import openpyxl
 import datetime
 import re
 
 var_global_MGMT_IP = 'none'
 var_global_host_dict = {'1.1.1.101':'GSM第一道sonicwall防火墙策略',
-    '1.1.1.102':'GSM第二道sonicwall防火墙墙策略',
+    '1.1.1.102':'GSM第二道sonicwall防火墙策略',
+    '192.168.153.1':'金融第二道sonicwall防火墙策略',
     '192.168.168.168':'SM外部sonicwall防火墙策略'}
 
 def judge_legal_ip(one_str):
@@ -119,12 +122,12 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
         ServicePortList.append('Ping')
         return ServicePortList
 
-    if Gname == '5000&ping':
-        Gname = Gname
+    #if Gname == '5000&ping':
+    #    Gname = Gname
 
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
+        #if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
+        #    continue
         tempStr1 = blocked_list[i]
         if 'service-group' == tempStr1[:13]:
             if '"' in Gname:
@@ -158,13 +161,13 @@ def getServiceList(blocked_list, block_child_list,sname):
     #获取具体服务对应的服务名和端口号
     ServicePort = ''
     for i in range(len(blocked_list)):
-        if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
-            continue
         tempStr1 = blocked_list[i]
         if 'service-object' == tempStr1[:14]:
             if sname == tempStr1[15:15+len(sname)] and tempStr1[15+len(sname):15+len(sname)+1]== ' ':
                 ServicePort = tempStr1[15 + len(sname)+1:len(tempStr1)]
                 break
+    if ServicePort == '':
+        print('ServicePort not found...',sname)
     return ServicePort
 
 def getAddressList(blocked_list, block_child_list,aname):
@@ -192,7 +195,7 @@ def getAddressList(blocked_list, block_child_list,aname):
         #上面提及问题处理已在ver652_conv.py中处理
     #print(address_detail)
     if address_detail == '':
-        print('ip address not found...',aname)
+        print('IP address not found...',aname)
     return address_detail
 
 
@@ -503,20 +506,27 @@ def save_xls_file(blocked_list, block_child_list):
 
     sheet.row_dimensions[cellrow].height = 16 * 4
     sheet.merge_cells(start_row=cellrow, start_column=1, end_row=cellrow, end_column=11)
-    ending_string='''                                                              检查人：                                     检查日期：
-
-                                                              审核人：                                     审核日期：'''
+    ending_string='''检查人：                                     检查日期：
+审核人：                                     审核日期：'''
     sheet.cell(cellrow,1).value=ending_string
+    sheet.alignment = Alignment(horizontal="center", vertical="center")
     var_system_time = var_system_time[:10]
     date_p_ = datetime.datetime.strptime(var_system_time, '%m/%d/%Y').date()
-    sheet.cell(1,1).value = var_system_time[6:]+'年'+var_system_time[:2]+'月  ' +var_global_host_dict[var_global_MGMT_IP]
 
-    for i in range(cellrow+1,300):
+    if date_p_.day < 15:
+        this_month_start = datetime.datetime(date_p_.year, date_p_.month, 1)
+        date_p_ = this_month_start - datetime.timedelta(days=1)
+        var_system_time = datetime.datetime.strftime(date_p_, "%m/%d/%Y")
+
+    sheet_rule_title = var_system_time[6:]+'年'+var_system_time[:2]+'月' +var_global_host_dict[var_global_MGMT_IP]
+    sheet.cell(1,1).value = sheet_rule_title[:8] + '  ' + sheet_rule_title[8:]
+
+    for i in range(cellrow+1,400):
         sheet.delete_rows(cellrow+1)
 
 # Edit sheet "rule" end
     try:
-        workbook.save('cfg_new.xlsx')
+        workbook.save(sheet_rule_title+'.xlsx')
     except:
         print("xlsx文件被锁定，无法保存。。。")
     finally:
@@ -630,7 +640,7 @@ def cfgxlsproc():
     keyslist = []
 
     confile_blocked = []
-    swcfgfile = 'sw.log'
+    swcfgfile = 'sw_ready.log'
 
     get_block(swcfgfile, confile_blocked, 'sn_block.txt')
 
