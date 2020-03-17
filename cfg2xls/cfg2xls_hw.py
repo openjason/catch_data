@@ -2,12 +2,18 @@
 '''
 根据华为防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2018-08-01
+2020-03-16 9:41
 '''
 # import os
+from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
 import openpyxl
 import copy
 import re
+
+var_global_MGMT_IP = 'none'
+var_global_host_dict = {'HW_S_3':'金融第一道防火墙策略',
+    'USG6600':'金融中转防火墙策略',
+    '192.168.168.168':'SM外部sonicwall防火墙策略'}
 
 def judge_legal_ip(one_str):
     '''''
@@ -105,6 +111,7 @@ def getServiceList(blocked_list, block_child_list,sname):
 def getAddressList(blocked_list, block_child_list,aname):
     #获取具体地址对应的地址名和地址
     address_detail = ''
+    aname = aname.strip()
     return_address_list = []
     target_string = 'ip address-set ' + aname + ' '
     target_str_len = len(target_string)
@@ -139,9 +146,10 @@ def getAddressList(blocked_list, block_child_list,aname):
                     i = i + 1
                     tempStr1 = blocked_list[i]
                 return return_address_list
+                #return address_detail
 
-
-                return address_detail
+    if address_detail == '':
+        print('IP address not found...',aname)
     return []
 
 
@@ -156,7 +164,7 @@ def save_xls_file(blocked_list, block_child_list):
     writecell = []
 
 #Edit sheet "interface" begin
-    sheet = wb.get_sheet_by_name('interface')
+    sheet = wb['interface']
     cellrow = 2
     for i in range(len(blocked_list)):
         tempStr1 = blocked_list[i]
@@ -212,7 +220,7 @@ def save_xls_file(blocked_list, block_child_list):
 # Edit sheet "interface" end
 
 # Edit sheet "route" begin
-    sheet = wb.get_sheet_by_name('route')
+    sheet = wb['route']
     cellrow = 3
     for i in range(len(blocked_list)):
 
@@ -296,12 +304,13 @@ def save_xls_file(blocked_list, block_child_list):
     rule_service_d = 'any'
     rule_service = 'any'
     rule_action = ''
+    rule_description = ''
     rule_source_address_l = []
     rule_destination_address_l = []
     rule_service_l = []
 
 
-    sheet = wb.get_sheet_by_name('rule')
+    sheet = wb['rule']
     cellrow = 2
     for i in range(len(blocked_list)):
         if 'security-policy' in blocked_list[i]:   #remove include "ipv6" string
@@ -376,6 +385,7 @@ def save_xls_file(blocked_list, block_child_list):
                     rule_source_address_l = []
                     rule_destination_address_l = []
                     rule_service_l = []
+                    rule_description = ''
 
                     rule_name = tempStr1[10:]
                     rule_name = rule_name.strip()
@@ -429,6 +439,10 @@ def save_xls_file(blocked_list, block_child_list):
                     rule_action = tempStr1[8:]
                     rule_action = rule_action.strip()
 
+                elif '  description' == tempStr1[:13]:
+                    rule_description = tempStr1[13:]
+                    rule_description = rule_description.strip()
+                
                 else:
                     print('Unknow keywork.'+ tempStr1)
 
@@ -470,7 +484,48 @@ def save_xls_file(blocked_list, block_child_list):
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_service_d
             cellcolumn += 1
             sheet.cell(row=cellrow, column=cellcolumn).value = rule_action
+            cellcolumn += 1
+            sheet.cell(row=cellrow, column=cellcolumn).value = rule_description
             # process last line end
+
+    #if rule_source_address_row > rule_destination_address_row :
+    #    sheet.row_dimensions[cellrow].height = 16 * rule_source_address_row
+    #else :
+    #    sheet.row_dimensions[cellrow].height = 16 * rule_destination_address_row
+
+    cellrow = cellrow+1
+    sheet.cell(row=cellrow, column=1).value = cellrow - 2
+    sheet.cell(row=cellrow, column=2).value = 'default'
+    for j in range(3,11):
+        sheet.cell(row=cellrow, column=j).value = 'any'
+    sheet.cell(row=cellrow, column=11).value = 'deny'
+    cellrow = cellrow+1
+
+    for i in range(cellrow+1,70):
+        sheet.delete_rows(cellrow+1)
+
+    sheet.row_dimensions[cellrow].height = 16 * 4
+    sheet.merge_cells(start_row=cellrow, start_column=1, end_row=cellrow, end_column=11)
+    ending_string='检查人：                                检查日期：'
+    ending_string=ending_string + '\n\n'
+    ending_string=ending_string + '审核人：                                审核日期：'
+    sheet.cell(cellrow,1).value=ending_string
+    sheet.cell(cellrow,1).alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
+    #var_system_time = var_system_time[:10]
+    #date_p_ = datetime.datetime.strptime(var_system_time, '%m/%d/%Y').date()
+
+    #if date_p_.day < 15:
+    #    this_month_start = datetime.datetime(date_p_.year, date_p_.month, 1)
+    #    date_p_ = this_month_start - datetime.timedelta(days=1)
+    #    var_system_time = datetime.datetime.strftime(date_p_, "%m/%d/%Y")
+
+    sheet_rule_title = '2020年'+'xx月  ' +var_global_host_dict['HW_S_3']
+    sheet.cell(1,1).value = sheet_rule_title
+
+    for i in range(cellrow+1,400):
+        sheet.delete_rows(cellrow+1)
+
 
     # Edit sheet "rule" end
     try:
