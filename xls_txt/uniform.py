@@ -54,7 +54,7 @@
 
 from configparser import ConfigParser
 from os.path import exists as os_path_exists
-import datetime
+from datetime import datetime
 from openpyxl import load_workbook
 import os
 import logging
@@ -62,6 +62,8 @@ from logging.handlers import RotatingFileHandler
 from openpyxl.styles import Border, Side, Alignment, PatternFill  #设置字体和边框需要的模块
 
 xl_border = Border(left=Side(style='thin',color='FF000000'),right=Side(style='thin',color='FF000000'),top=Side(style='thin',color='FF000000'),bottom=Side(style='thin',color='FF000000'),diagonal=Side(style='thin',color='FF000000'),diagonal_direction=0,outline=Side(style='thin',color='FF000000'),vertical=Side(style='thin',color='FF000000'),horizontal=Side(style='thin',color='FF000000'))
+
+dlevel = 1
 
 #设置日志文件配置参数
 def set_logging():
@@ -178,6 +180,7 @@ class App():
         print('数据处理： ',sheet_name)
 
         first_row_target=3
+        first_row_source=2
         
         #收款银行
         shou_kuan_yin_hang = '工商银行'
@@ -209,7 +212,7 @@ class App():
         guo_nei_last_row_target = first_row_target
         xi_tong_shi_ye_last_row_target = first_row_target
 
-        for i in (range(2,sheet_source_maxrow)):
+        for i in (range(first_row_source,sheet_source_maxrow)):
             dai_fang_fa_sheng_e = worksheet_source.cell(i,dai_fang_fa_sheng_e_pos).value
             if worksheet_source.cell(i,zhai_yao_pos1).value == None:
                 zhai_yao1 = ' '
@@ -279,6 +282,12 @@ class App():
                 gong_hang_guo_nei_count = gong_hang_guo_nei_count +1
             #切换 系统事业产品 / 国内卡产品 end
 
+            #工行时间格式转换value = '2019-01-02 15:13:07'
+            temp_str = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value
+            logger.info('processing line : '+str(i))
+            gong_hang_shijian_datetime = datetime.strptime(temp_str, '%Y-%m-%d %H:%M:%S')
+            gong_hang_shijian_str = gong_hang_shijian_datetime.strftime('%Y/%m/%d')
+
             worksheet_target.cell(last_row_target,1).value = ''
             worksheet_target.cell(last_row_target,2).value = shou_kuan_yin_hang
             worksheet_target.cell(last_row_target,3).value = worksheet_source.cell(i,shou_kuan_yin_hang_zhanghao_pos).value 
@@ -287,11 +296,11 @@ class App():
             worksheet_target.cell(last_row_target,6).value = ke_hu_lei_xin #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,7).value = bi_zhong #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,8).value = worksheet_source.cell(i,jin_e_pos).value 
-            worksheet_target.cell(last_row_target,9).value = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value 
+            worksheet_target.cell(last_row_target,9).value = gong_hang_shijian_str
             worksheet_target.cell(last_row_target,10).value = zhai_yao_content
             worksheet_target.cell(last_row_target,11).value = cheng_ban_ren_content
             
-        print('处理记录总行数:',i-1)
+        print('处理记录总行数:',i+1-first_row_source)
         print('处理国内产品行数: ', gong_hang_guo_nei_count)
         print('处理系统事业产品行数: ', gong_hang_xi_tong_count)
         worksheet_target = workbook_target['其他流水']
@@ -303,15 +312,15 @@ class App():
 
 
     #交行 数据处理 begin
-        gong_hang_guo_nei_count  = 0
-        gong_hang_xi_tong_count  = 0
+        jiao_hang_guo_nei_count  = 0
+        jiao_hang_xi_tong_count  = 0
 
         sheet_name = '交行'
         worksheet_source = workbook_source[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
         sheet_source_maxrow = worksheet_source.max_row
         print('数据处理： ',sheet_name)
 
-        first_row_target=3
+        first_row_source=3
         
         #收款银行
         shou_kuan_yin_hang = '交通银行'
@@ -341,7 +350,7 @@ class App():
         #worksheet_target = workbook_target[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
         #print(sheet_name)
 
-        for i in (range(3,sheet_source_maxrow)):
+        for i in range(first_row_source,sheet_source_maxrow):
             dai_fang_fa_sheng_e = worksheet_source.cell(i,dai_fang_fa_sheng_e_pos).value
             if worksheet_source.cell(i,zhai_yao_pos1).value == None:
                 zhai_yao1 = ' '
@@ -395,13 +404,20 @@ class App():
                 worksheet_target = workbook_target['系统事业产品']  # 根据Sheet1这个sheet名字来获取该sheet
                 last_row_target = xi_tong_shi_ye_last_row_target
                 xi_tong_shi_ye_last_row_target = xi_tong_shi_ye_last_row_target +1
-                gong_hang_xi_tong_count = gong_hang_xi_tong_count +1
+                jiao_hang_xi_tong_count = jiao_hang_xi_tong_count +1
             else:
                 worksheet_target = workbook_target['国内卡产品']  # 根据Sheet1这个sheet名字来获取该sheet
                 last_row_target = guo_nei_last_row_target
                 guo_nei_last_row_target = guo_nei_last_row_target +1
-                gong_hang_guo_nei_count = gong_hang_guo_nei_count +1
+                jiao_hang_guo_nei_count = jiao_hang_guo_nei_count +1
             #切换 系统事业产品 / 国内卡产品 end
+
+            #交行时间格式转换value = '2019-01-02 15:13:07'
+            temp_str = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value
+            logger.info('processing line : '+str(i))
+            jiao_hang_shijian_datetime = datetime.strptime(temp_str, '%Y-%m-%d %H:%M:%S')
+            jiao_hang_shijian_str = jiao_hang_shijian_datetime.strftime('%Y/%m/%d')
+
 
             worksheet_target.cell(last_row_target,1).value = ''
             worksheet_target.cell(last_row_target,2).value = shou_kuan_yin_hang
@@ -411,32 +427,32 @@ class App():
             worksheet_target.cell(last_row_target,6).value = ke_hu_lei_xin #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,7).value = bi_zhong #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,8).value = worksheet_source.cell(i,jin_e_pos).value 
-            worksheet_target.cell(last_row_target,9).value = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value 
+            worksheet_target.cell(last_row_target,9).value = jiao_hang_shijian_str
             worksheet_target.cell(last_row_target,10).value = zhai_yao_content
             worksheet_target.cell(last_row_target,11).value = cheng_ban_ren_content
             
-        print('处理交行记录总行数:',i-1)
-        print('处理交行国内产品行数: ', gong_hang_guo_nei_count)
-        print('处理交行系统事业产品行数: ', gong_hang_xi_tong_count)
+        print('处理交行记录总行数:',i+1-first_row_source)
+        print('处理交行国内产品行数: ', jiao_hang_guo_nei_count)
+        print('处理交行系统事业产品行数: ', jiao_hang_xi_tong_count)
         worksheet_target = workbook_target['其他流水']
         worksheet_target.cell(4,1).value = '交行'
-        worksheet_target.cell(4,2).value = gong_hang_guo_nei_count + gong_hang_xi_tong_count
-        worksheet_target.cell(4,3).value = i-1 - gong_hang_guo_nei_count + gong_hang_xi_tong_count
+        worksheet_target.cell(4,2).value = jiao_hang_guo_nei_count + jiao_hang_xi_tong_count
+        worksheet_target.cell(4,3).value = i-1 - jiao_hang_guo_nei_count + jiao_hang_xi_tong_count
         worksheet_target.cell(4,4).value = i-1
     #交行数据处理end
 
 
 
     #中行 数据处理 begin
-        gong_hang_guo_nei_count  = 0
-        gong_hang_xi_tong_count  = 0
+        zhong_hang_guo_nei_count  = 0
+        zhong_hang_xi_tong_count  = 0
 
         sheet_name = '中行'
         worksheet_source = workbook_source[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
         sheet_source_maxrow = worksheet_source.max_row
         print('数据处理： ',sheet_name)
 
-        first_row_target=3
+        first_row_source=2
         
         #收款银行
         shou_kuan_yin_hang = '中国银行'
@@ -469,7 +485,7 @@ class App():
         #worksheet_target = workbook_target[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
         #print(sheet_name)
 
-        for i in (range(2,sheet_source_maxrow)):
+        for i in (range(first_row_source,sheet_source_maxrow)):
             dai_fang_fa_sheng_e = worksheet_source.cell(i,dai_fang_fa_sheng_e_pos).value
             if worksheet_source.cell(i,zhai_yao_pos1).value == None:
                 zhai_yao1 = ' '
@@ -526,13 +542,167 @@ class App():
                 worksheet_target = workbook_target['系统事业产品']  # 根据Sheet1这个sheet名字来获取该sheet
                 last_row_target = xi_tong_shi_ye_last_row_target
                 xi_tong_shi_ye_last_row_target = xi_tong_shi_ye_last_row_target +1
-                gong_hang_xi_tong_count = gong_hang_xi_tong_count +1
+                zhong_hang_xi_tong_count = zhong_hang_xi_tong_count +1
             else:
                 worksheet_target = workbook_target['国内卡产品']  # 根据Sheet1这个sheet名字来获取该sheet
                 last_row_target = guo_nei_last_row_target
                 guo_nei_last_row_target = guo_nei_last_row_target +1
-                gong_hang_guo_nei_count = gong_hang_guo_nei_count +1
+                zhong_hang_guo_nei_count = zhong_hang_guo_nei_count +1
             #切换 系统事业产品 / 国内卡产品 end
+
+            #中行时间格式转换value = '20190102'
+            temp_str = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value
+            temp_str = temp_str.strip()
+            logger.info('processing line : '+str(i))
+            if dlevel > 3:
+                print(len(temp_str),type(temp_str),temp_str)
+            zhong_hang_shijian_datetime = datetime.strptime(temp_str, '%Y%m%d')
+            zhong_hang_shijian_str = zhong_hang_shijian_datetime.strftime('%Y/%m/%d')
+
+            worksheet_target.cell(last_row_target,1).value = ''
+            worksheet_target.cell(last_row_target,2).value = shou_kuan_yin_hang
+            worksheet_target.cell(last_row_target,3).value = worksheet_source.cell(i,shou_kuan_yin_hang_zhanghao_pos).value 
+            worksheet_target.cell(last_row_target,4).value = worksheet_source.cell(i,fu_kuan_ren_mingcheng_pos).value 
+            worksheet_target.cell(last_row_target,5).value = worksheet_source.cell(i,fu_kuan_zhanghao_pos).value 
+            worksheet_target.cell(last_row_target,6).value = ke_hu_lei_xin #worksheet_source.cell(i,).value 
+            worksheet_target.cell(last_row_target,7).value = bi_zhong #worksheet_source.cell(i,).value 
+            worksheet_target.cell(last_row_target,8).value = worksheet_source.cell(i,jin_e_pos).value 
+            worksheet_target.cell(last_row_target,9).value = zhong_hang_shijian_str
+            worksheet_target.cell(last_row_target,10).value = zhai_yao_content
+            worksheet_target.cell(last_row_target,11).value = cheng_ban_ren_content
+            
+        print('处理中行记录总行数:',i+1-first_row_source)
+        print('处理中行国内产品行数: ', zhong_hang_guo_nei_count)
+        print('处理中行系统事业产品行数: ', zhong_hang_xi_tong_count)
+        worksheet_target = workbook_target['其他流水']
+        worksheet_target.cell(5,1).value = '中行'
+        worksheet_target.cell(5,2).value = zhong_hang_guo_nei_count + zhong_hang_xi_tong_count
+        worksheet_target.cell(5,3).value = i-1 - zhong_hang_guo_nei_count + zhong_hang_xi_tong_count
+        worksheet_target.cell(5,4).value = i-1
+    #中行数据处理end
+
+    #建行 数据处理 begin
+        jian_hang_guo_nei_count  = 0
+        jian_hang_xi_tong_count  = 0
+
+        sheet_name = '建行'
+        worksheet_source = workbook_source[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
+        sheet_source_maxrow = worksheet_source.max_row
+        print('数据处理： ',sheet_name)
+
+        first_row_source=3
+        
+        #收款银行
+        shou_kuan_yin_hang = '建国银行'
+        #收款银行账号 对应 建行表格 第一行 第二列
+        shou_kuan_yin_hang_zhanghao = worksheet_source.cell(1,2).value
+
+        #收款银行账号 对应 建行表格 第一行 第二列
+        shou_kuan_yin_hang_zhanghao_pos = 1
+        #建行交易类型，用于区分是否处理
+        jiao_yi_lei_xing_pos = 1 #worksheet_source.cell(1,2).value
+
+        #付款银行账号 对应 交行 对方账号
+        fu_kuan_zhanghao_pos = 7
+        #付款人账号名称 对应 交行 对方单位名称
+        fu_kuan_ren_mingcheng_pos = 8
+        #客户类型
+        ke_hu_lei_xin = '国内'
+        #币种
+        bi_zhong = 'CNY'
+        #金额 对应 工行 贷方发生额
+        jin_e_pos = 3
+        #交易时间
+        jiao_yi_shi_jian_pos = 1
+        #摘要
+        zhai_yao_pos1 = 10   #摘要
+        zhai_yao_pos2 = 4  #余额
+        zhai_yao_pos3 = 11  #备注
+        #承办人
+        cheng_ban_ren_content = ' '
+        #贷方发生额
+        dai_fang_fa_sheng_e_pos = 3
+
+        #worksheet_target = workbook_target[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
+        #print(sheet_name)
+
+        for i in (range(first_row_source,sheet_source_maxrow)):
+            dai_fang_fa_sheng_e = worksheet_source.cell(i,dai_fang_fa_sheng_e_pos).value
+
+            if worksheet_source.cell(i,zhai_yao_pos1).value == None:
+                zhai_yao1 = ' '
+            else:
+                zhai_yao1 = worksheet_source.cell(i,zhai_yao_pos1).value
+            if worksheet_source.cell(i,zhai_yao_pos2).value == None:
+                zhai_yao2 = ' '
+            else:
+                zhai_yao2 = worksheet_source.cell(i,zhai_yao_pos2).value
+            if worksheet_source.cell(i,zhai_yao_pos3).value == None:
+                zhai_yao3 = ' '
+            else:
+                zhai_yao3 = worksheet_source.cell(i,zhai_yao_pos3).value
+
+            zhai_yao_content = str(zhai_yao1) +';'+ str(zhai_yao2) +';'+ str(zhai_yao3)
+
+            
+            #排除 不符合上述的入账流水规则 begin
+            if dai_fang_fa_sheng_e == None:
+                continue
+            if dai_fang_fa_sheng_e <= 0 :
+                continue
+            #排除 不符合上述的入账流水规则 end
+
+            fu_kuan_ren_mingcheng = worksheet_source.cell(i,fu_kuan_ren_mingcheng_pos).value
+            if fu_kuan_ren_mingcheng != None:
+                fu_kuan_ren_mingcheng = fu_kuan_ren_mingcheng.strip()
+            #查找付款人名称所属区域 begin
+            ke_hu_suo_shu_qu_yu = '' #客户所属区域
+            for kehu_quyu_index in range(0,len(customer_zone_list)):
+                kehu_quyu_search = customer_zone_list[kehu_quyu_index]
+                if fu_kuan_ren_mingcheng == kehu_quyu_search[0]:
+                    ke_hu_suo_shu_qu_yu = kehu_quyu_search[1]
+                    logger.info('客户所属区域, getit: ' + fu_kuan_ren_mingcheng +';'+ ke_hu_suo_shu_qu_yu)
+                    break
+            #查找付款人名称所属区域 end
+            #查找区域负责人 begin
+            qu_yu_fu_ze_ren = ' '
+            if ke_hu_suo_shu_qu_yu != '':
+                for kehu_quyu_index in range(0,len(qu_yu_yu_fu_ze_ren_fen_pei_list)):
+                    kehu_quyu_search = qu_yu_yu_fu_ze_ren_fen_pei_list[kehu_quyu_index]
+                    if ke_hu_suo_shu_qu_yu == kehu_quyu_search[1]:
+                        qu_yu_fu_ze_ren = kehu_quyu_search[2]
+                        logger.info('区域负责人, getit: ' + qu_yu_fu_ze_ren)
+                        cheng_ban_ren_content = qu_yu_fu_ze_ren
+            #查找区域负责人 end
+
+            #切换 系统事业产品 / 国内卡产品 begin
+            if fu_kuan_ren_mingcheng ==None:
+                sheet_name_switch = '国内卡产品'
+            elif '药' in fu_kuan_ren_mingcheng:
+                sheet_name_switch = '系统事业产品'
+            else:
+                sheet_name_switch = '国内卡产品'
+
+            if sheet_name_switch == '系统事业产品':
+                worksheet_target = workbook_target['系统事业产品']  # 根据Sheet1这个sheet名字来获取该sheet
+                last_row_target = xi_tong_shi_ye_last_row_target
+                xi_tong_shi_ye_last_row_target = xi_tong_shi_ye_last_row_target +1
+                jian_hang_xi_tong_count = jian_hang_xi_tong_count +1
+            else:
+                worksheet_target = workbook_target['国内卡产品']  # 根据Sheet1这个sheet名字来获取该sheet
+                last_row_target = guo_nei_last_row_target
+                guo_nei_last_row_target = guo_nei_last_row_target +1
+                jian_hang_guo_nei_count = jian_hang_guo_nei_count +1
+            #切换 系统事业产品 / 国内卡产品 end
+
+            #时间格式转换
+            temp_str = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value
+            temp_str = temp_str.strip()
+            logger.info('processing line : '+str(i))
+            if dlevel > 3:
+                print(len(temp_str),type(temp_str),temp_str)
+            jian_hang_shijian_datetime = datetime.strptime(temp_str, '%Y%m%d %H:%M:%S')
+            jian_hang_shijian_str = jian_hang_shijian_datetime.strftime('%Y/%m/%d')
 
             worksheet_target.cell(last_row_target,1).value = ''
             worksheet_target.cell(last_row_target,2).value = shou_kuan_yin_hang
@@ -542,19 +712,156 @@ class App():
             worksheet_target.cell(last_row_target,6).value = ke_hu_lei_xin #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,7).value = bi_zhong #worksheet_source.cell(i,).value 
             worksheet_target.cell(last_row_target,8).value = worksheet_source.cell(i,jin_e_pos).value 
-            worksheet_target.cell(last_row_target,9).value = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value 
+            worksheet_target.cell(last_row_target,9).value = jian_hang_shijian_str
             worksheet_target.cell(last_row_target,10).value = zhai_yao_content
             worksheet_target.cell(last_row_target,11).value = cheng_ban_ren_content
             
-        print('处理中行记录总行数:',i-1)
-        print('处理中行国内产品行数: ', gong_hang_guo_nei_count)
-        print('处理中行系统事业产品行数: ', gong_hang_xi_tong_count)
+        print('处理建行记录总行数:',i+1-first_row_source)
+        print('处理建行国内产品行数: ', jian_hang_guo_nei_count)
+        print('处理建行系统事业产品行数: ', jian_hang_xi_tong_count)
         worksheet_target = workbook_target['其他流水']
-        worksheet_target.cell(5,1).value = '中行'
-        worksheet_target.cell(5,2).value = gong_hang_guo_nei_count + gong_hang_xi_tong_count
-        worksheet_target.cell(5,3).value = i-1 - gong_hang_guo_nei_count + gong_hang_xi_tong_count
-        worksheet_target.cell(5,4).value = i-1
-    #中行数据处理end
+        worksheet_target.cell(6,1).value = '建行'
+        worksheet_target.cell(6,2).value = jian_hang_guo_nei_count + jian_hang_xi_tong_count
+        worksheet_target.cell(6,3).value = i-1 - jian_hang_guo_nei_count + jian_hang_xi_tong_count
+        worksheet_target.cell(6,4).value = i-1
+    #建行数据处理end
+
+    #浦发 数据处理 begin
+        pu_fa_guo_nei_count  = 0
+        pu_fa_xi_tong_count  = 0
+
+        sheet_name = '浦发'
+        worksheet_source = workbook_source[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
+        sheet_source_maxrow = worksheet_source.max_row
+        print('数据处理： ',sheet_name)
+
+        first_row_source=3
+        
+        #收款银行
+        shou_kuan_yin_hang = '浦发银行'
+        #收款银行账号 对应 浦发表格 第一行 第二列
+        shou_kuan_yin_hang_zhanghao_pos = 9
+        #浦发交易类型，用于区分是否处理
+        #收款银行账号 对应 建行表格 第一行 第二列
+        shou_kuan_yin_hang_zhanghao = worksheet_source.cell(1,2).value
+
+        jiao_yi_lei_xing_pos = 1 #worksheet_source.cell(1,2).value
+
+        #付款银行账号 对应 浦发 对方账号
+        fu_kuan_zhanghao_pos = 7
+        #付款人账号名称 对应 浦发 对方单位名称
+        fu_kuan_ren_mingcheng_pos = 8
+        #客户类型
+        ke_hu_lei_xin = '国内'
+        #币种
+        bi_zhong = 'CNY'
+        #金额 对应 浦发 贷方发生额
+        jin_e_pos = 5
+        #交易时间
+        jiao_yi_shi_jian_pos = 1
+        #摘要
+        zhai_yao_pos1 = 9   #摘要
+        #zhai_yao_pos2 = 10  #用途
+        #zhai_yao_pos3 = 13  #个性化信息
+        #承办人
+        cheng_ban_ren_content = ' '
+        #贷方发生额
+        dai_fang_fa_sheng_e_pos = 5
+
+        #worksheet_target = workbook_target[sheet_name]  # 根据Sheet1这个sheet名字来获取该sheet
+        #print(sheet_name)
+
+        for i in range(first_row_source,sheet_source_maxrow+1):
+            dai_fang_fa_sheng_e = worksheet_source.cell(i,dai_fang_fa_sheng_e_pos).value
+            if worksheet_source.cell(i,zhai_yao_pos1).value == None:
+                zhai_yao1 = ' '
+            else:
+                zhai_yao1 = worksheet_source.cell(i,zhai_yao_pos1).value
+
+            zhai_yao_content = str(zhai_yao1)
+            #logger.info('dai_fang_fa_sheng_e type: ' + str(dai_fang_fa_sheng_e))
+            
+            #排除 不符合上述的入账流水规则 begin
+            jiao_yi_lei_xing_str =  worksheet_source.cell(i,jiao_yi_lei_xing_pos).value
+            if dai_fang_fa_sheng_e ==None:
+                continue
+            if len(str(dai_fang_fa_sheng_e)) ==0 :
+                continue
+            #排除 不符合上述的入账流水规则 end
+
+            fu_kuan_ren_mingcheng = worksheet_source.cell(i,fu_kuan_ren_mingcheng_pos).value
+            if fu_kuan_ren_mingcheng != None:
+                fu_kuan_ren_mingcheng = fu_kuan_ren_mingcheng.strip()
+            #查找付款人名称所属区域 begin
+            ke_hu_suo_shu_qu_yu = '' #客户所属区域
+            for kehu_quyu_index in range(0,len(customer_zone_list)):
+                kehu_quyu_search = customer_zone_list[kehu_quyu_index]
+                if fu_kuan_ren_mingcheng == kehu_quyu_search[0]:
+                    ke_hu_suo_shu_qu_yu = kehu_quyu_search[1]
+                    logger.info('客户所属区域, getit: ' + fu_kuan_ren_mingcheng +';'+ ke_hu_suo_shu_qu_yu)
+                    break
+            #查找付款人名称所属区域 end
+            #查找区域负责人 begin
+            qu_yu_fu_ze_ren = ' '
+            if ke_hu_suo_shu_qu_yu != '':
+                for kehu_quyu_index in range(0,len(qu_yu_yu_fu_ze_ren_fen_pei_list)):
+                    kehu_quyu_search = qu_yu_yu_fu_ze_ren_fen_pei_list[kehu_quyu_index]
+                    if ke_hu_suo_shu_qu_yu == kehu_quyu_search[1]:
+                        qu_yu_fu_ze_ren = kehu_quyu_search[2]
+                        logger.info('区域负责人, getit: ' + qu_yu_fu_ze_ren)
+                        cheng_ban_ren_content = qu_yu_fu_ze_ren
+            #查找区域负责人 end
+
+            #切换 系统事业产品 / 国内卡产品 begin
+            if fu_kuan_ren_mingcheng ==None:
+                sheet_name_switch = '国内卡产品'
+            elif '药' in fu_kuan_ren_mingcheng:
+                sheet_name_switch = '系统事业产品'
+            else:
+                sheet_name_switch = '国内卡产品'
+
+            if sheet_name_switch == '系统事业产品':
+                worksheet_target = workbook_target['系统事业产品']  # 根据Sheet1这个sheet名字来获取该sheet
+                last_row_target = xi_tong_shi_ye_last_row_target
+                xi_tong_shi_ye_last_row_target = xi_tong_shi_ye_last_row_target +1
+                pu_fa_xi_tong_count = pu_fa_xi_tong_count +1
+            else:
+                worksheet_target = workbook_target['国内卡产品']  # 根据Sheet1这个sheet名字来获取该sheet
+                last_row_target = guo_nei_last_row_target
+                guo_nei_last_row_target = guo_nei_last_row_target +1
+                pu_fa_guo_nei_count = pu_fa_guo_nei_count +1
+            #切换 系统事业产品 / 国内卡产品 end
+
+            #中行时间格式转换value = '20190102'
+            temp_str = worksheet_source.cell(i,jiao_yi_shi_jian_pos).value
+            temp_str = temp_str.strip()
+            logger.info('processing line : '+str(i))
+            if dlevel > 3:
+                print(len(temp_str),type(temp_str),temp_str)
+            zhong_hang_shijian_datetime = datetime.strptime(temp_str, '%Y%m%d')
+            zhong_hang_shijian_str = zhong_hang_shijian_datetime.strftime('%Y/%m/%d')
+
+            worksheet_target.cell(last_row_target,1).value = ''
+            worksheet_target.cell(last_row_target,2).value = shou_kuan_yin_hang
+            worksheet_target.cell(last_row_target,3).value = shou_kuan_yin_hang_zhanghao #worksheet_source.cell(i,shou_kuan_yin_hang_zhanghao_pos).value 
+            worksheet_target.cell(last_row_target,4).value = worksheet_source.cell(i,fu_kuan_ren_mingcheng_pos).value 
+            worksheet_target.cell(last_row_target,5).value = worksheet_source.cell(i,fu_kuan_zhanghao_pos).value 
+            worksheet_target.cell(last_row_target,6).value = ke_hu_lei_xin #worksheet_source.cell(i,).value 
+            worksheet_target.cell(last_row_target,7).value = bi_zhong #worksheet_source.cell(i,).value 
+            worksheet_target.cell(last_row_target,8).value = worksheet_source.cell(i,jin_e_pos).value 
+            worksheet_target.cell(last_row_target,9).value = zhong_hang_shijian_str
+            worksheet_target.cell(last_row_target,10).value = zhai_yao_content
+            worksheet_target.cell(last_row_target,11).value = cheng_ban_ren_content
+            
+        print('处理浦发记录总行数:',i+1-first_row_source)
+        print('处理浦发国内产品行数: ', pu_fa_guo_nei_count)
+        print('处理浦发系统事业产品行数: ', pu_fa_xi_tong_count)
+        worksheet_target = workbook_target['其他流水']
+        worksheet_target.cell(7,1).value = '浦发'
+        worksheet_target.cell(7,2).value = pu_fa_guo_nei_count + pu_fa_xi_tong_count
+        worksheet_target.cell(7,3).value = i-1 - pu_fa_guo_nei_count + pu_fa_xi_tong_count
+        worksheet_target.cell(7,4).value = i-1
+    #浦发数据处理end
 
 
 
@@ -572,7 +879,8 @@ class App():
     def initWidgets(self):
         cp = ConfigParser()
         try:
-            cp.read('配置文件.ini', encoding='gbk')
+            cp = cp
+            #cp.read('配置文件.ini', encoding='gbk')
             # str_kehu_name = cp.get('配置信息', '客户名称')
             # kehu_name_list = str_kehu_name.split("|")
             # for i in range(0,len(kehu_name_list)):
@@ -600,7 +908,7 @@ class App():
         #print('host: ', str_kehu_name)
         #print(self.file_from_youjiqingdan)
 
-        temp_last_datetime = datetime.date.today() - datetime.timedelta(days=10)
+        #temp_last_datetime = datetime.date.today() - datetime.timedelta(days=10)
 
     # 退出键
     def command_btn_exit(self):
