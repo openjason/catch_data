@@ -1,9 +1,9 @@
 #-*- coding:utf-8 -*-
+#date: V2004231019
+#auth: openjc
 '''
 [F配置]
 Customers = 工行|交行|中行|浦发|建行
-#|中行|建行|浦发
-
 [工行]
 TSHEETNAME = 工行
 TTITLE = 1
@@ -64,7 +64,7 @@ T6 = VAL|国内
 T7 = VAL|CNY
 T8 = 贷方金额
 T9 = 交易日期
-T10 = 摘要
+T10 = 摘要|备注
 T11 = SPACE
 
 [建行]
@@ -81,7 +81,6 @@ T8 = 贷方发生额（收入）
 T9 = 交易时间
 T10 = 摘要|备注
 T11 = SPACE
-
 '''
 
 from configparser import ConfigParser
@@ -234,16 +233,23 @@ class App():
         #xlsfilename = self.data_dir + xlsfilename
         workbook_source = load_workbook('国内每日收款明细.xlsx')  # 打开excel文件
         logger.info('导入 ~国内每日收款明细~ 表' )
+        self.list_message.insert(0,'导入 ~国内每日收款明细~ 表' )
+        self.list_message.update()
 
         workbook_target = load_workbook('银行流水统一格式.xlsx')  # 打开excel文件
         logger.info('转换到 ~银行流水统一格式~ 表' )
+        self.list_message.insert(0,'转换到 ~银行流水统一格式~ 表' )
+        self.list_message.update()
 
-        
+        self.list_message.insert(0,'开始查找标题位置信息...')
+        self.list_message.update()
         for idx_one_customer_conf in range(len(self.list_conf_customer_lists)):
             list_one_customer_conf = self.list_conf_customer_lists[idx_one_customer_conf]
             #fxl = form excel
             fxl_sheetname = list_one_customer_conf [0]
             fxl_title_row = int(list_one_customer_conf [1])
+            self.list_message.insert(0,'开始查找标题位置信息...'+str(fxl_sheetname))
+            self.list_message.update()
 
             try:        #检查是否有对应的 sheet
                 worksheet_source = workbook_source[fxl_sheetname]
@@ -310,7 +316,7 @@ class App():
                                 one_cell_restruck = one_cell_restruck + '|' + one_cell_in_conf_line + '@' + str(idx_temp)
                     self.list_conf_customer_lists[idx_one_customer_conf][idx_one_cell_in_conf_line] = one_cell_restruck
         logger.info(self.list_conf_customer_lists)
-        self.list_message.insert(0,'完成查找标题位置信息...')
+        self.list_message.insert(0,'已确定标题位置信息。')
 
         int_from_conf_first_pos = 2
         int_from_conf_last_pos = 12
@@ -323,6 +329,8 @@ class App():
         #目标excel 表格 首行位置
         
         for idx_one_customer_conf in range(len(self.list_conf_customer_lists)):
+            logger.info('begin load sheet data: ')
+            logger.info(self.list_conf_customer_lists[idx_one_customer_conf])
             #当 未能打开 相应的 sheet ，跳过
             if 'NOTFOUND' == self.list_conf_customer_lists[idx_one_customer_conf][1]:
                 continue
@@ -347,8 +355,8 @@ class App():
             self.list_message.insert(0,'数据处理： '+ fxl_sheetname)
 
             #从每一个 sheet 读取 数据第一行 到 行 尾数据
-            logger.info('fxl_data_first_row' + str(fxl_data_first_row))
-            logger.info('sheet_source_maxrow' +str(sheet_source_maxrow))
+            logger.info('fxl_data_first_row: ' + str(fxl_data_first_row))
+            logger.info('sheet_source_maxrow: ' +str(sheet_source_maxrow))
 
             last_fxl_sheet_data_rows = fxl_sheet_data_rows  #上次处理数据行数
 
@@ -383,7 +391,7 @@ class App():
                     zhao_yao_pos_list = zhai_yao_pos_str.split('@')
                     zhao_yao_pos = int(zhao_yao_pos_list[1])
                     zhao_yao_str = str(worksheet_source.cell(int_row_data_from_source,zhao_yao_pos).value)
-                    if '利息' in zhao_yao_str:              #排除 ’利息‘
+                    if '利息划入' in zhao_yao_str:              #排除 ’利息‘
                         logger.info(zhao_yao_str)
                         continue
 
@@ -391,12 +399,12 @@ class App():
                     #交易类型[ Transaction Type ]       特殊处理
                     jiao_yi_lei_xin_pos = 1
                     jiao_yi_lei_xin_str = str(worksheet_source.cell(int_row_data_from_source,jiao_yi_lei_xin_pos).value)
-                    if not ('来账' in jiao_yi_lei_xin_str):              #排除 ’利息‘
+                    if not ('来账' in jiao_yi_lei_xin_str):              #
                         logger.info('中行排除项' + str(jiao_yi_lei_xin_str))
                         continue
 
-
-                fu_kuan_ren_mingcheng_str = list_one_customer_conf[6]   #付款人名称
+                cheng_ban_ren_content = '' #承办人信息清空
+                fu_kuan_ren_mingcheng_str = list_one_customer_conf[5]   #付款人名称
                 fu_kuan_ren_pos_list = fu_kuan_ren_mingcheng_str.split('@')
                 fu_kuan_ren_ren_pos  = int(fu_kuan_ren_pos_list[1])
                 fu_kuan_ren_mingcheng = worksheet_source.cell(int_row_data_from_source,fu_kuan_ren_ren_pos).value
@@ -426,12 +434,14 @@ class App():
                 #切换 系统事业产品 / 国内卡产品 begin
                 if fu_kuan_ren_mingcheng ==None:
                     sheet_name_switch = '国内卡产品'
-                elif '药' in fu_kuan_ren_mingcheng:
-                    sheet_name_switch = '系统事业产品'
-                elif len(fu_kuan_ren_mingcheng) < fu_kuan_ren_mingcheng_len_divion:
-                    sheet_name_switch = '系统事业产品'
                 else:
-                    sheet_name_switch = '国内卡产品'
+                    fu_kuan_ren_mingcheng = fu_kuan_ren_mingcheng.strip()
+                    if '药' in fu_kuan_ren_mingcheng:
+                        sheet_name_switch = '系统事业产品'
+                    elif len(fu_kuan_ren_mingcheng) > 0 and  len(fu_kuan_ren_mingcheng) < fu_kuan_ren_mingcheng_len_divion:
+                        sheet_name_switch = '系统事业产品'
+                    else:
+                        sheet_name_switch = '国内卡产品'
 
                 if sheet_name_switch == '系统事业产品':
                     worksheet_target = workbook_target['系统事业产品']  # 根据Sheet1这个sheet名字来获取该sheet
@@ -444,7 +454,7 @@ class App():
                     guo_nei_last_row_target = guo_nei_last_row_target +1
                     curr_row_target = guo_nei_last_row_target
                 #切换 系统事业产品 / 国内卡产品 end
-
+ 
                 #从 T1 到 T12 写入数
                 logger.info(jin_e_float)
                 for idx_one_cell_in_conf_line in range(int_from_conf_first_pos,int_from_conf_last_pos):               #T1 - T 12 
@@ -501,14 +511,16 @@ class App():
 
 
                             if  '发生额' in str_cell_name:
-                                    cell_value = jin_e_float
+                                cell_value = jin_e_float
                             if  '金额' in str_cell_name:
-                                    cell_value = jin_e_float
+                                cell_value = jin_e_float
                             #摘要（从一个字段中提取的）
                             if  '摘要' in str_cell_name:
-                                    cell_value = '[摘要]' + cell_value
+                                cell_value = cell_value.strip()
+                                cell_value = '[摘要]' + cell_value
                             if  '用途' in str_cell_name:
-                                    cell_value = '[用途]' + cell_value
+                                cell_value = cell_value.strip()
+                                cell_value = '[用途]' + cell_value
 
                             worksheet_target.cell(curr_row_target,idx_one_cell_in_conf_line-int_from_conf_first_pos+1).value = cell_value
                         
@@ -519,21 +531,22 @@ class App():
                                 int_cell_position = int(list_temp2[1])
                                 str_cell_name = list_temp2[0]
                                 cell_value = worksheet_source.cell(int_row_data_from_source,int_cell_position).value
+                                if cell_value == None:
+                                    cell_value = ' '
+                                cell_value = cell_value.strip()
                                 str_temp_str = str_temp_str + '[' +str(str_cell_name)+ ']' + str(cell_value) + ';'
 
                             worksheet_target.cell(curr_row_target,idx_one_cell_in_conf_line-int_from_conf_first_pos+1).value = str_temp_str
+                    #承办人，特殊处理，位置列：11
+                    worksheet_target.cell(curr_row_target,11).value = cheng_ban_ren_content
 
-            
-            
             self.list_message.insert(0,fxl_sheetname + '国内卡产品 ：'+str(guo_nei_last_row_target - last_guo_nei_last_row_target))
             self.list_message.insert(0,fxl_sheetname + '系统事业产品 ：'+str(xi_tong_shi_ye_last_row_target - last_xi_tong_shi_ye_last_row_target))
             self.list_message.insert(0,fxl_sheetname + '其他流水 ：'+str(fxl_sheet_data_rows - last_fxl_sheet_data_rows - (guo_nei_last_row_target - last_guo_nei_last_row_target) - (xi_tong_shi_ye_last_row_target - last_xi_tong_shi_ye_last_row_target)))
             self.list_message.insert(0,fxl_sheetname + '小计 ：'+str(fxl_sheet_data_rows -last_fxl_sheet_data_rows))
             self.list_message.insert(0,'='*40)
-            
-            
-            
-            
+            self.list_message.update()
+
             print('guonei:' , guo_nei_last_row_target  - last_guo_nei_last_row_target)
             print('xi tong: ', xi_tong_shi_ye_last_row_target -last_xi_tong_shi_ye_last_row_target)
             print('fxl_sheet_data_rows: ', fxl_sheet_data_rows - last_fxl_sheet_data_rows)
@@ -560,10 +573,7 @@ class App():
         self.list_message.insert(0, '系统事业产品 ：'+str(xi_tong_shi_ye_last_row_target - xi_tong_shi_ye_first_row_target))
         self.list_message.insert(0, '其他流水 ：'+str(fxl_sheet_data_rows - (guo_nei_last_row_target - guo_nei_first_row_target) - (xi_tong_shi_ye_last_row_target - xi_tong_shi_ye_first_row_target)))
         self.list_message.insert(0, '合计 ：'+str(fxl_sheet_data_rows))
-
         self.list_message.insert(0,'处理完成。。。')
-
-
 
 
 # 程序主gui界面。
@@ -596,11 +606,11 @@ class App():
         label_author = Label(fm1, text='by流程与信息化部IT. April,2020', font=('Arial', 9))
         label_author.place(x=814, y=717)
 
-        self.btn_download_init = Button(fm1, text='  刷  新  ', command=self.command_refresh_btn_run)
-        self.btn_download_init.place(x=929, y=100)
+        self.btn_download_init = Button(fm1, text='  运 行  ', command=self.command_refresh_btn_run)
+        self.btn_download_init.place(x=929, y=170)
 
-        self.btn_sendfile_init = Button(fm1, text='发送文件', command=self.command_btn_run)
-        self.btn_sendfile_init.place(x=929, y=210)
+        #self.btn_sendfile_init = Button(fm1, text='发送文件', command=self.command_btn_run)
+        #self.btn_sendfile_init.place(x=929, y=210)
         #btn_download_init.configure(state=DISABLED)
 
         btn_app_exit_init = Button(fm1, text='  退  出  ', command=self.command_btn_exit)
@@ -617,11 +627,13 @@ class App():
         self.sbar_lr.pack(padx=10,pady=40)
 
         str_tips = '刷新，请先点选要发送的文件       '
+        str_tips = '      '
         self.label_tips = Label(textvariable=self.svar_tips, font=('Arial', 11))
         self.label_tips.place(x=30, y=7)
         self.svar_tips.set(str_tips)
         
         str_file_detail_tips = '双击, 查看文件大小和时间'
+        str_file_detail_tips = ' '
         self.label_file_detail_tips = Label(textvariable=self.svar_file_detail_tips, font=('Arial', 10))
         self.label_file_detail_tips.place(x=30, y=704)
         self.svar_file_detail_tips.set(str_file_detail_tips)
@@ -661,11 +673,11 @@ class App():
         return 0
 
 if __name__ == '__main__':
-    print('新OA银行统一流水格式化工具 V2004161502')
+    print('新OA银行统一流水格式化工具 V2004231019')
 
     set_logging()
     main_window = Tk()
-    main_window.title('新OA银行统一流水格式化工具 V2004161502')
+    main_window.title('新OA银行统一流水格式化工具 V2004231019')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
