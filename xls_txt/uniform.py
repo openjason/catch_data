@@ -4,6 +4,8 @@
 '''
 [F配置]
 Customers = 工行|交行|中行|浦发|建行
+#|中行|建行|浦发
+
 [工行]
 TSHEETNAME = 工行
 TTITLE = 1
@@ -64,7 +66,7 @@ T6 = VAL|国内
 T7 = VAL|CNY
 T8 = 贷方金额
 T9 = 交易日期
-T10 = 摘要|备注
+T10 = 摘要
 T11 = SPACE
 
 [建行]
@@ -81,6 +83,7 @@ T8 = 贷方发生额（收入）
 T9 = 交易时间
 T10 = 摘要|备注
 T11 = SPACE
+
 '''
 
 from configparser import ConfigParser
