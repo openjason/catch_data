@@ -6,6 +6,7 @@ from tkinter import messagebox,scrolledtext,Canvas,PhotoImage,Label,StringVar,En
 from os.path import exists as os_path_exists
 from openpyxl import load_workbook 
 import datetime,time
+import xlrd
 import os
 import sys
 import logging
@@ -42,7 +43,7 @@ class App():
         self.file_from_jichu = ''
         self.curr_month = ''
         self.initWidgets(master)
-        self.curr_year_month = '2020-03-'
+        self.curr_year_month = '2020-04-'
 
     # 按文件夹统计符合条件文件列表，逐个文件导入数据库
     def fix_recorder_proc(self, work_dir):
@@ -514,6 +515,8 @@ class App():
                             else:
                                 curr_day = '0' + str(j-5)
                             #file_txt_kaoqin.write(username+ userid+" "+self.curr_year_month+curr_day+' '+click_one_time+':00')
+                            if type(userid) != type('str'):
+                                self.scr.insert(1.0,'ERROR:    userid type error: '  + str(userid) )
                             file_txt_kaoqin.write(userid+" "+self.curr_year_month+curr_day+' '+click_one_time+':00')
                             file_txt_kaoqin.write("\n")
                             userid_attend = 1
@@ -805,7 +808,7 @@ class App():
                 logger.info(daka_line)
 
         file_txt_kaoqin.close()
-        workbook.save('yfzx.xlsx')
+        workbook.save('东信和平科技股份有限公司_打卡时间表-研发-工时.xlsx')
         print('=' * 40)
         print('共导入了 ', i - int_first_row + 1, '行数据.')
         self.scr.insert(1.0, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
