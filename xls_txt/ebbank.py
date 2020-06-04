@@ -1,6 +1,7 @@
 #!/bin/python3
 '''
 功能：光大制卡业务库存反馈文件自动生成工具。
+Version: v1.1
 '''
 from tkinter import *
 from configparser import ConfigParser
@@ -182,6 +183,8 @@ class App():
         date_position = 0
         for j in range(12, int_sheet_ncols ):
             cell_value_rukuriqi = sheet_curr.cell(0, j).value
+            if cell_value_rukuriqi =='':
+                break
             xls_date = xldate_as_tuple(cell_value_rukuriqi, 0)
             date_str = str(xls_date[0])
             if xls_date[1] < 10:
@@ -195,6 +198,7 @@ class App():
             compare_data_str = self.svar_proc_time1.get()
             if date_str == compare_data_str:
                 date_position = j
+                break
 
         if date_position == 0 :
             self.scr.insert(END, "EXCEL表格无法查找到对应日期" + self.svar_proc_time1.get() + ".\n")
@@ -226,7 +230,8 @@ class App():
                     else:
                         int_rukushuliang = 0
 
-                str_merge = 'DATA' + str_split_string + order_id + str_split_string + str(int_rukushuliang) + str_split_string + waibaoshangkucunbianhao + str_split_string
+                #str_merge = 'DATA' + str_split_string + order_id + str_split_string + str(int_rukushuliang) + str_split_string + waibaoshangkucunbianhao + str_split_string
+                str_merge = 'DATA' + str_split_string + str(order_id) + str_split_string + str(int_rukushuliang) + str_split_string
                 if int_rukushuliang >0:
                     txt_open_file.writelines(str_merge)
                     txt_open_file.writelines('\n')
@@ -338,6 +343,7 @@ class App():
                 else:
                     int_chejianmeirichukuliang = 0
                 str_merge = 'DATA' + str_split_string + yinhang_fuliaobianhao + str_split_string + fuliaobianhao + str_split_string + str(int_chejianmeirichukuliang) +str_split_string
+                str_merge = 'DATA' + str_split_string + yinhang_fuliaobianhao + str_split_string + str(int_chejianmeirichukuliang) +str_split_string
                 str_merge = str_merge + str(int_dangqiankucun) + str_split_string
                 #if int_chejianmeirichukuliang >0 and len(fuliaobianhao) > 0:
                 if int_chejianmeirichukuliang >0:
@@ -458,7 +464,7 @@ class App():
         svar_label_prompt = StringVar()
         svar_label_prompt.set('客户名称：')
 
-        label_author = Label(fm1, text='by流程与信息化部IT. Dec,2019', font=('Arial', 9))
+        label_author = Label(fm1, text='by流程与信息化部IT. May,2020', font=('Arial', 9))
         label_author.place(x=820, y=740)
 
         self.scr = scrolledtext.ScrolledText(fm1, width=80, height=48)
@@ -493,6 +499,7 @@ class App():
 
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         str_ru_filename = '02_'+str_temp_last_datetime + '_frrsp.txt'
+       
 
         try:
             if self.fuliaoruku_file_proc(str_ru_filename, self.file_from_dingdangenzong) == 'no':
@@ -520,7 +527,7 @@ class App():
 
         str_temp_last_datetime = time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
         str_chu_filename = '02_' + str_temp_last_datetime + '_fs.txt'
-
+        
         try:
             if self.fuliao_chuku_file_proc(str_chu_filename, self.file_from_fuliaokucun) == 'no':
                 return (1)
@@ -540,7 +547,7 @@ if __name__ == '__main__':
     set_logging()
 
     main_window = Tk()
-    main_window.title('光大制卡业务库存反馈文件生成工具 v.2001191026')
+    main_window.title('光大制卡业务库存反馈文件生成工具 V1.1 20200604 ')
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
     sw = main_window.winfo_screenwidth()
