@@ -2,7 +2,8 @@
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2020-03-13 10:08
+2020-07-12 14:48
+当service group包含group，由于格式等原因查找不到group，没有提示问题。
 '''
 # import os
 from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
@@ -79,6 +80,8 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
     address_g_list = []
     if '"' in Aname:
         Aname = Aname[1:len(Aname) - 1]
+    
+    check_address_goup_list = AddressGroupList
 
     for i in range(len(blocked_list)):
         if 'ipv6' in blocked_list[i]:  # remove include "ipv6" string
@@ -101,6 +104,7 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
                     if 'address-object' == tempStr2[:14]:
                         tempGetSObject = tempStr2[15+5:len(tempStr2)]
                         AddressGroupList.append(getAddressList(blocked_list, block_child_list,tempGetSObject))
+                        check_address_goup_list = []
                     if 'address-group' == tempStr2[:13]:
                         tempGetSObject = tempStr2[14+5:len(tempStr2)]
                         tempGetSObject = tempGetSObject.strip()
@@ -108,6 +112,9 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
 #                        for tempInt1 in range(len(tempList3)):
 #                            AddressGroupList.append(tempList3[tempInt1])
                 break
+    if len(check_address_goup_list)>0 and check_address_goup_list == AddressGroupList:
+        print('AddressGroup not found...',Aname)
+    
     return AddressGroupList
 
 
@@ -122,6 +129,8 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
         ServicePortList.append('Ping')
         return ServicePortList
 
+    check_service_list = ServicePortList
+    #print('1',Gname,ServicePortList)
     #if Gname == '5000&ping':
     #    Gname = Gname
 
@@ -148,12 +157,15 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
                     if 'service-object' == tempStr2[:14]:
                         tempGetSObject = tempStr2[15:len(tempStr2)]
                         ServicePortList.append(getServiceList(blocked_list, block_child_list,tempGetSObject))
+                        check_service_list = []
                     if 'service-group' == tempStr2[:13]:
                         tempGetSObject = tempStr2[14:len(tempStr2)]
                         tempGetSObject = tempGetSObject.strip()
 
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
-#                        ServicePortList = ServicePortList + tempList3
+    #print('2',Gname,ServicePortList)
+    if len(check_service_list)>0 and check_service_list == ServicePortList:
+        print('ServiceGroup not found...',Gname)
 
     return ServicePortList
 
@@ -177,6 +189,9 @@ def getAddressList(blocked_list, block_child_list,aname):
     if aname =='any':
         return '0.0.0.0'
 
+    if aname =='"X3 Subnet"':
+        return('systeminterface')
+
     if re.search(r'[XU]\d+ IP',aname):
         return('systeminterface')
     #if '新加坡分公司' in aname :
@@ -190,9 +205,6 @@ def getAddressList(blocked_list, block_child_list,aname):
                 address_detail = tempStr_raw[len("address-object ipv4 ") :len(tempStr_raw)]
                 address_detail = fix_address_string(address_detail)
                 break
-            #不处理 'ipv6' 
-        #处理偶尔出现在address-object前多一个空格情况，另外，如果前面有4个空格以上将是group下的，所以只处理多一个空格
-        #上面提及问题处理已在ver652_conv.py中处理
     #print(address_detail)
     if address_detail == '':
         print('IP address not found...',aname)
@@ -503,13 +515,15 @@ def save_xls_file(blocked_list, block_child_list):
                     sheet.row_dimensions[cellrow].height = 16 * rule_destination_address_row
 
                 cellrow +=1
-
+    
     sheet.row_dimensions[cellrow].height = 16 * 4
     sheet.merge_cells(start_row=cellrow, start_column=1, end_row=cellrow, end_column=11)
-    ending_string='''检查人：                                     检查日期：
-审核人：                                     审核日期：'''
+    ending_string='检查人：                                检查日期：'
+    ending_string=ending_string + '\n\n'
+    ending_string=ending_string + '审核人：                                审核日期：'
     sheet.cell(cellrow,1).value=ending_string
-    sheet.alignment = Alignment(horizontal="center", vertical="center")
+    sheet.cell(cellrow,1).alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    
     var_system_time = var_system_time[:10]
     date_p_ = datetime.datetime.strptime(var_system_time, '%m/%d/%Y').date()
 
