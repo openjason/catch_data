@@ -4,12 +4,27 @@ sonicwall 6.5.2.x/6.5.3.x 格式与6.5.0.x（大部分使用的版本）导出�
 此程序主要将分行显示的address-object内容整合到一行，以便原程序正常解析内容。
 增加了处理address object ipv4 前多一个空格的情况。（将多余的一个空格删除）
 author:jason chan
-2020-03-12 9:03
+2020-07-22 9:03
 '''
 import os
+from chardet.universaldetector import UniversalDetector
+
+def fun_chardet(filepath):
+    #要以二进制读取模式打开文件
+    #fileencoding 是编码，confidence 是置信度，取之范围 0～1
+    detector = UniversalDetector()
+    detector.reset()
+    for each in open(filepath, 'rb'):
+        detector.feed(each)
+        if detector.done:
+            break
+    detector.close()
+    fileencoding = detector.result['encoding']
+    confidence = detector.result['confidence']
+    return(fileencoding,confidence)
 
 def version652():
-    with open('sw.log','r') as fp:
+    with open('sw.log','r',encoding='utf-8') as fp:
         for oneline in fp:
             if 'firmware-version' == oneline[:16]:
                 if '6.5.2' in oneline:
@@ -17,7 +32,7 @@ def version652():
         return False
 
 def version653():
-    with open('sw.log','r') as fp:
+    with open('sw.log','r',encoding='utf-8') as fp:
         for oneline in fp:
             if 'firmware-version' == oneline[:16]:
                 if '6.5.3' in oneline:
@@ -26,13 +41,15 @@ def version653():
 
 def cover653():
     #os.rename('sw.log','sw_raw.log')
-    fw = open('sw_ready.log','w')
+    fw = open('sw_ready.log','w',encoding='utf-8')
     print('sw.log ->sw_ready; Convert sonicwall configure file to low version file format...')
     cover_switch = False
     add_string = ''
     address_string = ''
     zone_string = ''
-    with open('sw.log','r') as fp:
+    fileencoding = fun_chardet('sw.log')[0]
+    print('sw.log encording',fileencoding)
+    with open('sw.log','r',encoding=fileencoding) as fp:
         for oneline in fp:
             fw.write(oneline)
 
@@ -69,13 +86,13 @@ def cover653():
 
 def cover652():
     os.rename('sw.log','sw_raw.log')
-    fw = open('sw.log','w')
+    fw = open('sw.log','w',encoding='utf-8')
     print('sw.log ->sw_raw; Convert sonicwall configure file to low version file format...')
     cover_switch = False
     add_string = ''
     address_string = ''
     zone_string = ''
-    with open('sw_raw.log','r') as fp:
+    with open('sw_raw.log','r',encoding='utf-8') as fp:
         for oneline in fp:
             fw.write(oneline)
             if 'address-object ipv4' == oneline[:19]:
@@ -103,9 +120,9 @@ def cover652():
 if __name__ == '__main__':
     if os.path.exists('sw_ready.log'):
         os.remove('sw_ready.log')
-    if version652() or version653():
-        cover653()
-        print('\nProcessing completed.')
-    else:
-        print('configura file version is not 652 or 653...pls check it.')
+    #if version652() or version653():
+    cover653()
+    print('\nProcessing completed.')
+    #else:
+    #   print('configura file version is not 652 or 653...pls check it.')
 
