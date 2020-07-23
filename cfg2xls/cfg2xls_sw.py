@@ -2,7 +2,7 @@
 '''
 根据防火墙配置文件配置内容，提取分类内容，保存到excel文件不同的sheet相应栏目中
 author:jason chan
-2020-07-12 14:48
+2020-07-22 14:48
 当service group包含group，由于格式等原因查找不到group，没有提示问题。
 '''
 # import os
@@ -16,7 +16,8 @@ var_global_MGMT_IP = 'none'
 var_global_host_dict = {'1.1.1.101':'GSM第一道sonicwall防火墙策略',
     '1.1.1.102':'GSM第二道sonicwall防火墙策略',
     '192.168.153.1':'金融第二道sonicwall防火墙策略',
-    '192.168.168.168':'SM外部sonicwall防火墙策略'}
+    '192.168.1.254':'SM外部sonicwall防火墙策略',
+    '192.168.168.168':'SM内部sonicwall防火墙策略'}
 
 def judge_legal_ip(one_str):
     '''''
@@ -34,11 +35,9 @@ def fix_address_string(add_str):
     fix_addr_str = "无IP地址"
     if add_str[0]=='"':
         tmp_pos = add_str[1:].find('"')
-        aname = add_str[0:tmp_pos+2]
         tmp_list = add_str[tmp_pos:].split()
     else:
         tmp_list = add_str.split()
-        aname = tmp_list[0]
     if len(tmp_list)< 3:
         return add_str
     if 'host' == tmp_list[1]:
@@ -66,7 +65,7 @@ def fix_address_string(add_str):
 
 def save_block_file(blocked_list, block_child_list, fn):
     #配置文件一块为单位，进行保存
-    with open(fn, 'w') as fopen:
+    with open(fn, 'w',encoding='utf-8') as fopen:
         for i in range(len(blocked_list)):
             if 'ipv6' in blocked_list[i]:
                 continue
@@ -77,7 +76,6 @@ def save_block_file(blocked_list, block_child_list, fn):
 
 def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
     #对地址明细进行解释，解析address-group明细，获取具体地址列表
-    address_g_list = []
     if '"' in Aname:
         Aname = Aname[1:len(Aname) - 1]
     
@@ -109,11 +107,11 @@ def getAddressGroupList(blocked_list, block_child_list,Aname,AddressGroupList):
                         tempGetSObject = tempStr2[14+5:len(tempStr2)]
                         tempGetSObject = tempGetSObject.strip()
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,AddressGroupList)
-#                        for tempInt1 in range(len(tempList3)):
-#                            AddressGroupList.append(tempList3[tempInt1])
                 break
-    if len(check_address_goup_list)>0 and check_address_goup_list == AddressGroupList:
-        print('AddressGroup not found...',Aname)
+#    if len(check_address_goup_list)>0 and check_address_goup_list == AddressGroupList:
+    if check_address_goup_list == AddressGroupList:
+        if not re.search(r'[XU]\d+ IP',Aname):
+            print('AddressGroup not found...',Aname)
     
     return AddressGroupList
 
@@ -163,8 +161,8 @@ def getServiceGroupList(blocked_list, block_child_list,Gname,ServicePortList):
                         tempGetSObject = tempGetSObject.strip()
 
                         tempList3 = getServiceGroupList(blocked_list, block_child_list,tempGetSObject,ServicePortList)
-    #print('2',Gname,ServicePortList)
-    if len(check_service_list)>0 and check_service_list == ServicePortList:
+
+    if check_service_list == ServicePortList:
         print('ServiceGroup not found...',Gname)
 
     return ServicePortList
@@ -192,8 +190,6 @@ def getAddressList(blocked_list, block_child_list,aname):
     if aname =='"X3 Subnet"':
         return('systeminterface')
 
-    if re.search(r'[XU]\d+ IP',aname):
-        return('systeminterface')
     #if '新加坡分公司' in aname :
     #    print('aname')
 
@@ -207,7 +203,8 @@ def getAddressList(blocked_list, block_child_list,aname):
                 break
     #print(address_detail)
     if address_detail == '':
-        print('IP address not found...',aname)
+        if (not re.search(r'[XU]\d+ IP',aname)) and (not re.search(r'X1[01]:V1[05] IP',aname)):
+            print('IP address not found...',aname)
     return address_detail
 
 
@@ -221,7 +218,6 @@ def save_xls_file(blocked_list, block_child_list):
     vaild_counter = 1
     print(xlsfile)
     wb = workbook
-    writecell = []
 
     #Edit sheet "interface" begin
     sheet = wb['interface']
@@ -343,7 +339,6 @@ def save_xls_file(blocked_list, block_child_list):
 
                         tempStr3 = child_List[j+8].strip()
                         tempList3 = tempStr3.split()
-                        route_comment = tempList3[1]
 
 #                        print(route_id,route_interface,route_metric,route_source,route_distination,route_service,route_gateway,route_comment)
                         cellcolumn = 1
@@ -382,8 +377,6 @@ def save_xls_file(blocked_list, block_child_list):
             rule_service_port = ''
             rule_address_detail= ''
             rule_destination_detail = ''
-            rule_destination_list = []
-            rule_name = tempStr1[10:30]
             tempList1 = block_child_list[i]
             for rule_child in tempList1:
                 tempStr1 = rule_child.strip()
@@ -459,17 +452,17 @@ def save_xls_file(blocked_list, block_child_list):
                             if tempList2[1] == 'group':
                                 ServicePortList = []
                                 rule_service_port_list = getServiceGroupList(blocked_list, block_child_list, rule_service,ServicePortList)
-#add 2018
                                 rule_service_port_list.sort()
                                 for tempInt1 in range(len(rule_service_port_list)):
-#                                    print(rule_service_port_list)
                                     rule_service_port = rule_service_port + rule_service_port_list[tempInt1] + '\n'
             format_rule_str = format_service_list(rule_service_port)
-#            format_rule_str = rule_service_port
 
-            if rule_from == rule_to or rule_from == 'VPN' or rule_from == 'SSLVPN' or rule_to == 'SSLVPN' or\
+            #if rule_from == rule_to or rule_from == 'VPN' or rule_from == 'SSLVPN' or rule_to == 'SSLVPN' or\
+            if rule_from == rule_to or rule_from == 'SSLVPN' or rule_to == 'SSLVPN' or rule_to == 'WLAN' or\
                     (rule_source_address == 'any' and rule_destination_address == 'any' and rule_service == 'any') or \
-                    rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"':
+                    rule_source_address == '"WLAN RemoteAccess Networks"' or rule_source_address == '"WAN RemoteAccess Networks"' or \
+                    rule_destination_address == '"WLAN RemoteAccess Networks"' or rule_destination_address == '"WAN RemoteAccess Networks"' or \
+                    rule_destination_address =='"All X0 Management IP"' or rule_destination_address == '"All Interface IP"' :
                 pass
             else:
 
@@ -531,8 +524,10 @@ def save_xls_file(blocked_list, block_child_list):
         this_month_start = datetime.datetime(date_p_.year, date_p_.month, 1)
         date_p_ = this_month_start - datetime.timedelta(days=1)
         var_system_time = datetime.datetime.strftime(date_p_, "%m/%d/%Y")
-
-    sheet_rule_title = var_system_time[6:]+'年'+var_system_time[:2]+'月' +var_global_host_dict[var_global_MGMT_IP]
+    if var_global_MGMT_IP in var_global_host_dict:
+        sheet_rule_title = var_system_time[6:]+'年'+var_system_time[:2]+'月' +var_global_host_dict[var_global_MGMT_IP]
+    else:
+        sheet_rule_title = var_system_time[6:]+'年'+var_system_time[:2]+'月' + 'not definded'
     sheet.cell(1,1).value = sheet_rule_title[:8] + '  ' + sheet_rule_title[8:]
 
     for i in range(cellrow+1,400):
@@ -602,7 +597,7 @@ def get_block(filename, confile_blocked, wfilename):
     confile_raw = []
     confile_temp = []
     fpline = ''
-    with open(filename, 'r', encoding='gbk') as fp:
+    with open(filename, 'r', encoding='utf-8') as fp:
         for fpline in fp:
             #print(len(fpline),fpline)
             #        if len(fpline) > 3 and fpline[0] != '#': 井号也是标志，不可清理
@@ -616,8 +611,6 @@ def get_block(filename, confile_blocked, wfilename):
         lineStr = confile_raw[line_num]
         space1 = len(confile_raw[line_num]) - len(confile_raw[line_num].lstrip(' '))
         space2 = len(confile_raw[line_num + 1]) - len(confile_raw[line_num + 1].lstrip(' '))
-        step1 = 0
- #       step2 = 1
         if space1 == 0 and space2 == 0 :
             confile_blocked.append (lineStr)
             confile_block.append ("null")
@@ -650,13 +643,8 @@ def get_xls_keys(workbook, keyslist):
     wb.close()
 
 def cfgxlsproc():
-    xlsfile = 'sonicwall.xlsx'
-    keyslist = []
-
     confile_blocked = []
     swcfgfile = 'sw_ready.log'
-
     get_block(swcfgfile, confile_blocked, 'sn_block.txt')
-
 if __name__ == '__main__':
     cfgxlsproc()
