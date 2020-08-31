@@ -55,8 +55,8 @@ class App:
         self.file_from_youjiqingdan = ""
         self.file_from_jichu = ""
         self.curr_month = ""
+        self.curr_year_month = "2020-08-"
         self.initWidgets(master)
-        self.curr_year_month = "2020-06-"
         self.is_workday=[0,32]
         #是否工作日，列表内日子计算工时时按星期几的相反操作，即是否扣 120 分钟工作时
 
@@ -92,7 +92,7 @@ class App:
             self.master.update()
             return 2
         file_proced_count = 0
-        buqian_txt_file = open("buqian.txt", "w")
+        buqian_txt_file = open("buqian.txt", "w",encoding='gbk')
         for parent, dirnames, filenames in os.walk(work_dir, followlinks=True):
             for filename in filenames:
                 file_path = os.path.join(parent, filename)
@@ -324,7 +324,7 @@ class App:
         userid_attend = 0
 
         file_proced_count = 0
-        buqian_txt_file = open("buqian.txt", "w")
+        buqian_txt_file = open("buqian.txt", "w",encoding='gbk')
         for parent, dirnames, filenames in os.walk(work_dir, followlinks=True):
             for filename in filenames:
                 file_path = os.path.join(parent, filename)
@@ -608,7 +608,7 @@ class App:
         print("sheetname & lines:", str_curr_sheet_name, int_sheet_nrows)
 
         int_first_col = 6
-        file_txt_kaoqin = open("nc.txt", "w")
+        file_txt_kaoqin = open("nc.txt", "w",encoding='gbk')
 
         match_list = []
 
@@ -661,25 +661,18 @@ class App:
                                     1.0, "ERROR:    userid type error: " + str(userid)
                                 )
                             click_one_time_hour_str = click_one_time[:2]
-                            #凌晨时段数据处理，如凌晨1点，设为次日
+                            #凌晨时段数据处理，如凌晨6点前，设为次日
                             #打卡记录为不是第一个记录的才设置，即不是当日首次打卡记录
+                            str_checkin = self.curr_year_month + curr_day + " " + click_one_time + ":00"
+                            datetime_checkin = datetime.datetime.strptime(str_checkin,'%Y-%m-%d %H:%M:%S')
+
                             if click_one_times.index(click_one_time) >=1 :
                                 if click_one_time_hour_str < '06':
-                                    print(click_one_time)
-                                    if (j - 5+1) > 9:
-                                        curr_day = str(j - 5+1)
-                                    else:
-                                        curr_day = "0" + str(j - 5+1)
+                                    datetime_checkin = datetime_checkin + datetime.timedelta(days=1)
 
-                            file_txt_kaoqin.write(
-                                userid
-                                + " "
-                                + self.curr_year_month
-                                + curr_day
-                                + " "
-                                + click_one_time
-                                + ":00"
-                            )
+                            str_checkin = datetime.datetime.strftime(datetime_checkin,'%Y-%m-%d %H:%M:%S')
+
+                            file_txt_kaoqin.write(userid + " " + str_checkin)
                             file_txt_kaoqin.write("\n")
                             userid_attend = 1
                 if userid_attend == 1:
@@ -842,6 +835,24 @@ class App:
 
         workbook.save("kaoqinwenj.xlsx")
 
+    def bool_need_deduction_2hour(self,checkin_time):
+        #是否需要扣减2小时
+        
+        int_weekday_click = checkin_time.weekday()
+        check_work_day = checkin_time.day
+
+        if int_weekday_click < 5:
+            b_need_deduction = True
+        else:
+            b_need_deduction = False
+        if check_work_day in self.is_workday:
+                b_need_deduction = not b_need_deduction
+
+
+
+        return(b_need_deduction)
+
+        
     # 研发中心特殊处理
     def proc_yf_proc(self, xlsfilename):
         if not os_path_exists(xlsfilename):
@@ -883,7 +894,7 @@ class App:
         # print('sheetname & lines:', str_curr_sheet_name, int_sheet_nrows)
 
         int_first_col = 6
-        file_txt_kaoqin = open("nc.txt", "w")
+        file_txt_kaoqin = open("nc.txt", "w",encoding='gbk')
         match_list = []
 
         self.scr.insert(1.0, "\n\n\n注意： " + str(self.curr_year_month) + "...\n\n\n")
@@ -967,45 +978,51 @@ class App:
                             0,
                         )
 
-                        if int(last_click[:2]) > 4:
-                            last_time = datetime.datetime(
-                                int(self.curr_year_month[:4]),
-                                int(self.curr_year_month[5:7]),
-                                int(curr_day),
-                                int(last_click[:2]),
-                                int(last_click[-2:]),
-                                0,
-                                0,
-                            )
-                        else:
-                            last_time = datetime.datetime(
-                                int(self.curr_year_month[:4]),
-                                int(self.curr_year_month[5:7]),
-                                int(curr_day)+1,
-                                int(last_click[:2]),
-                                int(last_click[-2:]),
-                                0,
-                                0,
-                            )
-
+                        last_time = datetime.datetime(
+                            int(self.curr_year_month[:4]),
+                            int(self.curr_year_month[5:7]),
+                            int(curr_day),
+                            int(last_click[:2]),
+                            int(last_click[-2:]),
+                            0,
+                            0,
+                        )
+                        #如第二次打开时间为4点以前，算第二天
+                        if int(last_click[:2]) < 4:
+                            last_time = last_time + datetime.timedelta(days=1)
+                            
                         weekday_click = first_time.weekday()
                         check_work_day = first_time.day
                         #if check_work_day == 28:
                         #    print('day:28')
                         temp_min_time = (last_time - first_time).seconds / 60
-                        if weekday_click < 5:
-                            if temp_min_time > 60 * 4:
-                                if check_work_day in self.is_workday:
-                                    temp_min_time = temp_min_time 
-                                else:
-                                    temp_min_time = temp_min_time - 120
-                        else:
-                            if check_work_day in self.is_workday:
-                                temp_min_time = temp_min_time -120
-                            else:
-                                temp_min_time = temp_min_time 
 
-                            #temp_min_time = (last_time - first_time).seconds / 60
+                        if temp_min_time > 16*60:
+                            print('工作时间超16小时，请核查。。。')
+                            print('UserID:',userid,'  DAY:',curr_day)
+                            self.scr.insert(1.0, "工作时间超16小时，请核查... UserID:" + str(userid) + '  DAY:' + str(curr_day) +".\n")
+
+                        if self.bool_need_deduction_2hour(first_time):
+                            #判断打卡时间是否为中午时间
+                            #上班打卡
+                            deduction_minutes = 120
+                            str_noon_checkin = datetime.datetime.strftime(first_time,'%H:%M')
+                            #print('str_noon_check:',str_noon_checkin)
+                            if str_noon_checkin > '11:30':
+                                if str_noon_checkin < '13:30':
+                                    deduction_minutes = 13*60 + 30 - int(str_noon_checkin[:2]) * 60 - int(str_noon_checkin[-2:])
+                            #temp_min_time = temp_min_time - deduction_minutes
+                            #下班打卡
+                            str_noon_checkout = datetime.datetime.strftime(last_time,'%H:%M')
+                            if str_noon_checkout > '11:30':
+                                if str_noon_checkout < '13:30':
+                                    deduction_minutes = int(str_noon_checkout[:2]) * 60 + int(str_noon_checkout[-2:]) - 11*60 - 30
+                            if str_noon_checkin > '13:30':
+                                print(str_noon_checkin,'upper than 13:30')
+                                deduction_minutes = 0
+                            print('deduction_minutes:',deduction_minutes)
+                            temp_min_time = temp_min_time - deduction_minutes
+
 
                         work_time_minute_int = work_time_minute_int + temp_min_time
                         work_time_str = (
@@ -1110,7 +1127,6 @@ class App:
     # 程序主gui界面。
     def initWidgets(self, fm1):
 
-        str_kehu_name = "ep"
 
         self.customer_sname = "ep"
         kehu_conf_jxc = "仓库进销存"
@@ -1122,11 +1138,17 @@ class App:
         # print('host: ', str_kehu_name)
         # print(self.file_from_youjiqingdan)
 
+        temp_curr_datetime = datetime.datetime.now()
+        if temp_curr_datetime.day < 5:
+            temp_curr_datetime = temp_curr_datetime - datetime.timedelta(days=6)
+        str_kehu_name = temp_curr_datetime.strftime('%Y-%m-')
+
+
         # label_kehumingcheng = Label(fm1, text='客户名称：', font=('Arial', 12))
         # label_kehumingcheng.place(x=20, y=30)
-        # self.svar_kehumingcheng.set(str_kehu_name)
-        # entry_kehumingcheng = Entry(fm1, textvariable=self.svar_kehumingcheng, width=30, font=('Arial', 12))
-        # entry_kehumingcheng.place(x=20, y=55)
+        self.svar_kehumingcheng.set(str_kehu_name)
+        entry_kehumingcheng = Entry(fm1, textvariable=self.svar_kehumingcheng, width=30, font=('Arial', 12))
+        entry_kehumingcheng.place(x=620, y=100)
 
         # label_proc_time = Label(fm1, text='对账时间：', font=('Arial', 12))
         # label_proc_time.place(x=300, y=30)
@@ -1180,7 +1202,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="正在导入员工工号数据... ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
         userid_filename = "在职人员信息表.xls"
         self.user_id_import_list(userid_filename)
@@ -1188,14 +1210,14 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
     # 补签卡
     def command_fix_recorder_run(self):
         label_tips1_filename = Label(
             self.master, text="正在导入补签卡数据... ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
         work_dir = "补签卡\\"
         self.fix_recorder_proc(work_dir)
@@ -1203,7 +1225,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
     # 匹配员工工号
     def command_fix_yf_run(self):
@@ -1215,7 +1237,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
     # 研发中心 补卡
     def command_fix_yf_buka_run(self):
@@ -1229,7 +1251,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
     # 匹配员工工号
     def command_fix_txl_id_run(self):
@@ -1245,7 +1267,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
     # 钉钉数据转NC 文本文件
     def command_dingding_ech_run(self):
@@ -1253,7 +1275,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="正在处理钉钉数据（只导出含工号的数据）... ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
         file_from_dingding = "东信和平科技股份有限公司_打卡时间表.xlsx"
 
@@ -1262,7 +1284,7 @@ class App:
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
         )
-        label_tips1_filename.place(x=620, y=530)
+        label_tips1_filename.place(x=620, y=590)
 
         return 0
 
