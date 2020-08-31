@@ -328,7 +328,7 @@ if __name__ == '__main__':
     main_window = Tk()
     main_window.title('开票明细信息EBS格式化工具 V200722')
 
-    # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
+    # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏 幕分辨率。
     sw = main_window.winfo_screenwidth()
   
     sh = main_window.winfo_screenheight()
