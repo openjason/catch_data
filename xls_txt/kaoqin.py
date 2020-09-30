@@ -43,6 +43,8 @@ class App:
         self.svar_proc_time1 = StringVar()
         self.svar_cangku_filename = StringVar()
         self.svar_kehumingcheng = StringVar()
+        self.svar_kehumingcheng2 = StringVar()
+        
         self.svar_proc_time2 = StringVar()
         self.svar_youjiqingdan_filename = StringVar()
         self.svar_jichu_filename = StringVar()
@@ -55,7 +57,8 @@ class App:
         self.file_from_youjiqingdan = ""
         self.file_from_jichu = ""
         self.curr_month = ""
-        self.curr_year_month = "2020-08-"
+        self.curr_year_month = "2020-09-"
+        self.next_year_month = "2020-10-"
         self.initWidgets(master)
         self.is_workday=[0,32]
         #是否工作日，列表内日子计算工时时按星期几的相反操作，即是否扣 120 分钟工作时
@@ -85,10 +88,10 @@ class App:
         return (txtfile_line)
 
 
-    # 按文件夹统计符合条件文件列表，逐个文件导入数据库
+    # 20200925更新，用补签卡汇总表excel 导入数据
     def fix_recorder_proc(self, work_dir):
         if len(self.userid_list) < 1:
-            self.scr.insert(1.0, "error请先运行更新员工信息 ...\n")
+            self.scr.insert(END, "error请先运行更新员工信息 ...\n")
             self.master.update()
             return 2
         file_proced_count = 0
@@ -96,206 +99,157 @@ class App:
         for parent, dirnames, filenames in os.walk(work_dir, followlinks=True):
             for filename in filenames:
                 file_path = os.path.join(parent, filename)
-                if not ("#" in filename):
+                if ('~$' in filename) or (not ("补签卡" in filename)):
                     logger.info("不处理文件名: " + file_path)
                     print("文件名: " + filename)
-                    self.scr.insert(1.0, "不处理文件名: " + file_path + "...\n")
+                    self.scr.insert(END, "不处理文件名: " + file_path + "...\n")
                 else:
+                    xlsfilename = file_path
+                    print('OpenXlsFile: ',xlsfilename)
+                    workbook = load_workbook(xlsfilename)
+                    sheet_curr = workbook.worksheets[0]
+
+                    int_sheet_nrows = sheet_curr.max_row
+                    int_sheet_ncols = sheet_curr.max_column
+
+                    int_first_row = 1
+                    int_first_col = 6
+
+                    userid_count_attend = 0
+                    userid_count = 0
+                    userid_attend = 0
+
                     file_proced_count = file_proced_count + 1
                     logger.info("文件名: " + file_path)
                     print("文件名: " + filename)
-                    temp = filename.split("#")
-                    username = temp[0]
-                    userid = temp[1]
-                    #简单处理部分文件名格式非标情况
-                    userid = userid.replace('-','')
-                    userid = userid.replace(' ','')
-                    if userid[-4:] == ".txt":
-                        userid = userid[:-4]
-                        if not userid.isdigit():
-                            logger.info("error工号格式错： " + filename)
-                            self.scr.insert(1.0, "error工号格式错： " + filename + "...\n")
-                            self.master.update()
-                    else:
-                        logger.info("error文件名格式错： " + filename)
-                        self.scr.insert(1.0, "error文件名格式错： " + filename + "...\n")
-                        self.master.update()
 
-                    self.scr.insert(1.0, "处理： " + filename + "...\n")
+                    self.scr.insert(END, "处理： " + filename + "...\n")
                     self.master.update()
 
-                    # 检查 工号 存在 begin
-                    testid = "00"
-                    for temp_userid in self.userid_list:
-                        temp_id = temp_userid[0]
-                        if userid == temp_id:
-                            testid = userid
-                            break
-                    if testid == "00":
-                        self.scr.insert(1.0, "无匹配工号，姓名： " + str(username) + "\n")
-                        self.master.update()
-                    # 检查 工号 存在 end
-
-                    # 自动检测文件编码格式（utf-8, ansi,...）
-                    with open(file_path, mode="rb") as det_file:
-                        data_ = det_file.read(200000)
-                        file_encode_detect_dict = chardet.detect(data_)
-                        file_encode_detect = file_encode_detect_dict["encoding"]
-                    # with open(file_path, 'r', encoding=file_encode_detect,errors='ignore') as f:
-                    if file_encode_detect != 'utf-8':
-                        file_encode_detect = 'GB2312'
-                    with open(file_path, "r", encoding=file_encode_detect) as f:
-                        for txtfile_line in f.readlines():
-                            txtfile_line = txtfile_line.strip()
-
-                            if len(txtfile_line) < 5:
-                                print("space line.")
-                                continue
-
-                            txtfile_line = self.fix_string_to_standard(txtfile_line)
-
-                            # 打卡文件 行 处理
-                            #logger.info(txtfile_line)
-                            #print(txtfile_line)
-                            line_proc_list = txtfile_line.split("#")
-
-                            # 行格式错，‘#’号分隔符多于2个
-                            if len(line_proc_list) > 3:
-                                logger.info("error line format error: " + txtfile_line)
-                            # 检查日期格式正确 begin
-                            try:
-                                daka_date = line_proc_list[0]
-                                daka_date = daka_date.strip()
-                                if daka_date.count("-") == 2:
-                                    daka_date_format = datetime.datetime.strptime(
-                                        daka_date, "%Y-%m-%d"
-                                    ).date()
-                                elif daka_date.count(".") == 2:
-                                    daka_date_format = datetime.datetime.strptime(
-                                        daka_date, "%Y.%m.%d"
-                                    ).date()
-                                else:
-                                    self.scr.insert(
-                                        1.0, "error日期格式错： " + str(daka_date) + "\n"
-                                    )
-                                    self.scr.update()
-
-                                if (
-                                    daka_date_format
-                                    < datetime.datetime.strptime(
-                                        self.curr_year_month + "01", "%Y-%m-%d"
-                                    ).date()
-                                    or daka_date_format
-                                    > datetime.datetime.strptime(
-                                        self.curr_year_month + "30", "%Y-%m-%d"
-                                    ).date()
-                                ):
-                                    self.scr.insert(
-                                        1.0, "error日期超出范围： " + str(daka_date) + "\n"
-                                    )
-                                    self.scr.update()
-                                daka_date = daka_date_format.strftime("%Y-%m-%d")
-                            except Exception as err_message:
-                                print(err_message)
-                                self.scr.insert(1.0, err_message)
-                                self.scr.update()
-                                logger.error(err_message.__str__())
-                                logger.exception(sys.exc_info())
-                                continue
-                            # 检查日期格式正确 end
-
-                            # 有两个分隔符‘#’，执行上午打卡，之后处理下午打卡，如果
-                            if len(line_proc_list) == 3:
-                                daka_morning = line_proc_list[1]
-                                daka_morning = daka_morning.strip()
-                                daka_afternoon = line_proc_list[2]
-                                daka_afternoon = daka_afternoon.strip()
-                            elif len(line_proc_list) == 2:
-                                daka_morning = line_proc_list[1]
-                                daka_morning = daka_morning.strip()
-                                daka_afternoon = "afternoon_space"
+                    curr_proc_row = int_first_row
+                    check_space_row_count = 0
+                    while(1):
+                        # 检查 工号 存在 begin
+                        curr_proc_row = curr_proc_row +1
+                        # 下一行
+                        from_excel_uid = sheet_curr.cell(curr_proc_row,4).value
+                        if from_excel_uid == '' or from_excel_uid ==None:
+                            check_space_row_count = check_space_row_count +1
+                            if check_space_row_count > 5 :
+                                break
                             else:
-                                print("打卡数据行 ‘#’ 数量分割出错...")
-                                self.scr.insert(1.0, "打卡数据行 ‘#’ 数量分割出错...")
-                                self.scr.update()
-                                logger.info("打卡数据行 ‘#’ 数量分割出错...")
-
-                            # 检查 上班 时间格式正确 begin
-                            try:
-                                if daka_morning.count(":") == 2:
-                                    daka_date_format = datetime.datetime.strptime(
-                                        "2020-01-01 " + daka_morning,
-                                        "%Y-%m-%d %H:%M:%S",
-                                    )
-                                    daka_morning = daka_date_format.strftime("%H:%M:%S")
-                                elif daka_morning.count(":") == 1:
-                                    daka_date_format = datetime.datetime.strptime(
-                                        "2020-01-01 " + daka_morning, "%Y-%m-%d %H:%M")
-                                    daka_morning = (
-                                        daka_date_format.strftime("%H:%M") + ":00"
-                                    )
-                                else:
-                                    self.scr.insert(1.0, "error日期格式错: " + daka_morning)
-                                    self.scr.update()
-                            except Exception as err_message:
-                                print(err_message)
-                                self.scr.insert(1.0, err_message)
-                                self.scr.update()
-                                logger.error(err_message.__str__())
-                                logger.exception(sys.exc_info())
                                 continue
-                            # 检查 上班 时间格式正确 end
+                        check_space_row_count = 0
 
-                            # 检查 下班 时间格式正确 begin
-                            # 如果 下午打卡时间为空，？？？？
-                            if "space" not in daka_afternoon:
-                                try:
-                                    if daka_afternoon.count(":") == 2:
-                                        daka_date_format = datetime.datetime.strptime(
-                                            "2020-01-01 " + daka_afternoon,
-                                            "%Y-%m-%d %H:%M:%S",
-                                        )
-                                        daka_afternoon = daka_date_format.strftime(
-                                            "%H:%M:%S"
-                                        )
-                                    elif daka_afternoon.count(":") == 1:
-                                        daka_date_format = datetime.datetime.strptime(
-                                            "2020-01-01 " + daka_afternoon,
-                                            "%Y-%m-%d %H:%M",
-                                        )
-                                        daka_afternoon = (
-                                            daka_date_format.strftime("%H:%M") + ":00"
-                                        )
-                                    else:
-                                        self.scr.insert(
-                                            1.0, "error日期格式错: " + daka_morning
-                                        )
-                                        self.scr.update()
-                                except Exception as err_message:
-                                    print(err_message)
-                                    self.scr.insert(1.0, err_message)
+                        
+                        print('from_excel_uid',from_excel_uid)
+                        testid = "00"
+                        for temp_userid in self.userid_list:
+                            temp_id = temp_userid[0]
+                            if from_excel_uid == temp_id:
+                                testid = from_excel_uid
+                                break
+                        if testid == "00":
+                            self.scr.insert(END, "无匹配工号，姓名： " + str(username) + "\n")
+                            self.master.update()
+
+                        from_excel_username = sheet_curr.cell(curr_proc_row,3).value
+                        from_excel_attend_date = sheet_curr.cell(curr_proc_row,5).value
+                        from_excel_attend_time = sheet_curr.cell(curr_proc_row,6).value
+
+                        # 检查 工号 存在 end
+                        #txtfile_line = self.fix_string_to_standard(txtfile_line)
+
+                        # 打卡文件 行 处理
+                        #logger.info(txtfile_line)
+                        #print(txtfile_line)
+                        #line_proc_list = txtfile_line.split("#")
+
+                        # 行格式错，‘#’号分隔符多于2个
+                        # 检查日期格式正确 begin
+
+                        try:
+                            daka_date = from_excel_attend_date
+                            if type(daka_date) == str:
+                                daka_date = daka_date.strip()
+                                # if daka_date.count("-") == 2:
+                                #     daka_date_format = datetime.datetime.strptime(
+                                #         daka_date, "%Y-%m-%d"
+                                #     ).date()
+                                # elif daka_date.count(".") == 2:
+                                #     daka_date_format = datetime.datetime.strptime(
+                                #         daka_date, "%Y.%m.%d"
+                                #     ).date()
+                                # else:
+                                #     self.scr.insert(
+                                #         END, "error日期格式错： " + str(daka_date) + "\n"
+                                #     )
+                                #     self.scr.update()
+                                # daka_date = daka_date_format.strftime("%Y-%m-%d")
+                            elif type(daka_date) != datetime.datetime:
+                                self.scr.insert(END, "error日期type类型有误：  行" +str(curr_proc_row) + '  ' + str(daka_date) + str(from_excel_username) +"\n")
+                                continue
+                            temp_datetime_str = self.curr_year_month + "01 00:00"
+                            if daka_date < datetime.datetime.strptime(temp_datetime_str, "%Y-%m-%d %H:%M") or \
+                                daka_date > datetime.datetime.strptime(self.next_year_month + "01 00:00", "%Y-%m-%d %H:%M"):
+                                    self.scr.insert(END, "跳过记录，日期超出范围：  行" +str(curr_proc_row) + '  ' + str(daka_date)+ str(from_excel_username) + "\n")
                                     self.scr.update()
-                                    logger.error(err_message.__str__())
-                                    logger.exception(sys.exc_info())
                                     continue
-                            # 检查 下班 时间格式正确 end
+                            print('daka_date ',daka_date)
+                        except Exception as err_message:
+                            print(err_message)
+                            self.scr.insert(END, err_message)
+                            self.scr.update()
+                            logger.error(err_message.__str__())
+                            logger.exception(sys.exc_info())
+                            continue
+                        # 检查日期格式正确 end
 
-                            buqian_txt_file.write(
-                                userid + " " + daka_date + " " + daka_morning
-                            )
-                            # buqian_txt_file.write(userid+' '+daka_date+' '+daka_morning+':00')
-                            buqian_txt_file.write("\n")
-                            if len(line_proc_list) > 2:
-                                # buqian_txt_file.write(userid+' '+daka_date+' '+daka_afternoon+':00')
-                                buqian_txt_file.write(
-                                    userid + " " + daka_date + " " + daka_afternoon
-                                )
-                                buqian_txt_file.write("\n")
+                        # 有两个分隔符‘#’，执行上午打卡，之后处理下午打卡，如果
+                        daka_morning = from_excel_attend_time
+                        
+                        #print('daka_morning ',daka_morning)
+                        #print('type(daka_morning) ',type(daka_morning))
+                        try:
+                            if type(daka_morning ) == str:
+                                # daka_date_format = datetime.datetime.strptime("2020-01-01 " + daka_morning,"%Y-%m-%d %H:%M:%S")
+                                # daka_date_format = datetime.datetime.strptime(
+                                #     "2020-01-01 " + daka_morning, "%Y-%m-%d %H:%M")
+                                
+                                # daka_morning = (daka_date_format.strftime("%H:%M") + ":00")
+
+                                # self.scr.insert(END, "error日期格式错: " + daka_morning)
+                                # self.scr.update()
+                                if type(daka_morning) != datetime.datetime:
+                                    self.scr.insert(END, "error日期type类型有误： 行" +str(curr_proc_row) + '  '+ str(daka_morning) +str(from_excel_username) + "\n")
+                                    continue
+                        except Exception as err_message:
+                            print(err_message)
+                            self.scr.insert(END, err_message)
+                            self.scr.update()
+                            logger.error(err_message.__str__())
+                            logger.exception(sys.exc_info())
+                            continue
+                        # 检查 上班 时间格式正确 end
+
+                        # 检查 下班 时间格式正确 begin
+                        # 检查 下班 时间格式正确 end
+
+                        temp_userid_to_file = str(from_excel_uid)
+                        temp_date_to_file = datetime.datetime.strftime(from_excel_attend_date,'%Y-%m-%d')
+                        temp_time_to_file = from_excel_attend_time.strftime('%H:%M')
+                        #datetime.datetime.strptime(from_excel_attend_time,'%H:%M') 
+
+                        buqian_txt_file.write(temp_userid_to_file + " " + temp_date_to_file + " " + temp_time_to_file)
+                        # buqian_txt_file.write(userid+' '+daka_date+' '+daka_morning+':00')
+                        buqian_txt_file.write("\n")
+
+                    # excel 下一行，循环
 
         buqian_txt_file.close()
         self.scr.insert(
-            1.0,
-            "文件总数：" + str(len(filenames)) + "处理文件数量： " + str(file_proced_count) + "\n",
+            END,
+            "文件总数：" + str(len(filenames)) + "处理文件数量： " + str(file_proced_count) + "记录数量： " +str(curr_proc_row) +"\n",
         )
         self.scr.update()
 
@@ -331,7 +285,7 @@ class App:
                 if not ("#" in filename):
                     logger.info("不处理文件名: " + file_path)
                     print("文件名: " + filename)
-                    self.scr.insert(1.0, "不处理文件名: " + file_path + "...\n")
+                    self.scr.insert(END, "不处理文件名: " + file_path + "...\n")
                 else:
                     file_proced_count = file_proced_count + 1
                     logger.info("文件名: " + file_path)
@@ -343,11 +297,11 @@ class App:
                         userid = userid[:-4]
                         if not userid.isdigit():
                             logger.info("error工号格式错： " + filename)
-                            self.scr.insert(1.0, "error工号格式错： " + filename + "...\n")
+                            self.scr.insert(END, "error工号格式错： " + filename + "...\n")
                             self.master.update()
                     else:
                         logger.info("error文件名格式错： " + filename)
-                        self.scr.insert(1.0, "error文件名格式错： " + filename + "...\n")
+                        self.scr.insert(END, "error文件名格式错： " + filename + "...\n")
                         self.master.update()
 
                     # 检查 工号 存在 begin
@@ -371,7 +325,7 @@ class App:
                     # 在excel表格内找不到对应的工号，不往下执行
                     print(userid, xls_userid, xls_catch_line)
 
-                    self.scr.insert(1.0, "处理： " + filename + "...\n")
+                    self.scr.insert(END, "处理： " + filename + "...\n")
                     self.master.update()
 
                     # 检查 工号 存在 end
@@ -416,7 +370,7 @@ class App:
                                     ).date()
                                 else:
                                     self.scr.insert(
-                                        1.0, "error日期格式错： " + str(daka_date) + "\n"
+                                        END, "error日期格式错： " + str(daka_date) + "\n"
                                     )
                                     self.scr.update()
 
@@ -426,18 +380,18 @@ class App:
                                         self.curr_year_month + "01", "%Y-%m-%d"
                                     ).date()
                                     or daka_date_format
-                                    > datetime.datetime.strptime(
-                                        self.curr_year_month + "30", "%Y-%m-%d"
+                                    < datetime.datetime.strptime(
+                                        self.next_year_month + "01", "%Y-%m-%d"
                                     ).date()
                                 ):
                                     self.scr.insert(
-                                        1.0, "error日期超出范围： " + str(daka_date) + "\n"
+                                        END, "error日期超出范围： " + str(daka_date) + "\n"
                                     )
                                     self.scr.update()
                                 daka_date = daka_date_format.strftime("%Y-%m-%d")
                             except Exception as err_message:
                                 print(err_message)
-                                self.scr.insert(1.0, err_message)
+                                self.scr.insert(END, err_message)
                                 self.scr.update()
                                 logger.error(err_message.__str__())
                                 logger.exception(sys.exc_info())
@@ -453,7 +407,7 @@ class App:
                                 daka_afternoon = "afternoon_space"
                             else:
                                 print("打卡数据行 ‘#’ 数量分割出错...")
-                                self.scr.insert(1.0, "打卡数据行 ‘#’ 数量分割出错...")
+                                self.scr.insert(END, "打卡数据行 ‘#’ 数量分割出错...")
                                 self.scr.update()
                                 logger.info("打卡数据行 ‘#’ 数量分割出错...")
 
@@ -473,11 +427,11 @@ class App:
                                         daka_date_format.strftime("%H:%M") + ":00"
                                     )
                                 else:
-                                    self.scr.insert(1.0, "error日期格式错: " + daka_morning)
+                                    self.scr.insert(END, "error日期格式错: " + daka_morning)
                                     self.scr.update()
                             except Exception as err_message:
                                 print(err_message)
-                                self.scr.insert(1.0, err_message)
+                                self.scr.insert(END, err_message)
                                 self.scr.update()
                                 logger.error(err_message.__str__())
                                 logger.exception(sys.exc_info())
@@ -506,12 +460,12 @@ class App:
                                         )
                                     else:
                                         self.scr.insert(
-                                            1.0, "error日期格式错: " + daka_morning
+                                            END, "error日期格式错: " + daka_morning
                                         )
                                         self.scr.update()
                                 except Exception as err_message:
                                     print(err_message)
-                                    self.scr.insert(1.0, err_message)
+                                    self.scr.insert(END, err_message)
                                     self.scr.update()
                                     logger.error(err_message.__str__())
                                     logger.exception(sys.exc_info())
@@ -560,9 +514,9 @@ class App:
 
         buqian_txt_file.close()
         workbook.save(xlsfilename[:-5] + "-buka.xlsx")
-        self.scr.insert(1.0, "保存文件：" + xlsfilename[:-5] + "-buka.xlsx" + "\n")
+        self.scr.insert(END, "保存文件：" + xlsfilename[:-5] + "-buka.xlsx" + "\n")
         self.scr.insert(
-            1.0,
+            END,
             "文件总数：" + str(len(filenames)) + "处理文件数量： " + str(file_proced_count) + "\n",
         )
         self.scr.update()
@@ -579,18 +533,23 @@ class App:
         int_first_row = 3
         # 日数据开始位置
         print(xlsfilename)
-        self.scr.insert(1.0, "钉钉数据" + xlsfilename + "...\n")
+        self.scr.insert(END, "钉钉数据" + xlsfilename + "...\n")
 
-        self.scr.insert(
-            1.0, "Getatime " + str(time.ctime(os.path.getatime(xlsfilename))) + "...\n"
-        )
-        self.scr.insert(
-            1.0, "Getmtime " + str(time.ctime(os.path.getmtime(xlsfilename))) + "...\n"
-        )
-        self.scr.insert(
-            1.0, "Getctime " + str(time.ctime(os.path.getctime(xlsfilename))) + "...\n"
-        )
-        self.master.update()
+        # self.scr.insert(
+        #     END, "Getatime " + str(time.ctime(os.path.getatime(xlsfilename))) + "...\n"
+        # )
+        # self.scr.insert(
+        #     END, "Getmtime " + str(time.ctime(os.path.getmtime(xlsfilename))) + "...\n"
+        # )
+        # self.scr.insert(
+        #     END, "Getctime " + str(time.ctime(os.path.getctime(xlsfilename))) + "...\n"
+        # )
+        # self.master.update()
+
+        str_kaoqin_date_begin = self.svar_kehumingcheng2.get()
+        str_kaoqin_date_end = self.svar_kehumingcheng.get()
+
+        self.scr.insert(END,'处理考勤时间段 开始:'+str_kaoqin_date_begin+' 结束:（钉钉考勤表最新日期）')
 
         workbook = xlrd.open_workbook(xlsfilename)
         sheetsname = workbook.sheet_names()  # 获取excel里的工作表sheet名称数组
@@ -611,16 +570,16 @@ class App:
         file_txt_kaoqin = open("nc.txt", "w",encoding='gbk')
 
         match_list = []
-
-        self.scr.insert(1.0, "\n\n\n注意： " + str(self.curr_year_month) + "...\n\n\n")
-        self.master.update()
+        self.curr_year_month = str_kaoqin_date_begin[:8]
+        # self.scr.insert(END, "\n\n\n注意： " + str(self.curr_year_month) + "...\n\n\n")
+        # self.master.update()
 
         userid_count_attend = 0
         userid_count = 0
         userid_attend = 0
 
         self.scr.insert(
-            1.0, "\nExcel File Title: " + sheet_curr.cell(0, 0).value + "...\n"
+            END, "\nExcel File Title: " + sheet_curr.cell(0, 0).value + "...\n"
         )
 
         for i in range(int_first_row, int_sheet_nrows):
@@ -656,9 +615,9 @@ class App:
                             else:
                                 curr_day = "0" + str(j - 5)
                             # file_txt_kaoqin.write(username+ userid+" "+self.curr_year_month+curr_day+' '+click_one_time+':00')
-                            if type(userid) != type("str"):
+                            if type(userid) != str:
                                 self.scr.insert(
-                                    1.0, "ERROR:    userid type error: " + str(userid)
+                                    END, "ERROR: 工号格式不正确，需为字符串   userid type error: 错误工号 " + str(userid) + username +"\n"
                                 )
                             click_one_time_hour_str = click_one_time[:2]
                             #凌晨时段数据处理，如凌晨6点前，设为次日
@@ -671,10 +630,11 @@ class App:
                                     datetime_checkin = datetime_checkin + datetime.timedelta(days=1)
 
                             str_checkin = datetime.datetime.strftime(datetime_checkin,'%Y-%m-%d %H:%M:%S')
-
-                            file_txt_kaoqin.write(userid + " " + str_checkin)
-                            file_txt_kaoqin.write("\n")
-                            userid_attend = 1
+                            #logger.info(userid)
+                            if str_checkin >= str_kaoqin_date_begin:                            
+                                file_txt_kaoqin.write(userid + " " + str_checkin)
+                                file_txt_kaoqin.write("\n")
+                                userid_attend = 1
                 if userid_attend == 1:
                     userid_count_attend = userid_count_attend + 1
 
@@ -683,16 +643,16 @@ class App:
         file_txt_kaoqin.close()
         print("=" * 40)
         print("共导入了 ", i - int_first_row + 1, "行数据.")
-        self.scr.insert(1.0, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
-        self.scr.insert(1.0, "有工号 .." + str(userid_count) + "行数据..\n")
-        self.scr.insert(1.0, "有工号正常打卡 .." + str(userid_count_attend) + "行数据..\n")
+        self.scr.insert(END, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(END, "有工号 .." + str(userid_count) + "行数据..\n")
+        self.scr.insert(END, "有工号正常打卡 .." + str(userid_count_attend) + "行数据..\n")
 
         self.master.update()
 
     # 钉钉上通信录 员工 工号 补全
     def fix_txl_id_run_proc(self, xlsfilename):
         if len(self.userid_list) < 1:
-            self.scr.insert(1.0, "error请先运行更新员工信息 ...\n")
+            self.scr.insert(END, "error请先运行更新员工信息 ...\n")
             self.master.update()
             return 2
 
@@ -705,7 +665,7 @@ class App:
         int_first_row = 4
         # 日数据开始位置
         print(xlsfilename)
-        self.scr.insert(1.0, "钉钉数据" + xlsfilename + "...\n")
+        self.scr.insert(END, "钉钉数据" + xlsfilename + "...\n")
         self.master.update()
 
         workbook = load_workbook(xlsfilename)  # 打开excel文件
@@ -738,14 +698,14 @@ class App:
                     userid = temp_userid[0]
                     break
             if userid == "00":
-                self.scr.insert(1.0, "无匹配工号，姓名： " + str(username) + "\n")
+                self.scr.insert(END, "无匹配工号，姓名： " + str(username) + "\n")
                 self.master.update()
 
             else:
                 if username not in match_list:
                     match_list.append(username)
                 else:
-                    self.scr.insert(1.0, "重名.." + str(username) + "\n")
+                    self.scr.insert(END, "重名.." + str(username) + "\n")
                     self.master.update()
 
                 dingding_id_line = worksheetj.cell(i, 6).value
@@ -757,7 +717,7 @@ class App:
 
         print("=" * 40)
         print("共导入了 ", i - int_first_row + 1, "行数据.")
-        self.scr.insert(1.0, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(END, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
         self.master.update()
 
         workbook.save("kaoqinwenj.xlsx")
@@ -765,7 +725,7 @@ class App:
     # 下载txl上通信录 员工 工号 补全
     def download_txl_id_run_proc(self, xlsfilename):
         if len(self.userid_list) < 1:
-            self.scr.insert(1.0, "error请先运行更新员工信息 ...\n")
+            self.scr.insert(END, "error请先运行更新员工信息 ...\n")
             self.master.update()
             return 2
 
@@ -778,7 +738,7 @@ class App:
         int_first_row = 4
         # 日数据开始位置
         print(xlsfilename)
-        self.scr.insert(1.0, "钉钉数据" + xlsfilename + "...\n")
+        self.scr.insert(END, "钉钉数据" + xlsfilename + "...\n")
         self.master.update()
 
         workbook = load_workbook(xlsfilename)  # 打开excel文件
@@ -811,14 +771,14 @@ class App:
                     userid = temp_userid[0]
                     break
             if userid == "00":
-                self.scr.insert(1.0, "无匹配工号，姓名： " + str(username) + "\n")
+                self.scr.insert(END, "无匹配工号，姓名： " + str(username) + "\n")
                 self.master.update()
 
             else:
                 if username not in match_list:
                     match_list.append(username)
                 else:
-                    self.scr.insert(1.0, "重名.." + str(username) + "\n")
+                    self.scr.insert(END, "重名.." + str(username) + "\n")
                     self.master.update()
 
                 dingding_id_line = worksheetj.cell(i, 6).value
@@ -830,7 +790,7 @@ class App:
 
         print("=" * 40)
         print("共导入了 ", i - int_first_row + 1, "行数据.")
-        self.scr.insert(1.0, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(END, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
         self.master.update()
 
         workbook.save("kaoqinwenj.xlsx")
@@ -865,16 +825,16 @@ class App:
         int_first_row = 4
         # 日数据开始位置
         print(xlsfilename)
-        self.scr.insert(1.0, "钉钉数据" + xlsfilename + "...\n")
+        self.scr.insert(END, "钉钉数据" + xlsfilename + "...\n")
 
         self.scr.insert(
-            1.0, "Getatime " + str(time.ctime(os.path.getatime(xlsfilename))) + "...\n"
+            END, "Getatime " + str(time.ctime(os.path.getatime(xlsfilename))) + "...\n"
         )
         self.scr.insert(
-            1.0, "Getmtime " + str(time.ctime(os.path.getmtime(xlsfilename))) + "...\n"
+            END, "Getmtime " + str(time.ctime(os.path.getmtime(xlsfilename))) + "...\n"
         )
         self.scr.insert(
-            1.0, "Getctime " + str(time.ctime(os.path.getctime(xlsfilename))) + "...\n"
+            END, "Getctime " + str(time.ctime(os.path.getctime(xlsfilename))) + "...\n"
         )
         self.master.update()
 
@@ -897,7 +857,7 @@ class App:
         file_txt_kaoqin = open("nc.txt", "w",encoding='gbk')
         match_list = []
 
-        self.scr.insert(1.0, "\n\n\n注意： " + str(self.curr_year_month) + "...\n\n\n")
+        self.scr.insert(END, "\n\n\n注意： " + str(self.curr_year_month) + "...\n\n\n")
         self.master.update()
 
         userid_count_attend = 0
@@ -905,7 +865,7 @@ class App:
         userid_attend = 0
 
         self.scr.insert(
-            1.0, "\nExcel File Title: " + sheet_curr.cell(1, 1).value + "...\n"
+            END, "\nExcel File Title: " + sheet_curr.cell(1, 1).value + "...\n"
         )
 
         for i in range(int_first_row, int_sheet_nrows + 1):
@@ -1000,7 +960,7 @@ class App:
                         if temp_min_time > 16*60:
                             print('工作时间超16小时，请核查。。。')
                             print('UserID:',userid,'  DAY:',curr_day)
-                            self.scr.insert(1.0, "工作时间超16小时，请核查... UserID:" + str(userid) + '  DAY:' + str(curr_day) +".\n")
+                            self.scr.insert(END, "工作时间超16小时，请核查... UserID:" + str(userid) + '  DAY:' + str(curr_day) +".\n")
 
                         if self.bool_need_deduction_2hour(first_time):
                             #判断打卡时间是否为中午时间
@@ -1057,9 +1017,9 @@ class App:
         workbook.save("东信和平科技股份有限公司_打卡时间表-研发-工时.xlsx")
         print("=" * 40)
         print("共导入了 ", i - int_first_row + 1, "行数据.")
-        self.scr.insert(1.0, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
-        self.scr.insert(1.0, "有工号 .." + str(userid_count) + "行数据..\n")
-        self.scr.insert(1.0, "有工号正常打卡 .." + str(userid_count_attend) + "行数据..\n")
+        self.scr.insert(END, "共导入了 .." + str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(END, "有工号 .." + str(userid_count) + "行数据..\n")
+        self.scr.insert(END, "有工号正常打卡 .." + str(userid_count_attend) + "行数据..\n")
 
         self.master.update()
 
@@ -1079,7 +1039,7 @@ class App:
 
         print("清空原有staff 数据...")
         print(xlsfilename)
-        self.scr.insert(1.0, "清空列表（staff）数据...\n")
+        self.scr.insert(END, "清空列表（staff）数据...\n")
         self.master.update()
 
         workbook = xlrd.open_workbook(xlsfilename)
@@ -1103,25 +1063,25 @@ class App:
                     self.userid_list.append([userid, username])
                 else:
                     self.scr.insert(
-                        1.0, "ERROR基础数据表（price）数据导入: " + str(username) + ".\n"
+                        END, "ERROR基础数据表（price）数据导入: " + str(username) + ".\n"
                     )
                     self.master.update()
-        logger.info(self.userid_list)
+        #logger.info(self.userid_list)
         print("=" * 40)
         logger.info("共导入了 " + str(i - int_first_row + 1) + "行数据.")
         print("共导入了 ", i - int_first_row + 1, "行数据.")
-        self.scr.insert(1.0, "共导入了.." + str(i - int_first_row + 1) + "行数据..\n")
+        self.scr.insert(END, "共导入了.." + str(i - int_first_row + 1) + "行数据..\n")
         self.master.update()
 
         match_list = []
-        self.scr.insert(1.0, "检查重名：\n")
+        self.scr.insert(END, "检查重名：\n")
 
         for temp_userid in self.userid_list:
             temp_j = temp_userid[1]
             if temp_j not in match_list:
                 match_list.append(temp_j)
             else:
-                self.scr.insert(1.0, "重名.." + str(temp_j) + "\n")
+                self.scr.insert(END, "重名.." + str(temp_j) + "\n")
                 self.master.update()
 
     # 程序主gui界面。
@@ -1141,17 +1101,22 @@ class App:
         temp_curr_datetime = datetime.datetime.now()
         if temp_curr_datetime.day < 5:
             temp_curr_datetime = temp_curr_datetime - datetime.timedelta(days=6)
-        str_kehu_name = temp_curr_datetime.strftime('%Y-%m-')
-
+        str_kehu_name = temp_curr_datetime.strftime('%Y-%m-%d')
+        str_kehu_name2 = (temp_curr_datetime- datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+        str_kehu_name = '钉钉考勤表最新日期'
 
         # label_kehumingcheng = Label(fm1, text='客户名称：', font=('Arial', 12))
         # label_kehumingcheng.place(x=20, y=30)
         self.svar_kehumingcheng.set(str_kehu_name)
-        entry_kehumingcheng = Entry(fm1, textvariable=self.svar_kehumingcheng, width=30, font=('Arial', 12))
-        entry_kehumingcheng.place(x=620, y=100)
+        #entry_kehumingcheng = Entry(fm1, textvariable=self.svar_kehumingcheng, width=20, font=('Arial', 12))
+        #entry_kehumingcheng.place(x=620, y=125)
 
-        # label_proc_time = Label(fm1, text='对账时间：', font=('Arial', 12))
-        # label_proc_time.place(x=300, y=30)
+        self.svar_kehumingcheng2.set(str_kehu_name2)
+        entry_kehumingcheng2 = Entry(fm1, textvariable=self.svar_kehumingcheng2, width=20, font=('Arial', 12))
+        entry_kehumingcheng2.place(x=620, y=100)
+
+        label_proc_time = Label(fm1, text='请输入处理的考勤开始日期，例子：2020-08-09', font=('Arial', 12))
+        label_proc_time.place(x=620, y=70)
 
         temp_last_datetime = datetime.date.today() - datetime.timedelta(days=10)
 
@@ -1166,9 +1131,7 @@ class App:
         )
         btn_id_import_init.place(x=620, y=200)
 
-        btn_dingding_exchage_run = Button(
-            fm1, text="钉钉数据转换", command=self.command_dingding_ech_run
-        )
+        btn_dingding_exchage_run = Button(fm1, text="钉钉数据转换", command=self.command_dingding_ech_run)
         btn_dingding_exchage_run.place(x=620, y=270)
 
         btn_fix_rec_run = Button(
@@ -1279,7 +1242,15 @@ class App:
 
         file_from_dingding = "东信和平科技股份有限公司_打卡时间表.xlsx"
 
-        self.dingding_data_ech(file_from_dingding)
+        try:
+            self.dingding_data_ech(file_from_dingding)
+        except Exception as err_message:
+            print(err_message)
+            self.scr.insert(END, err_message)
+            self.scr.update()
+            logger.error(err_message.__str__())
+            logger.exception(sys.exc_info())
+
 
         label_tips1_filename = Label(
             self.master, text="完成...                     ", font=("Arial", 12)
