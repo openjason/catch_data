@@ -102,9 +102,9 @@ for child in root:
                     ws.cell(row=cell_row, column=3).value = str(sub2.text)
 
                     if str(sub2.text) != 'None':
-                        break
+                        pass
                     else:
-                        ws.cell(row=cell_row, column=3).value ='无组属性'
+                        ws.cell(row=cell_row, column=3).value =''
             except:
                 pass
             row_next = 0
