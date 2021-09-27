@@ -8,7 +8,7 @@
 
 [JC配置]
 customer = 广州三代社保|!|珠海社保
-dxhppwd = qd|!|DXHP8915631
+dxhppwd = qxd|!|xxxxxx631
 [广州三代社保]
 working = 1|!|11|!|13
 #原始文件夹
