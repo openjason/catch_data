@@ -8,7 +8,7 @@
 
 [JC配置]
 customer = 广州三代社保|!|珠海社保
-dxhppwd = qxd|!|xxxxxx631
+dxhppwd = qd|!|DXHP8915631
 [广州三代社保]
 working = 1|!|11|!|13
 #原始文件夹
@@ -88,6 +88,7 @@ checkpoint9 =
 checkpoint10 = 
 '''
 from ntpath import realpath
+from sqlite3 import connect
 from tkinter import Tk
 from tkinter import ttk
 from tkinter.ttk import Treeview,Style
@@ -239,25 +240,31 @@ def Success_Failure_log_filecheck(path):
                     failure_log_filename = os.path.join(path, relpath,filename)
     if success_log_filename == '' or failure_log_filename == '':
         return 'Error: 无Success.log/Failure.log文件。'
-    openf = open(failure_log_filename,'r',encoding='gbk')
-    while openf : 
-        oneline = openf.readline()
-        if not('一共有0个ATR' in oneline):
+
+    with open(failure_log_filename,'r',encoding='gbk') as openf : 
+        zeroATR = False
+        for oneline in openf.readlines():
+            if '一共有0个ATR' in oneline:
+                zeroATR = True
+                break
+        if zeroATR == False:
             oneline = oneline.strip()
             return 'Error: 文件Failure.log 异常：' + oneline
-        else:
-            openf = open(success_log_filename,'r',encoding='gbk')
-            while openf : 
-                oneline = openf.readline()
-                oneline = openf.readline()  #读第二行
-                if not(('一共成功导入' in oneline) and ('条数据'in oneline)) :
-                    oneline = oneline.strip()
-                    return 'Error: 文件Success.log 异常：' + oneline
-                else:
-                    str_pos1 = oneline.index('一共成功导入')
-                    str_pos2 = oneline.index('条数据')
-                    result_str = oneline[str_pos1+6:str_pos2]
-                    return '正常返回: ' + result_str
+
+        with open(success_log_filename,'r',encoding='gbk') as openf : 
+            is_success_load = False
+            for oneline in openf.readlines():
+                if '一共成功导入' in oneline:
+                    is_success_load = True
+                    break
+            if is_success_load == False:
+                oneline = oneline.strip()
+                return 'Error: 文件Success.log 异常：' + oneline
+            else:
+                str_pos1 = oneline.index('一共成功导入')
+                str_pos2 = oneline.index('条数据')
+                result_str = oneline[str_pos1+6:str_pos2]
+                return '正常返回: ' + result_str
 
 def catchepmdbxls_filelist_form_ep(path,shortname,one_ep_file_shuliang):
     if shortname[-3:] == '.ep':
@@ -643,6 +650,7 @@ def check_PrintList_mdb_val(pitemlist,xlsfilename,mdbfilename):
             if driverstr.startswith('Microsoft Access Driver'):
                 conn = pyodbc.connect(r"DRIVER={"+driverstr+"};DBQ="+ DBfile +";Uid=;Pwd=;")
     except:
+        print('Error Microsoft Access Driver 驱动有误，程序出错。')
         return('Error Microsoft Access Driver 驱动有误，程序出错。')
     cursor = conn.cursor() 
     SQL = "SELECT * from printdata;"
@@ -827,9 +835,13 @@ def check_printitem_ep_str_match(pitemlist,epfilename):
         #小文件，打开文件#读取所有行
         with open(txtfilename,'r',encoding='gbk') as f:  
             lines = f.readlines()                        
-        onelinefirst=lines[5]    
+        onelinefirst=lines[5]
         onelinelast=lines[-2]
-    
+    onelinefirst = onelinefirst.strip()
+    onelinelast =onelinelast.strip()
+    #logger.info('onelinefirst,onelinelast:')
+    #logger.info(onelinefirst)
+    #logger.info(onelinelast)
     #获取匹配行首行
     matchContent = ''
     for match_printitem_one in printitem_match_list:
@@ -843,7 +855,7 @@ def check_printitem_ep_str_match(pitemlist,epfilename):
             return -1
         templen1 = endpos-startpos -len(startstring)
         if templen1 != pistringlen:
-            return('Error 字符串长度检查不匹配 '+startstring+' 出错.')
+            return('Error 首行字符串长度检查'+startstring+'错;'+str(pistringlen))
         else:
             print('Match:' + startstring)
             matchContent = matchContent + startstring
@@ -859,7 +871,7 @@ def check_printitem_ep_str_match(pitemlist,epfilename):
             return -1
         templen1 = endpos-startpos -len(startstring)
         if templen1 != pistringlen:
-            return('Error 字符串长度检查不匹配 '+startstring+' 出错.')
+            return('Error 末行字符串长度检查'+startstring+'错;'+str(pistringlen))
         else:
             print('Match:' + startstring)
            
@@ -1042,6 +1054,7 @@ class App():
         self.svar_tips = StringVar()
         self.svar_file_detail_tips = StringVar() 
         self.customerlist = []
+        self.combobox_index = 0
         self.sourcedir = ''
         self.sortingdir = ''
         self.tempdir = ''
@@ -1111,14 +1124,20 @@ class App():
         #btn_app_exit_init.place(x=929, y=270)
 
         self.sbar_lr = Scrollbar(fm1,width=20)
-
         self.var_combobox = StringVar()
+
+        def callbackFunc(event):
+            #当前选项名 = event.widget.get()
+            self.combobox_index = event.widget.current()
+            print(self.combobox_index)
+
         self.combobox = ttk.Combobox(fm1, textvariable=self.var_combobox)
         self.combobox['value'] = temp_customer_list  #('python', 'java', 'C', 'C++')
         self.combobox.current(0)
         self.combobox.update
-        #self.combobox.pack(padx=15, pady=10)
         self.combobox.place(x=870, y=10)
+        self.combobox.bind("<<ComboboxSelected>>", callbackFunc)
+
 
         self.style = Style()
         aktualTheme = self.style.theme_use()
@@ -1199,720 +1218,722 @@ class App():
 
         try:
             #从配置文件提取待校验文件名和类型
-            for i in range(0,1): #len(self.customerlist)):
-                tempj = self.customerlist[i]
-                verifyfiles = []
-                working_items = tempj[1]
-                sourcedir = tempj[2]
-                sortingdir = tempj[3]
-                tempdir = tempj[4]
-                logger.info(tempdir)
-                if os.path.exists(tempdir):
-                    shutil.rmtree(tempdir)
-                os.makedirs(tempdir)
+            #for i in range(0,1): #len(self.customerlist)):
+            i = self.combobox_index
+            tempj = self.customerlist[i]
+            verifyfiles = []
+            working_items = tempj[1]
+            sourcedir = tempj[2]
+            sortingdir = tempj[3]
+            tempdir = tempj[4]
+            logger.info(tempdir)
+            if os.path.exists(tempdir):
+                shutil.rmtree(tempdir)
+            os.makedirs(tempdir)
 
-                for j in range(5,5+int(working_items[1])):   #verify file pos 5 to 14
-                    tempk = tempj[j]
-                    print('tempk:',tempk)
-                    tempm = tempk[0]
-                    #print('tempm:',tempm)
-                    if not tempm == '':
-                        tempn = tempk[1]
-                        product_report_fullname =  catchfilefullname(sourcedir,tempn)
-                        logger.info('查找文件:' + tempm)
-                        logger.info(product_report_fullname)
-                        if product_report_fullname == -1:
-                            self.list_treeview.insert('', END, values=('0',tempm +' 查找无此文件.','错误'), tags = ('R'))
-                            product_report_fullname = ''
-                        else:
-                            temp_str = '查找：' + tempm + ' = ' + os.path.basename(product_report_fullname)
-                            logger.info(temp_str)
-                            #self.list_treeview.insert('', END, values=('0',temp_str,'ready'), tags = ('G'))
-                        
-                        if len(product_report_fullname) > 4:
-                            if product_report_fullname[-4:] == '.pdf':
-                                temp_filename = os.path.join(tempdir,os.path.basename(product_report_fullname))
-                                temp_filename = temp_filename[:-4] + '.txt'
-                                logger.info('convert_pdf_to_txt')
-                                logger.info(product_report_fullname)
-                                if '生产报告' in product_report_fullname:
-                                    result_str =  convert_pdf_to_txt_scbg(product_report_fullname,temp_filename)
-                                else:
-                                    result_str =  convert_pdf_to_txt(product_report_fullname,temp_filename)
-                                if '正常返回' in result_str:
-                                    self.list_treeview.insert('', END, values=('-','解析PDF文件: ' + os.path.basename(product_report_fullname),'Pass'), tags = ('G'))
-
-                                else:
-                                    self.list_treeview.insert('', END, values=('-','无法解析PDF文件: ' + os.path.basename(product_report_fullname),'错误'), tags = ('R'))
-                                product_report_fullname = temp_filename
-                        verifyfiles.append([tempm,tempn,product_report_fullname])
-                        #若为pdf文件，用转换后的txt替代
-
-                logger.info('待校验文件清单verifyfiles')
-                logger.info(verifyfiles)
-
-                logger.info(tempj)
-                for j in range(5+int(working_items[1]),5+int(working_items[1])+int(working_items[2])):   #check point pos 15 to 25
-                    tempk = tempj[j]
-                    logger.info('tempk:')
-                    logger.info(tempk)
-                    cpstr = tempk[0]
-                    if cpstr == '':
-                        break
+            for j in range(5,5+int(working_items[1])):   #verify file pos 5 to 14
+                tempk = tempj[j]
+                print('tempk:',tempk)
+                tempm = tempk[0]
+                #print('tempm:',tempm)
+                if not tempm == '':
+                    tempn = tempk[1]
+                    product_report_fullname =  catchfilefullname(sourcedir,tempn)
+                    logger.info('查找文件:' + tempm)
+                    logger.info(product_report_fullname)
+                    if product_report_fullname == -1:
+                        self.list_treeview.insert('', END, values=('0',tempm +' 查找无此文件.','错误'), tags = ('R'))
+                        product_report_fullname = ''
                     else:
-                        if cpstr == 'ErrorFile':
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            if os.path.exists(comparefile1):
-                                tempErrorFileSize = os.path.getsize(comparefile1)
-                                if tempErrorFileSize == 0:
-                                    self.list_treeview.insert('', END, values=('1','Error.txt 文件大小为 0.','Pass'), tags = ('G'))
+                        temp_str = '查找：' + tempm + ' = ' + os.path.basename(product_report_fullname)
+                        logger.info(temp_str)
+                        #self.list_treeview.insert('', END, values=('0',temp_str,'ready'), tags = ('G'))
+                    
+                    if len(product_report_fullname) > 4:
+                        if product_report_fullname[-4:] == '.pdf':
+                            temp_filename = os.path.join(tempdir,os.path.basename(product_report_fullname))
+                            temp_filename = temp_filename[:-4] + '.txt'
+                            logger.info('convert_pdf_to_txt')
+                            logger.info(product_report_fullname)
+                            if '生产报告' in product_report_fullname:
+                                result_str =  convert_pdf_to_txt_scbg(product_report_fullname,temp_filename)
+                            else:
+                                result_str =  convert_pdf_to_txt(product_report_fullname,temp_filename)
+                            if '正常返回' in result_str:
+                                self.list_treeview.insert('', END, values=('-','解析PDF文件: ' + os.path.basename(product_report_fullname),'Pass'), tags = ('G'))
+
+                            else:
+                                self.list_treeview.insert('', END, values=('-','无法解析PDF文件: ' + os.path.basename(product_report_fullname),'错误'), tags = ('R'))
+                            product_report_fullname = temp_filename
+                    verifyfiles.append([tempm,tempn,product_report_fullname])
+                    #若为pdf文件，用转换后的txt替代
+
+            logger.info('待校验文件清单verifyfiles')
+            logger.info(verifyfiles)
+
+            logger.info(tempj)
+            for j in range(5+int(working_items[1]),5+int(working_items[1])+int(working_items[2])):   #check point pos 15 to 25
+                tempk = tempj[j]
+                logger.info('tempk:')
+                logger.info(tempk)
+                cpstr = tempk[0]
+                if cpstr == '':
+                    break
+                else:
+                    if cpstr == 'ErrorFile':
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        if os.path.exists(comparefile1):
+                            tempErrorFileSize = os.path.getsize(comparefile1)
+                            if tempErrorFileSize == 0:
+                                self.list_treeview.insert('', END, values=('1','Error.txt 文件大小为 0.','Pass'), tags = ('G'))
+                            else:
+                                temp_str = os.path.basename(comparefile1)
+                                self.list_treeview.insert('', END, values=('1',temp_str + ' 文件大小为' + str(tempErrorFileSize),'错误'), tags = ('R'))
+                                logger.info(comparefile1 + ' 文件大小为' + str(tempErrorFileSize))
+                        else:
+                            self.list_treeview.insert('', END, values=('1','查找Error.txt文件，无此文件','错误'), tags = ('R'))
+                            logger.info('查找Error文件，无此文件')
+                        self.list_treeview.update()
+
+                    elif cpstr == 'DataForm':
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        logger.info('读取数据单DataForm')
+                        #因有两个同名‘数据单’，需筛选出在分发文件夹的‘数据单’
+                        comparefile1 = catchfilefullnameindir(sourcedir,'数据单','分发')
+                        logger.info(comparefile1)
+                        data_form_list =  get_Data_Form_listval(comparefile1)
+                        logger.info('读取数据单,获订单下单数量，描述，ep文件列表等内容')
+                        logger.info(data_form_list)
+                        kehu = data_form_list[0]
+                        logger.info('匹配客户名称')
+                        logger.info(kehu)
+                        if kehu in comparefile1:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'数据单客户:'+kehu+' 名称匹配.','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'数据单客户:'+kehu+' 名称不匹配.','错误'), tags = ('R'))
+                        try:
+                            dingdanshuliang = data_form_list[2]
+                            logger.info('匹配订单数量')
+                            logger.info(dingdanshuliang)
+                            dingdanshuliang_str = dingdanshuliang[:-1]#订单数量 去 ’万‘ 字
+                            dingdanshuliang = int(float(dingdanshuliang_str)*10000)
+                            logger.info(dingdanshuliang)
+
+                            xiafashuliang = data_form_list[3]
+                            logger.info('匹配下发数量')
+                            logger.info(dingdanshuliang)
+                            xiafashuliang_str = xiafashuliang[:-1]#下单数量 去 ’万‘ 字
+                            xiafashuliang = int(float(xiafashuliang_str)*10000)
+                            logger.info(xiafashuliang)
+                        except:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'Error.订单下单数值有误.程序出错','错误'), tags = ('R'))
+                        if dingdanshuliang != xiafashuliang:
+                            yi_chang_return_str = get_xlsfile_nrow(sourcedir,'异常反馈表')
+                            if '正常返回' in yi_chang_return_str:
+                                yi_chang_fan_kui_biao_nrows_str = yi_chang_return_str[5:]
+                                yi_chang_fan_kui_biao_nrows = int(yi_chang_fan_kui_biao_nrows_str) -1
+                                if yi_chang_fan_kui_biao_nrows == dingdanshuliang - xiafashuliang:
+                                    self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+\
+                                        '不相同.异常反馈表:'+str(yi_chang_fan_kui_biao_nrows),'Pass'), tags = ('G'))
                                 else:
-                                    temp_str = os.path.basename(comparefile1)
-                                    self.list_treeview.insert('', END, values=('1',temp_str + ' 文件大小为' + str(tempErrorFileSize),'错误'), tags = ('R'))
-                                    logger.info(comparefile1 + ' 文件大小为' + str(tempErrorFileSize))
+                                    self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+\
+                                        '不相同.异常反馈表:'+str(yi_chang_fan_kui_biao_nrows),'Pass'), tags = ('R'))
                             else:
-                                self.list_treeview.insert('', END, values=('1','查找Error.txt文件，无此文件','错误'), tags = ('R'))
-                                logger.info('查找Error文件，无此文件')
-                            self.list_treeview.update()
+                                self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+'不相同.'+yi_chang_return_str,'Pass'), tags = ('R'))
 
-                        elif cpstr == 'DataForm':
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            logger.info('读取数据单DataForm')
-                            #因有两个同名‘数据单’，需筛选出在分发文件夹的‘数据单’
-                            comparefile1 = catchfilefullnameindir(sourcedir,'数据单','分发')
-                            logger.info(comparefile1)
-                            data_form_list =  get_Data_Form_listval(comparefile1)
-                            logger.info('读取数据单,获订单下单数量，描述，ep文件列表等内容')
-                            logger.info(data_form_list)
-                            kehu = data_form_list[0]
-                            logger.info('匹配客户名称')
-                            logger.info(kehu)
-                            if kehu in comparefile1:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'数据单客户:'+kehu+' 名称匹配.','Pass'), tags = ('G'))
+                        #数据表中EPmdbxls文件列表下单数量合计 与 表头下单数据 核对
+                        ep_wenjian_liebiao = data_form_list[8]  #8,第9，ep文件列表
+                        ep_mdb_xls_liebiao_fullname = []
+                        sum_xiadan = 0
+                        ep_mdb_xls_filelist = []
+                        for ep_wenjian_i in ep_wenjian_liebiao:
+                            sum_xiadan = sum_xiadan  + ep_wenjian_i[3]
+                            #将ep列表中的文件转为 含路径的 文件名
+                            ep_wenjian_basename = ep_wenjian_i[1]
+                            ep_wenjian_onefile_shuliang = ep_wenjian_i[3]
+                            logger.info('ep_mdb_xls_filelist:\n ep_wenjian_basename')
+                            logger.info(ep_wenjian_basename)
+                            ep_mdb_xls_filelist =  catchepmdbxls_filelist_form_ep(sourcedir,ep_wenjian_basename,ep_wenjian_onefile_shuliang)
+                            logger.info(ep_mdb_xls_filelist)
+                            if ep_mdb_xls_filelist == -1:
+                                self.list_treeview.insert('', END, values=('-','数据单EPmdbxls文件列表对应mdb*xls:'+str(ep_wenjian_basename)+' 找无此文件.','错误'), tags = ('R'))
                             else:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'数据单客户:'+kehu+' 名称不匹配.','错误'), tags = ('R'))
-                            try:
-                                dingdanshuliang = data_form_list[2]
-                                logger.info('匹配订单数量')
-                                logger.info(dingdanshuliang)
-                                dingdanshuliang_str = dingdanshuliang[:-1]#订单数量 去 ’万‘ 字
-                                dingdanshuliang = int(float(dingdanshuliang_str)*10000)
-                                logger.info(dingdanshuliang)
-
-                                xiafashuliang = data_form_list[3]
-                                logger.info('匹配下发数量')
-                                logger.info(dingdanshuliang)
-                                xiafashuliang_str = xiafashuliang[:-1]#下单数量 去 ’万‘ 字
-                                xiafashuliang = int(float(xiafashuliang_str)*10000)
-                                logger.info(xiafashuliang)
-                            except:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'Error.订单下单数值有误.程序出错','错误'), tags = ('R'))
-                            if dingdanshuliang != xiafashuliang:
-                                yi_chang_return_str = get_xlsfile_nrow(sourcedir,'异常反馈表')
-                                if '正常返回' in yi_chang_return_str:
-                                    yi_chang_fan_kui_biao_nrows_str = yi_chang_return_str[5:]
-                                    yi_chang_fan_kui_biao_nrows = int(yi_chang_fan_kui_biao_nrows_str) -1
-                                    if yi_chang_fan_kui_biao_nrows == dingdanshuliang - xiafashuliang:
-                                        self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+\
-                                            '不相同.异常反馈表:'+str(yi_chang_fan_kui_biao_nrows),'Pass'), tags = ('G'))
+                                ep_mdb_xls_liebiao_fullname.append(ep_mdb_xls_filelist)
+                                if ep_wenjian_onefile_shuliang > 240:
+                                    str_fendan_filename_digest = catch_ep_cutting_form_ep(sourcedir,ep_wenjian_basename,ep_wenjian_onefile_shuliang)
+                                    logger.info(str_fendan_filename_digest)
+                                    if int(ep_wenjian_onefile_shuliang//240)+1 == str_fendan_filename_digest.count('_'):
+                                        self.list_treeview.insert('', END, values=('-','EP文件:'+str(ep_wenjian_basename)+' 分单文件：' + str(str_fendan_filename_digest)+ ' 数量:' + str(int(ep_wenjian_onefile_shuliang//240)+1),'Pass'), tags = ('G'))
                                     else:
-                                        self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+\
-                                            '不相同.异常反馈表:'+str(yi_chang_fan_kui_biao_nrows),'Pass'), tags = ('R'))
-                                else:
-                                    self.list_treeview.insert('', END, values=('-','订单数量:'+str(dingdanshuliang)+' 与下单数量:'+str(xiafashuliang)+'不相同.'+yi_chang_return_str,'Pass'), tags = ('R'))
+                                        self.list_treeview.insert('', END, values=('-','EP文件:'+str(ep_wenjian_basename)+' 分单文件：' + str(str_fendan_filename_digest)+ ' 数量:' + str(int(ep_wenjian_onefile_shuliang//240)+1),'错误'), tags = ('R'))
+                        if sum_xiadan == xiafashuliang:
+                            self.list_treeview.insert('', END, values=('-','下发数量:'+str(xiafashuliang)+' ep文件数据数量匹配.','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-','下发数据:'+str(xiafashuliang)+' ep文件数据数量不匹配.','错误'), tags = ('R'))
+                        #在数据格式栏中查找是否有相应数据长度值
+                        shuju_geshi_shuju_changdu = data_form_list[4]
+                        logger.info('在数据格式栏中查找是否有相应数据长度值SMC_Len_value_str/shuju_geshi_shuju_changdu')
+                        logger.info(SMC_Len_value_str)
+                        logger.info(shuju_geshi_shuju_changdu)
 
-                            #数据表中EPmdbxls文件列表下单数量合计 与 表头下单数据 核对
-                            ep_wenjian_liebiao = data_form_list[8]  #8,第9，ep文件列表
-                            ep_mdb_xls_liebiao_fullname = []
-                            sum_xiadan = 0
-                            ep_mdb_xls_filelist = []
-                            for ep_wenjian_i in ep_wenjian_liebiao:
-                                sum_xiadan = sum_xiadan  + ep_wenjian_i[3]
-                                #将ep列表中的文件转为 含路径的 文件名
-                                ep_wenjian_basename = ep_wenjian_i[1]
-                                ep_wenjian_onefile_shuliang = ep_wenjian_i[3]
-                                logger.info('ep_mdb_xls_filelist:\n ep_wenjian_basename')
-                                logger.info(ep_wenjian_basename)
-                                ep_mdb_xls_filelist =  catchepmdbxls_filelist_form_ep(sourcedir,ep_wenjian_basename,ep_wenjian_onefile_shuliang)
-                                logger.info(ep_mdb_xls_filelist)
-                                if ep_mdb_xls_filelist == -1:
-                                    self.list_treeview.insert('', END, values=('-','数据单EPmdbxls文件列表对应mdb*xls:'+str(ep_wenjian_basename)+' 找无此文件.','错误'), tags = ('R'))
-                                else:
-                                    ep_mdb_xls_liebiao_fullname.append(ep_mdb_xls_filelist)
-                                    if ep_wenjian_onefile_shuliang > 240:
-                                        str_fendan_filename_digest = catch_ep_cutting_form_ep(sourcedir,ep_wenjian_basename,ep_wenjian_onefile_shuliang)
-                                        logger.info(str_fendan_filename_digest)
-                                        if int(ep_wenjian_onefile_shuliang//240)+1 == str_fendan_filename_digest.count('_'):
-                                            self.list_treeview.insert('', END, values=('-','EP文件:'+str(ep_wenjian_basename)+' 分单文件：' + str(str_fendan_filename_digest)+ ' 数量:' + str(int(ep_wenjian_onefile_shuliang//240)+1),'Pass'), tags = ('G'))
-                                        else:
-                                            self.list_treeview.insert('', END, values=('-','EP文件:'+str(ep_wenjian_basename)+' 分单文件：' + str(str_fendan_filename_digest)+ ' 数量:' + str(int(ep_wenjian_onefile_shuliang//240)+1),'错误'), tags = ('R'))
-                            if sum_xiadan == xiafashuliang:
-                                self.list_treeview.insert('', END, values=('-','下发数量:'+str(xiafashuliang)+' ep文件数据数量匹配.','Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-','下发数据:'+str(xiafashuliang)+' ep文件数据数量不匹配.','错误'), tags = ('R'))
-                            #在数据格式栏中查找是否有相应数据长度值
-                            shuju_geshi_shuju_changdu = data_form_list[4]
-                            logger.info('在数据格式栏中查找是否有相应数据长度值SMC_Len_value_str/shuju_geshi_shuju_changdu')
-                            logger.info(SMC_Len_value_str)
-                            logger.info(shuju_geshi_shuju_changdu)
+                        if SMC_Len_value_str in shuju_geshi_shuju_changdu:
+                            self.list_treeview.insert('', END, values=('','数据表数据格式数据长度:'+SMC_Len_value_str+' 数值匹配.','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('','数据表数据格式数据长度:'+' 数值不匹配.','错误'), tags = ('R'))
+                        self.list_treeview.update()
+                        
 
-                            if SMC_Len_value_str in shuju_geshi_shuju_changdu:
-                                self.list_treeview.insert('', END, values=('','数据表数据格式数据长度:'+SMC_Len_value_str+' 数值匹配.','Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('','数据表数据格式数据长度:'+' 数值不匹配.','错误'), tags = ('R'))
-                            self.list_treeview.update()
-                            
+                    elif cpstr == 'TaskOrderProReport':
+                        logger.info('TaskOrderProReport')
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        logger.info(temp_list)
+                        temp_str = tempk[2]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile2 = temp_list[2]
+                        logger.info(temp_list)
+                        #对比生产任务单需求文档编号 = 生产报告产品规格编号
+                        comparevalue1 =  catch_pdf_string_val(comparefile1,'ProjectCode')
+                        comparevalue2 =  catch_pdf_string_val(comparefile2,'产品规格编号')
+                        logger.info('comparevalue 1, 2')
+                        logger.info(comparevalue1)
+                        logger.info(comparevalue2)
+                        if comparevalue1 == comparevalue2:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*ProjectCode 与 生产报告*产品规格编号 相同: ' + str(comparevalue1),'Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*ProjectCode 与 生产报告*产品规格编号 不同: ' + str(comparevalue1),'错误'), tags = ('R'))
+                        #对比生产任务单 应用要求 = 生产报告产 产品名称
+                        comparevalue1 =  catch_pdf_string_val(comparefile1,'ApplicantDemand')
+                        comparevalue2 =  catch_pdf_string_val(comparefile2,'产品名称')
+                        logger.info('comparevalue 1, 2')
+                        logger.info(comparevalue1)
+                        logger.info(comparevalue2)
+                        if comparevalue1 == comparevalue2:
+                            self.list_treeview.insert('', END, values=('-','生产任务单*ApplicantDemand 与 生产报告*产品名称 相同: ' + str(comparevalue1),'Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-','生产任务单*ApplicantDemand 与 生产报告*产品名称 不同: ' + str(comparevalue1),'错误'), tags = ('R'))
 
-                        elif cpstr == 'TaskOrderProReport':
-                            logger.info('TaskOrderProReport')
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            logger.info(temp_list)
-                            temp_str = tempk[2]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile2 = temp_list[2]
-                            logger.info(temp_list)
-                            #对比生产任务单需求文档编号 = 生产报告产品规格编号
-                            comparevalue1 =  catch_pdf_string_val(comparefile1,'ProjectCode')
-                            comparevalue2 =  catch_pdf_string_val(comparefile2,'产品规格编号')
-                            logger.info('comparevalue 1, 2')
-                            logger.info(comparevalue1)
+
+                    elif cpstr == 'TaskOrderOrderProReport':
+                        logger.info('TaskOrderOrderProReport')
+                        temp_str = tempk[1]                 #文件1
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        logger.info(comparefile1)
+                        temp_str = tempk[2]                 #文件2
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile2 = temp_list[2]
+                        logger.info(comparefile2)
+                        temp_str = tempk[3]                 #文件3
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile3 = temp_list[2]
+                        logger.info(comparefile3)
+
+                        comparevalue1 =  catch_pdf_string_val(comparefile1,'ProductOrderNo')
+                        ProductOrderNo_value = comparevalue1
+                        logger.info('comparevalue1, 2, 3')
+                        logger.info(comparevalue1)
+                        if 'Error' in comparevalue1:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
+                        else:
+                            comparevalue2 = catch_xls_order_report_no(comparefile2,comparevalue1)
                             logger.info(comparevalue2)
-                            if comparevalue1 == comparevalue2:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*ProjectCode 与 生产报告*产品规格编号 相同: ' + str(comparevalue1),'Pass'), tags = ('G'))
+                            if 'Error' in comparevalue2:
+                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'订单表*工单号*报告编号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
                             else:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*ProjectCode 与 生产报告*产品规格编号 不同: ' + str(comparevalue1),'错误'), tags = ('R'))
-                            #对比生产任务单 应用要求 = 生产报告产 产品名称
-                            comparevalue1 =  catch_pdf_string_val(comparefile1,'ApplicantDemand')
-                            comparevalue2 =  catch_pdf_string_val(comparefile2,'产品名称')
-                            logger.info('comparevalue 1, 2')
-                            logger.info(comparevalue1)
-                            logger.info(comparevalue2)
-                            if comparevalue1 == comparevalue2:
-                                self.list_treeview.insert('', END, values=('-','生产任务单*ApplicantDemand 与 生产报告*产品名称 相同: ' + str(comparevalue1),'Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-','生产任务单*ApplicantDemand 与 生产报告*产品名称 不同: ' + str(comparevalue1),'错误'), tags = ('R'))
-
-
-                        elif cpstr == 'TaskOrderOrderProReport':
-                            logger.info('TaskOrderOrderProReport')
-                            temp_str = tempk[1]                 #文件1
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            logger.info(comparefile1)
-                            temp_str = tempk[2]                 #文件2
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile2 = temp_list[2]
-                            logger.info(comparefile2)
-                            temp_str = tempk[3]                 #文件3
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile3 = temp_list[2]
-                            logger.info(comparefile3)
-
-                            comparevalue1 =  catch_pdf_string_val(comparefile1,'ProductOrderNo')
-                            ProductOrderNo_value = comparevalue1
-                            logger.info('comparevalue1, 2, 3')
-                            logger.info(comparevalue1)
-                            if 'Error' in comparevalue1:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
-                            else:
-                                comparevalue2 = catch_xls_order_report_no(comparefile2,comparevalue1)
-                                logger.info(comparevalue2)
-                                if 'Error' in comparevalue2:
-                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'订单表*工单号*报告编号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
-                                else:
-                                    comparevalue3 =  catch_pdf_string_val_shengchanbaogao(comparefile3,'生产报告编号')
-                                    #特殊处理 查找pdf 转txt 错位问题
-                                    logger.info(comparevalue3)
-                                    if 'Error' in comparevalue3:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告*生产报告编号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
-                                    else:
-                                        if comparevalue2 == comparevalue3:
-                                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号 - 订单表*工单号*报告编号 - 生产报告*生产报告编号 相同: ' + str(comparevalue3),'Pass'), tags = ('G'))
-                                        else:
-                                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号 - 订单表*工单号*报告编号 - 生产报告*生产报告编号 不同: ' + str(comparevalue3),'错误'), tags = ('R'))
-                            self.list_treeview.update()
-
-                        elif cpstr == 'PersonalizationPrintItem':
-                            logger.info('PersonalizationPrintItem')
-                            temp_str = tempk[1]                 #生产任务单
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            logger.info(comparefile1)
-
-                            comparevalue1 =  catch_pdf_string_multilines(comparefile1,'PersonalizationDemand1')
-                            logger.info('PersonalizationPrintItem comparevalue 1, 2')
-                            logger.info(comparevalue1)
-                            temp_str = comparevalue1
-                            try:
-                                temp_pos1 = temp_str.index('（')
-                                temp_pos2 = temp_str.index('）')
-                                temp_pos3 = temp_str.index('分隔方式')
-                            except:
-                                comparevalue1 = 'Error: 个人化要求没有找到括号（）.'
-                            temp_str_personal = temp_str[temp_pos1+1:temp_pos2]
-                            logger.info(temp_str_personal)
-                            temp_str_personal= temp_str_personal.replace('和','、')
-                            temp_str_personal= temp_str_personal.replace('相片','照片')
-                            temp_str_personal= temp_str_personal.replace('、',' ')
-                            comparevalue1path1 = temp_str_personal
-                            logger.info(comparevalue1path1)
-                            separate_mathod = ''
-                            for temp_i in range(temp_pos3+4,temp_pos3+16):    #分隔方式
-                                if temp_str[temp_i].isdigit() or temp_str[temp_i]=='/':
-                                    separate_mathod = separate_mathod + temp_str[temp_i]
-                                else:
-                                    break
-                            logger.info('separate_mathod')
-                            logger.info(separate_mathod)
-                            for temp_ep_level_list in ep_mdb_xls_liebiao_fullname:      #可能有多个ep文件及对应mdb xls
-                                temp_list = temp_ep_level_list[1]                       #对应mdb
-                                logger.info('mdb file list')
-                                logger.info(temp_list)
-                                if len(temp_list) > 2:
-                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应多于2个mdb文件。' ,'错误'), tags = ('R'))
-                                    logger.info('ep文件对应多于2个mdb文件。')
-                                elif len(temp_list) == 2:
-                                    wu_ren_xiang = False
-                                    for temp_str in temp_list:
-                                        if '无人像' in temp_str:
-                                            wu_ren_xiang = True
-                                        else:
-                                            mdb_normal_file = temp_str
-                                    if not wu_ren_xiang :
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应2个mdb文件，缺无人像文件。' ,'错误'), tags = ('R'))
-                                        logger.info('ep文件对应2个mdb文件，缺无人像文件。')
-                                else:
-                                    mdb_normal_file = temp_list[0]
-                                temp_list = temp_ep_level_list[2]                       #对应xls
-                                logger.info('xls file list')
-                                logger.info(temp_list)
-                                mdb_basename = os.path.basename(mdb_normal_file)
-                                xls_basename = mdb_basename.replace('mdb','xls')
-                                xls_normal_file = ''
-                                for temp_str in temp_list:
-                                    if xls_basename in temp_str:
-                                        xls_normal_file = temp_str
-                                if xls_basename == '':
-                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应mdb文件，缺xls文件。' ,'错误'), tags = ('R'))
-                                    logger.info('ep文件对应mdb文件，缺xls文件。')
-                                else:
-                                    self.list_treeview.insert('', END, values=('-','文件ep,mdb,xls对应 正常: ' + str(mdb_normal_file),'Pass'), tags = ('G'))
-                                comparevalue2 = catch_xls_oneline (xls_normal_file,0)      #读第0行数据
-                                logger.info(comparevalue2)
-                                if 'Error' in comparevalue2:
-                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'xls文件*失败: ' + str(xls_basename),'错误'), tags = ('R'))
-                                    logger.info('xls文件*失败: ')
-                                else:
-                                    if comparevalue2 == comparevalue1path1:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'印刷个人信息与xls对应相同: ' + str(comparevalue2),'Pass'), tags = ('G'))
-                                        logger.info('印刷个人信息与xls对应相同: ' + str(comparevalue2))
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'印刷个人信息与xls对应不同: ' + str(comparevalue2),'错误'), tags = ('R'))
-                                        logger.info('印刷个人信息与xls对应不同:')
-
-                                comparevalue3 =  catch_xls_onecell_value(xls_normal_file,'银行卡号')
+                                comparevalue3 =  catch_pdf_string_val_shengchanbaogao(comparefile3,'生产报告编号')
+                                #特殊处理 查找pdf 转txt 错位问题
                                 logger.info(comparevalue3)
                                 if 'Error' in comparevalue3:
-                                    self.list_treeview.insert('', END, values=('-','卡号分隔方式读取打印列表出错: ' + str(comparevalue3),'错误'), tags = ('R'))
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告*生产报告编号*查找失败: ' + str(comparevalue1),'错误'), tags = ('R'))
                                 else:
-                                    separate_mathod_list1 = separate_mathod.split('/')
-                                    separate_mathod_list2 = comparevalue3.split(' ')
-                                    logger.info(separate_mathod_list1)
-                                    logger.info(separate_mathod_list2)
-                                    for i in range(0,len(separate_mathod_list1)):
-                                        if int(separate_mathod_list1[i]) == len(separate_mathod_list2[i]):
-                                            separate_isok = 'OK'
-                                        else:
-                                            separate_isok = 'Error'
-                                    if separate_isok == 'OK':
-                                        self.list_treeview.insert('', END, values=('-','卡号分隔方式 相符: ' + str(comparevalue3) + '==' +separate_mathod,'Pass'), tags = ('G'))
+                                    if comparevalue2 == comparevalue3:
+                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号 - 订单表*工单号*报告编号 - 生产报告*生产报告编号 相同: ' + str(comparevalue3),'Pass'), tags = ('G'))
                                     else:
-                                        self.list_treeview.insert('', END, values=('-','卡号分隔方式 不相符: ' + str(comparevalue3),'错误'), tags = ('R'))
-                                        
-                                    self.list_treeview.update()
-                                    printlist_title_ech = ech_printlist_title_xls2xml(xls_normal_file, tempdir)
-                                    logger.info(printlist_title_ech)
-                                    if 'Error' in printlist_title_ech:
-                                        self.list_treeview.insert('', END, values=('-',printlist_title_ech,'错误'), tags = ('R'))
+                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产任务单*工单号 - 订单表*工单号*报告编号 - 生产报告*生产报告编号 不同: ' + str(comparevalue3),'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'PersonalizationPrintItem':
+                        logger.info('PersonalizationPrintItem')
+                        temp_str = tempk[1]                 #生产任务单
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        logger.info(comparefile1)
+
+                        comparevalue1 =  catch_pdf_string_multilines(comparefile1,'PersonalizationDemand1')
+                        logger.info('PersonalizationPrintItem comparevalue 1, 2')
+                        logger.info(comparevalue1)
+                        temp_str = comparevalue1
+                        try:
+                            temp_pos1 = temp_str.index('（')
+                            temp_pos2 = temp_str.index('）')
+                            temp_pos3 = temp_str.index('分隔方式')
+                        except:
+                            comparevalue1 = 'Error: 个人化要求没有找到括号（）.'
+                        temp_str_personal = temp_str[temp_pos1+1:temp_pos2]
+                        logger.info(temp_str_personal)
+                        temp_str_personal= temp_str_personal.replace('和','、')
+                        temp_str_personal= temp_str_personal.replace('相片','照片')
+                        temp_str_personal= temp_str_personal.replace('、',' ')
+                        comparevalue1path1 = temp_str_personal
+                        logger.info(comparevalue1path1)
+                        separate_mathod = ''
+                        for temp_i in range(temp_pos3+4,temp_pos3+16):    #分隔方式
+                            if temp_str[temp_i].isdigit() or temp_str[temp_i]=='/':
+                                separate_mathod = separate_mathod + temp_str[temp_i]
+                            else:
+                                break
+                        logger.info('separate_mathod')
+                        logger.info(separate_mathod)
+                        for temp_ep_level_list in ep_mdb_xls_liebiao_fullname:      #可能有多个ep文件及对应mdb xls
+                            temp_list = temp_ep_level_list[1]                       #对应mdb
+                            logger.info('mdb file list')
+                            logger.info(temp_list)
+                            if len(temp_list) > 2:
+                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应多于2个mdb文件。' ,'错误'), tags = ('R'))
+                                logger.info('ep文件对应多于2个mdb文件。')
+                            elif len(temp_list) == 2:
+                                wu_ren_xiang = False
+                                for temp_str in temp_list:
+                                    if '无人像' in temp_str:
+                                        wu_ren_xiang = True
+                                    else:
+                                        mdb_normal_file = temp_str
+                                if not wu_ren_xiang :
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应2个mdb文件，缺无人像文件。' ,'错误'), tags = ('R'))
+                                    logger.info('ep文件对应2个mdb文件，缺无人像文件。')
+                            else:
+                                mdb_normal_file = temp_list[0]
+                            temp_list = temp_ep_level_list[2]                       #对应xls
+                            logger.info('xls file list')
+                            logger.info(temp_list)
+                            mdb_basename = os.path.basename(mdb_normal_file)
+                            xls_basename = mdb_basename.replace('mdb','xls')
+                            xls_normal_file = ''
+                            for temp_str in temp_list:
+                                if xls_basename in temp_str:
+                                    xls_normal_file = temp_str
+                            if xls_basename == '':
+                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'ep文件对应mdb文件，缺xls文件。' ,'错误'), tags = ('R'))
+                                logger.info('ep文件对应mdb文件，缺xls文件。')
+                            else:
+                                self.list_treeview.insert('', END, values=('-','文件ep,mdb,xls对应 正常: ' + str(mdb_normal_file),'Pass'), tags = ('G'))
+                            comparevalue2 = catch_xls_oneline (xls_normal_file,0)      #读第0行数据
+                            logger.info(comparevalue2)
+                            if 'Error' in comparevalue2:
+                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'xls文件*失败: ' + str(xls_basename),'错误'), tags = ('R'))
+                                logger.info('xls文件*失败: ')
+                            else:
+                                if comparevalue2 == comparevalue1path1:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'印刷个人信息与xls对应相同: ' + str(comparevalue2),'Pass'), tags = ('G'))
+                                    logger.info('印刷个人信息与xls对应相同: ' + str(comparevalue2))
+                                else:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'印刷个人信息与xls对应不同: ' + str(comparevalue2),'错误'), tags = ('R'))
+                                    logger.info('印刷个人信息与xls对应不同:')
+
+                            comparevalue3 =  catch_xls_onecell_value(xls_normal_file,'银行卡号')
+                            logger.info(comparevalue3)
+                            if 'Error' in comparevalue3:
+                                self.list_treeview.insert('', END, values=('-','卡号分隔方式读取打印列表出错: ' + str(comparevalue3),'错误'), tags = ('R'))
+                            else:
+                                separate_mathod_list1 = separate_mathod.split('/')
+                                separate_mathod_list2 = comparevalue3.split(' ')
+                                logger.info(separate_mathod_list1)
+                                logger.info(separate_mathod_list2)
+                                for i in range(0,len(separate_mathod_list1)):
+                                    if int(separate_mathod_list1[i]) == len(separate_mathod_list2[i]):
+                                        separate_isok = 'OK'
+                                    else:
+                                        separate_isok = 'Error'
+                                if separate_isok == 'OK':
+                                    self.list_treeview.insert('', END, values=('-','卡号分隔方式 相符: ' + str(comparevalue3) + '==' +separate_mathod,'Pass'), tags = ('G'))
+                                else:
+                                    self.list_treeview.insert('', END, values=('-','卡号分隔方式 不相符: ' + str(comparevalue3),'错误'), tags = ('R'))
                                     
-                                    if not os.path.exists(os.path.join(tempdir,'sheet1.xml')):
-                                        self.list_treeview.insert('', END, values=('-','打印列表sheet1.xml不存在. ' + str(comparevalue3),'错误'), tags = ('R'))
-                                    else:
-                                        printlist_title_string = get_xmlfile_sheet_title_value(tempdir)
-                                        temp_pos1 = printlist_title_string.index('&C')
-                                        temp_pos2 = printlist_title_string.index('&R')
-                                        printlist_title_projectname = printlist_title_string[2:temp_pos1]
-                                        printlist_title_order_count = printlist_title_string[temp_pos2+2:]
-                                        logger.info(printlist_title_string)
-                                        if 'Error' in printlist_title_string:
-                                            self.list_treeview.insert('', END, values=('-','打印列表xml get title执行错误' + str(comparevalue3),'错误'), tags = ('R'))
-                                        else:
-                                            if str(dingdanshuliang) in printlist_title_order_count:
-                                                self.list_treeview.insert('', END, values=('-','打印列表页眉: ' + printlist_title_projectname+'-'+printlist_title_order_count,'Pass'), tags = ('G'))
-                                            else:
-                                                self.list_treeview.insert('', END, values=('-','打印列表页眉有误，订单量不符: ' + printlist_title_projectname+'-'+printlist_title_order_count,'错误'), tags = ('R'))
-                                    self.list_treeview.update()
-
-                        elif cpstr == 'SMCLenPrintItem':
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-
-                            comparevalue1 =  catch_pdf_string_val(comparefile1,'SMCLen')
-                            if comparevalue1 == 'Error, 没有找到字符串: SMCLen':
-                                comparevalue1 =  catch_pdf_string_val(comparefile1,'SMC长度')
-                            logger.info('comparevalue1')
-                            logger.info(comparevalue1)
-                            if 'Error' in comparevalue1:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告，提取SMCLen: ' + comparevalue1,'错误'), tags = ('R'))
-                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告,提取SMCLen:' + str(comparevalue1),'Pass'), tags = ('G'))
-                            #self.catch_,comparefile2)
-                            SMC_Len_value_str = str(comparevalue1)   #用户匹配数据单中数据格式的相应值
-                            
-                            logger.info('提取生产报告打印项列表，返回列表')
-                            get_PrintItem_list =  get_ProductReport_PrintItem_listval(comparefile1)
-                            logger.info(get_PrintItem_list)
-                            self.list_treeview.insert('', END, values=('-','提取生产报告 打印数据项描述:' + str(len(get_PrintItem_list))+'条','Pass'), tags = ('G'))
-                            self.list_treeview.update()
-
-                        elif cpstr == 'SMCLenEPs':
-                            logger.info('EPmdbxls文件列表ep_mdb_xls_liebiao_fullname')
-                            logger.info(ep_mdb_xls_liebiao_fullname )
-                            logger.info('SMC_Len_value_str')
-                            logger.info(SMC_Len_value_str)
-                            for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
-                                ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
-                                for ep_wenjian_onefile  in ep_wenjian_multi_file:
-                                    #logger.info(ep_wenjian_onefile)
-                                    ep_wenjian_smcstrlen =  catch_txtfile_string_len(ep_wenjian_onefile,'[SMC]','[ENDSMC]')
-                                    ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
-                                    if ep_wenjian_smcstrlen == SMC_Len_value_str :                        
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对SMCLen: ' + str(ep_wenjian_onefile_basename)+'='+ep_wenjian_smcstrlen,'Pass'), tags = ('G'))
-                                        #用户匹配数据单中数据格式的相应值
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对SMCLen: ' + str(ep_wenjian_onefile_basename)+'='+ep_wenjian_smcstrlen,'错误'), tags = ('R'))
-                            self.list_treeview.update()
-
-                        elif cpstr == 'PrintItemEP':
-                            #生产报告打印标签和长度描述和ep内容是否一致，只检查 第一条 和最后一条
-                            logger.info('生产报告打印标签长度描述 与 ep内容是否一致')
-                            logger.info(get_PrintItem_list)
-                            logger.info(ep_mdb_xls_liebiao_fullname)
-                            for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
-                                ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
-                                for ep_wenjian_onefile  in ep_wenjian_multi_file:
-                                    #logger.info(ep_wenjian_onefile)
-                                    ep_wenjian_printitem_match =  check_printitem_ep_str_match(get_PrintItem_list,ep_wenjian_onefile)
-                                    ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
-                                    if '匹配正确' in ep_wenjian_printitem_match:                        
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项长度: ' + str(ep_wenjian_onefile_basename),'Pass'), tags = ('G'))
-                                        self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项长度: ' + str(ep_wenjian_onefile_basename),'错误'), tags = ('R'))
-                            self.list_treeview.update()
-
-                        elif cpstr == 'PrintListEP':
-                            #生产报告打印清单内容与ep文件是否一致，只检查 第一条 和最后一条
-                            logger.info('生产报告打印清单内容与ep文件是否一致')
-                            logger.info(get_PrintItem_list)
-                            logger.info(ep_mdb_xls_liebiao_fullname)
-
-                            for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
-                                ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
-                                xls_wenjian_multi_file = ep_wenjian_batch_epmdbxls[2]   #xls文件组
-                                for ep_wenjian_onefile  in ep_wenjian_multi_file:
-                                    xls_wenjian_onefile = xls_wenjian_multi_file[0]
-                                    #现只处理一个ep文件对应一个xls文件
-                                    ep_wenjian_printitem_match =  check_printList_EP_match(get_PrintItem_list,ep_wenjian_onefile,xls_wenjian_onefile)
-                                    logger.info(ep_wenjian_printitem_match)
-                                    ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
-                                    logger.info(ep_wenjian_onefile_basename)
-                                    if '匹配正确' in ep_wenjian_printitem_match:                        
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项内容: ' + str(ep_wenjian_onefile_basename),'Pass'), tags = ('G'))
-                                        self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项内容: ' + str(ep_wenjian_onefile_basename),'错误'), tags = ('R'))
-                                        self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match,'错误'), tags = ('R'))
-                            self.list_treeview.update()
-
-                        elif cpstr == 'PrintListMdb':
-                            #核对打印清单内容与mdb文件是否一致，只检查 第一条 和最后一条
-                            logger.info('生产报告打印清单内容与mdb文件是否一致')
-                            logger.info(get_PrintItem_list)
-                            logger.info(ep_mdb_xls_liebiao_fullname)
-
-                            for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
-                                ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #ep 文件
-                                mdb_wenjian_multi_file = ep_wenjian_batch_epmdbxls[1]   #mdb文件组
-                                xls_wenjian_multi_file = ep_wenjian_batch_epmdbxls[2]   #xls文件组
-                                value_float_temp = ep_wenjian_batch_epmdbxls[3]   #当个ep文件数据量
-                                count_ep_onefile_shuliang_str = str(int(value_float_temp))
-                                logger.info('count_ep_onefile_shuliang_str')
-                                logger.info(count_ep_onefile_shuliang_str)
+                                self.list_treeview.update()
+                                printlist_title_ech = ech_printlist_title_xls2xml(xls_normal_file, tempdir)
+                                logger.info(printlist_title_ech)
+                                if 'Error' in printlist_title_ech:
+                                    self.list_treeview.insert('', END, values=('-',printlist_title_ech,'错误'), tags = ('R'))
                                 
-                                #for ep_wenjian_onefile  in ep_wenjian_multi_file: 只有一个ep文件
-                                ep_wenjian_onefile  = ep_wenjian_multi_file[0]
-                                is_wurenxiang_mdb = False
-                                if len(mdb_wenjian_multi_file) >1:
-                                    is_wurenxiang_mdb =True
-                                if is_wurenxiang_mdb:
-                                    if '无人像' in mdb_wenjian_multi_file[0]:
-                                        mdb_wurenxiang_file = mdb_wenjian_multi_file[0]
-                                        mdb_wenjian_onefile = mdb_wenjian_multi_file[1]
+                                if not os.path.exists(os.path.join(tempdir,'sheet1.xml')):
+                                    self.list_treeview.insert('', END, values=('-','打印列表sheet1.xml不存在. ' + str(comparevalue3),'错误'), tags = ('R'))
+                                else:
+                                    printlist_title_string = get_xmlfile_sheet_title_value(tempdir)
+                                    temp_pos1 = printlist_title_string.index('&C')
+                                    temp_pos2 = printlist_title_string.index('&R')
+                                    printlist_title_projectname = printlist_title_string[2:temp_pos1]
+                                    printlist_title_order_count = printlist_title_string[temp_pos2+2:]
+                                    logger.info(printlist_title_string)
+                                    if 'Error' in printlist_title_string:
+                                        self.list_treeview.insert('', END, values=('-','打印列表xml get title执行错误' + str(comparevalue3),'错误'), tags = ('R'))
                                     else:
-                                        mdb_wenjian_onefile = mdb_wenjian_multi_file[0]
-                                        mdb_wurenxiang_file = mdb_wenjian_multi_file[1]
-                                    temp_str = brackets_catchcontent(mdb_wurenxiang_file)
-                                    temp_list = temp_str.split('-')
-                                    mdb_wurenxiang_count = int(temp_list[1])
-                                    logger.info('mdb_wurenxiang_count')
-                                    logger.info(mdb_wurenxiang_count)
-                                else:           #无 无人像 文件
-                                    mdb_wenjian_onefile = mdb_wenjian_multi_file[0]
-                                    mdb_wurenxiang_count = 0
+                                        if str(dingdanshuliang) in printlist_title_order_count:
+                                            self.list_treeview.insert('', END, values=('-','打印列表页眉: ' + printlist_title_projectname+'-'+printlist_title_order_count,'Pass'), tags = ('G'))
+                                        else:
+                                            self.list_treeview.insert('', END, values=('-','打印列表页眉有误，订单量不符: ' + printlist_title_projectname+'-'+printlist_title_order_count,'错误'), tags = ('R'))
+                                self.list_treeview.update()
 
-                                xls_wenjian_onefile = mdb_wenjian_onefile.replace('.mdb','.xls')
+                    elif cpstr == 'SMCLenPrintItem':
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
 
-                                ep_wenjian_printitem_match =  check_PrintList_mdb_val(get_PrintItem_list,xls_wenjian_onefile,mdb_wenjian_onefile)
+                        comparevalue1 =  catch_pdf_string_val(comparefile1,'SMCLen')
+                        if comparevalue1 == 'Error, 没有找到字符串: SMCLen':
+                            comparevalue1 =  catch_pdf_string_val(comparefile1,'SMC长度')
+                        logger.info('comparevalue1')
+                        logger.info(comparevalue1)
+                        if 'Error' in comparevalue1:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告，提取SMCLen: ' + comparevalue1,'错误'), tags = ('R'))
+                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'生产报告,提取SMCLen:' + str(comparevalue1),'Pass'), tags = ('G'))
+                        #self.catch_,comparefile2)
+                        SMC_Len_value_str = str(comparevalue1)   #用户匹配数据单中数据格式的相应值
+                        
+                        logger.info('提取生产报告打印项列表，返回列表')
+                        get_PrintItem_list =  get_ProductReport_PrintItem_listval(comparefile1)
+                        logger.info(get_PrintItem_list)
+                        self.list_treeview.insert('', END, values=('-','提取生产报告 打印数据项描述:' + str(len(get_PrintItem_list))+'条','Pass'), tags = ('G'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'SMCLenEPs':
+                        logger.info('EPmdbxls文件列表ep_mdb_xls_liebiao_fullname')
+                        logger.info(ep_mdb_xls_liebiao_fullname )
+                        logger.info('SMC_Len_value_str')
+                        logger.info(SMC_Len_value_str)
+                        for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
+                            ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
+                            for ep_wenjian_onefile  in ep_wenjian_multi_file:
+                                #logger.info(ep_wenjian_onefile)
+                                ep_wenjian_smcstrlen =  catch_txtfile_string_len(ep_wenjian_onefile,'[SMC]','[ENDSMC]')
                                 ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
-                                mdb_check_result_str =ep_wenjian_printitem_match[0-len(count_ep_onefile_shuliang_str):]
-                                logger.info('ep_wenjian_printitem_match')
-                                logger.info(ep_wenjian_printitem_match)
-                                logger.info(mdb_check_result_str)
-                                mdb_check_result_str = str(int(mdb_check_result_str)+mdb_wurenxiang_count)
-                                logger.info(mdb_check_result_str)
+                                if ep_wenjian_smcstrlen == SMC_Len_value_str :                        
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对SMCLen: ' + str(ep_wenjian_onefile_basename)+'='+ep_wenjian_smcstrlen,'Pass'), tags = ('G'))
+                                    #用户匹配数据单中数据格式的相应值
+                                else:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对SMCLen: ' + str(ep_wenjian_onefile_basename)+'='+ep_wenjian_smcstrlen,'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'PrintItemEP':
+                        #生产报告打印标签和长度描述和ep内容是否一致，只检查 第一条 和最后一条
+                        logger.info('生产报告打印标签长度描述 与 ep内容是否一致')
+                        logger.info(get_PrintItem_list)
+                        logger.info(ep_mdb_xls_liebiao_fullname)
+                        for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
+                            ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
+                            for ep_wenjian_onefile  in ep_wenjian_multi_file:
+                                #logger.info(ep_wenjian_onefile)
+                                ep_wenjian_printitem_match =  check_printitem_ep_str_match(get_PrintItem_list,ep_wenjian_onefile)
+                                ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
                                 if '匹配正确' in ep_wenjian_printitem_match:                        
-                                    if mdb_check_result_str == count_ep_onefile_shuliang_str:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:相符 无人像='+str(mdb_wurenxiang_count) ,'Pass'), tags = ('G'))
-                                        self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:不符'+str(count_ep_onefile_shuliang_str)+'无人像='+str(mdb_wurenxiang_count),'错误'), tags = ('R'))
-                                        self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'错误'), tags = ('R'))
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项长度: ' + str(ep_wenjian_onefile_basename),'Pass'), tags = ('G'))
+                                    self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
                                 else:
-                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:不符' + str(ep_wenjian_onefile_basename[:-3])+'无人像='+str(mdb_wurenxiang_count),'错误'), tags = ('R'))
+                                    logger.error(ep_wenjian_printitem_match)
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'标签项长度有误: ' + str(ep_wenjian_printitem_match)+str(ep_wenjian_onefile_basename),'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'PrintListEP':
+                        #生产报告打印清单内容与ep文件是否一致，只检查 第一条 和最后一条
+                        logger.info('生产报告打印清单内容与ep文件是否一致')
+                        logger.info(get_PrintItem_list)
+                        logger.info(ep_mdb_xls_liebiao_fullname)
+
+                        for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
+                            ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #只提取 ep 文件列表，mdb，xls 文件列表不处理
+                            xls_wenjian_multi_file = ep_wenjian_batch_epmdbxls[2]   #xls文件组
+                            for ep_wenjian_onefile  in ep_wenjian_multi_file:
+                                xls_wenjian_onefile = xls_wenjian_multi_file[0]
+                                #现只处理一个ep文件对应一个xls文件
+                                ep_wenjian_printitem_match =  check_printList_EP_match(get_PrintItem_list,ep_wenjian_onefile,xls_wenjian_onefile)
+                                logger.info(ep_wenjian_printitem_match)
+                                ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
+                                logger.info(ep_wenjian_onefile_basename)
+                                if '匹配正确' in ep_wenjian_printitem_match:                        
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项内容: ' + str(ep_wenjian_onefile_basename),'Pass'), tags = ('G'))
+                                    self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
+                                else:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印标签项内容: ' + str(ep_wenjian_onefile_basename),'错误'), tags = ('R'))
                                     self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        self.list_treeview.update()
 
-                        elif cpstr == 'SuccessFailurelogCheck':
-                            #核查订单目录log文件是否匹配
-                            logger.info('success_failure_filecheck')
-                            success_failure_filecheck =  Success_Failure_log_filecheck(sourcedir)
-                            logger.info(success_failure_filecheck)
-                            if '正常返回' in success_failure_filecheck:                        
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核查订单目录log文件success 错误0，总数量：' + str(success_failure_filecheck[5:]),'Pass'), tags = ('G'))
-                                success_count = int(success_failure_filecheck[5:])
-                                if xiafashuliang == success_count:
-                                    self.list_treeview.insert('', END, values=('-','成功导入数量相同：' + str(success_count),'Pass'), tags = ('G'))
+                    elif cpstr == 'PrintListMdb':
+                        #核对打印清单内容与mdb文件是否一致，只检查 第一条 和最后一条
+                        logger.info('生产报告打印清单内容与mdb文件是否一致')
+                        logger.info(get_PrintItem_list)
+                        logger.info(ep_mdb_xls_liebiao_fullname)
+
+                        for ep_wenjian_batch_epmdbxls  in ep_mdb_xls_liebiao_fullname:
+                            ep_wenjian_multi_file = ep_wenjian_batch_epmdbxls[0]    #ep 文件
+                            mdb_wenjian_multi_file = ep_wenjian_batch_epmdbxls[1]   #mdb文件组
+                            xls_wenjian_multi_file = ep_wenjian_batch_epmdbxls[2]   #xls文件组
+                            value_float_temp = ep_wenjian_batch_epmdbxls[3]   #当个ep文件数据量
+                            count_ep_onefile_shuliang_str = str(int(value_float_temp))
+                            logger.info('count_ep_onefile_shuliang_str')
+                            logger.info(count_ep_onefile_shuliang_str)
+                            
+                            #for ep_wenjian_onefile  in ep_wenjian_multi_file: 只有一个ep文件
+                            ep_wenjian_onefile  = ep_wenjian_multi_file[0]
+                            is_wurenxiang_mdb = False
+                            if len(mdb_wenjian_multi_file) >1:
+                                is_wurenxiang_mdb =True
+                            if is_wurenxiang_mdb:
+                                if '无人像' in mdb_wenjian_multi_file[0]:
+                                    mdb_wurenxiang_file = mdb_wenjian_multi_file[0]
+                                    mdb_wenjian_onefile = mdb_wenjian_multi_file[1]
                                 else:
-                                    self.list_treeview.insert('', END, values=('-','成功导入数量不相同：' + str(success_count),'错误'), tags = ('R'))
-                            else:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核查订单目录log文件匹配 异常：' + str(success_failure_filecheck),'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                                    mdb_wenjian_onefile = mdb_wenjian_multi_file[0]
+                                    mdb_wurenxiang_file = mdb_wenjian_multi_file[1]
+                                temp_str = brackets_catchcontent(mdb_wurenxiang_file)
+                                temp_list = temp_str.split('-')
+                                mdb_wurenxiang_count = int(temp_list[1])
+                                logger.info('mdb_wurenxiang_count')
+                                logger.info(mdb_wurenxiang_count)
+                            else:           #无 无人像 文件
+                                mdb_wenjian_onefile = mdb_wenjian_multi_file[0]
+                                mdb_wurenxiang_count = 0
 
-                        elif cpstr == 'ZipPwdCheck':
-                            #核对zip压缩文件密码是否正确
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile1 = temp_list[2]
-                            checkzippwd =  check_zip_pwd(comparefile1,self.dxhppwd_list[0])
-                            if checkzippwd == 0:                        
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单zip压缩文件密码是否正确: 正确','Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单zip压缩文件密码是否正确: 错误' ,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                            xls_wenjian_onefile = mdb_wenjian_onefile.replace('.mdb','.xls')
 
-                        elif cpstr == 'SortedPackageCheck': #分发文件夹文件检查
-                            logger.info('SortedPackageCheck')
-                            #提取客户分拣文件文件名
-                            temp_str = tempk[1]
-                            temp_int = int(temp_str) -1
-                            temp_list = verifyfiles[temp_int]
-                            comparefile_match = temp_list[1]
-                            logger.info(comparefile_match)
-                            strSortedNumber = getSortedNumberFromxls(sourcedir,comparefile_match,ProductOrderNo_value)
-                            logger.info('strSortedNumber')
-                            strSortedNumber = strSortedNumber[5:]
-                            logger.info(strSortedNumber)
-                            zipfile_gerenhua = catchfilefullname(sourcedir,'个人化.zip')
-                            logger.info('文件名检查（单号，分单号）个人化.zip')
-                            logger.info(zipfile_gerenhua)
-                            zipfile_gerenhuabasename = os.path.basename(zipfile_gerenhua)
-                            #文件名检查（单号，分单号）
-                            if ProductOrderNo_value in zipfile_gerenhuabasename:
-                                temp_pos1 = zipfile_gerenhuabasename.find('(')
-                                temp_pos2 = zipfile_gerenhuabasename.find('（')
-                                temp_pos3 = max(temp_pos1,temp_pos2)
-                                temp_pos1 = zipfile_gerenhuabasename.find(')')
-                                temp_pos2 = zipfile_gerenhuabasename.find('）')
-                                temp_pos1 = max(temp_pos1,temp_pos2)
-                                if temp_pos1 > temp_pos3:
-                                    temp_str = zipfile_gerenhuabasename[temp_pos3+1:temp_pos1]
-                                    logger.info(temp_str)
-                                    temp_str = temp_str.strip()
-                                    if strSortedNumber == temp_str:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号相符','Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                            ep_wenjian_printitem_match =  check_PrintList_mdb_val(get_PrintItem_list,xls_wenjian_onefile,mdb_wenjian_onefile)
+                            ep_wenjian_onefile_basename = os.path.basename(ep_wenjian_onefile)
+                            mdb_check_result_str =ep_wenjian_printitem_match[0-len(count_ep_onefile_shuliang_str):]
+                            logger.info('ep_wenjian_printitem_match')
+                            logger.info(ep_wenjian_printitem_match)
+                            logger.info(mdb_check_result_str)
+                            mdb_check_result_str = str(int(mdb_check_result_str)+mdb_wurenxiang_count)
+                            logger.info(mdb_check_result_str)
+                            if '匹配正确' in ep_wenjian_printitem_match:                        
+                                if mdb_check_result_str == count_ep_onefile_shuliang_str:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:相符 无人像='+str(mdb_wurenxiang_count) ,'Pass'), tags = ('G'))
+                                    self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'Pass'), tags = ('G'))
+                                else:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:不符'+str(count_ep_onefile_shuliang_str)+'无人像='+str(mdb_wurenxiang_count),'错误'), tags = ('R'))
+                                    self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match[5:],'错误'), tags = ('R'))
+                            else:
+                                self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单内容与mdb文件:不符' + str(ep_wenjian_onefile_basename[:-3])+'无人像='+str(mdb_wurenxiang_count),'错误'), tags = ('R'))
+                                self.list_treeview.insert('', END, values=('-',ep_wenjian_printitem_match,'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'SuccessFailurelogCheck':
+                        #核查订单目录log文件是否匹配
+                        logger.info('success_failure_filecheck')
+                        success_failure_filecheck =  Success_Failure_log_filecheck(sourcedir)
+                        logger.info(success_failure_filecheck)
+                        if '正常返回' in success_failure_filecheck:                        
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核查订单目录log文件success 错误0，总数量：' + str(success_failure_filecheck[5:]),'Pass'), tags = ('G'))
+                            success_count = int(success_failure_filecheck[5:])
+                            if xiafashuliang == success_count:
+                                self.list_treeview.insert('', END, values=('-','成功导入数量相同：' + str(success_count),'Pass'), tags = ('G'))
+                            else:
+                                self.list_treeview.insert('', END, values=('-','成功导入数量不相同：' + str(success_count),'错误'), tags = ('R'))
+                        else:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核查订单目录log文件匹配 异常：' + str(success_failure_filecheck),'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'ZipPwdCheck':
+                        #核对zip压缩文件密码是否正确
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile1 = temp_list[2]
+                        checkzippwd =  check_zip_pwd(comparefile1,self.dxhppwd_list[0])
+                        if checkzippwd == 0:                        
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单zip压缩文件密码是否正确: 正确','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),'核对打印清单zip压缩文件密码是否正确: 错误' ,'错误'), tags = ('R'))
+                        self.list_treeview.update()
+
+                    elif cpstr == 'SortedPackageCheck': #分发文件夹文件检查
+                        logger.info('SortedPackageCheck')
+                        #提取客户分拣文件文件名
+                        temp_str = tempk[1]
+                        temp_int = int(temp_str) -1
+                        temp_list = verifyfiles[temp_int]
+                        comparefile_match = temp_list[1]
+                        logger.info(comparefile_match)
+                        strSortedNumber = getSortedNumberFromxls(sourcedir,comparefile_match,ProductOrderNo_value)
+                        logger.info('strSortedNumber')
+                        strSortedNumber = strSortedNumber[5:]
+                        logger.info(strSortedNumber)
+                        zipfile_gerenhua = catchfilefullname(sourcedir,'个人化.zip')
+                        logger.info('文件名检查（单号，分单号）个人化.zip')
+                        logger.info(zipfile_gerenhua)
+                        zipfile_gerenhuabasename = os.path.basename(zipfile_gerenhua)
+                        #文件名检查（单号，分单号）
+                        if ProductOrderNo_value in zipfile_gerenhuabasename:
+                            temp_pos1 = zipfile_gerenhuabasename.find('(')
+                            temp_pos2 = zipfile_gerenhuabasename.find('（')
+                            temp_pos3 = max(temp_pos1,temp_pos2)
+                            temp_pos1 = zipfile_gerenhuabasename.find(')')
+                            temp_pos2 = zipfile_gerenhuabasename.find('）')
+                            temp_pos1 = max(temp_pos1,temp_pos2)
+                            if temp_pos1 > temp_pos3:
+                                temp_str = zipfile_gerenhuabasename[temp_pos3+1:temp_pos1]
+                                logger.info(temp_str)
+                                temp_str = temp_str.strip()
+                                if strSortedNumber == temp_str:
+                                    self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号相符','Pass'), tags = ('G'))
                                 else:
                                     self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
                             else:
                                 self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        else:
+                            self.list_treeview.insert('', END, values=(str(j-4-int(working_items[1])),os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        self.list_treeview.update()
 
-                            checkzippwd =  check_zip_pwd(zipfile_gerenhua,self.dxhppwd_list[1])
-                            #密码检查
-                            if checkzippwd == 0:                        
-                                self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对个人化文件密码是否正确: 正确','Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对个人化文件密码是否正确: 错误' ,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        checkzippwd =  check_zip_pwd(zipfile_gerenhua,self.dxhppwd_list[1])
+                        #密码检查
+                        if checkzippwd == 0:                        
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对个人化文件密码是否正确: 正确','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对个人化文件密码是否正确: 错误' ,'错误'), tags = ('R'))
+                        self.list_treeview.update()
 
-                            comparevalue1 =  check_sortingfile_gerenhua_zip_content(zipfile_gerenhua,dingdanshuliang)
-                            #压缩包内容检查
-                            logger.info(comparevalue1)
-                            if '正常返回' in comparevalue1:                        
-                                self.list_treeview.insert('', END, values=('-',comparevalue1,'Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-','个人化zip压缩包检查异常：' + str(comparevalue1),'错误'), tags = ('R'))
-                            self.list_treeview.update()
-                            #检查印刷文件 印刷.zip
-                            zipfile_gerenhua = catchfilefullname(sourcedir,'印刷.zip')
-                            logger.info('检查印刷文件 印刷.zip')
-                            logger.info(zipfile_gerenhua)
-                            zipfile_gerenhuabasename = os.path.basename(zipfile_gerenhua)
-                            if ProductOrderNo_value in zipfile_gerenhuabasename:
-                                temp_pos1 = zipfile_gerenhuabasename.find('(')
-                                temp_pos2 = zipfile_gerenhuabasename.find('（')
-                                temp_pos3 = max(temp_pos1,temp_pos2)
-                                temp_pos1 = zipfile_gerenhuabasename.find(')')
-                                temp_pos2 = zipfile_gerenhuabasename.find('）')
-                                temp_pos1 = max(temp_pos1,temp_pos2)
-                                if temp_pos1 > temp_pos3:
-                                    temp_str = zipfile_gerenhuabasename[temp_pos3+1:temp_pos1]
-                                    temp_str = temp_str.strip()
-                                    logger.info(temp_str)
-                                    logger.info(strSortedNumber)
-                                    if strSortedNumber == temp_str:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号相符','Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        comparevalue1 =  check_sortingfile_gerenhua_zip_content(zipfile_gerenhua,dingdanshuliang)
+                        #压缩包内容检查
+                        logger.info(comparevalue1)
+                        if '正常返回' in comparevalue1:                        
+                            self.list_treeview.insert('', END, values=('-',comparevalue1,'Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-','个人化zip压缩包检查异常：' + str(comparevalue1),'错误'), tags = ('R'))
+                        self.list_treeview.update()
+                        #检查印刷文件 印刷.zip
+                        zipfile_gerenhua = catchfilefullname(sourcedir,'印刷.zip')
+                        logger.info('检查印刷文件 印刷.zip')
+                        logger.info(zipfile_gerenhua)
+                        zipfile_gerenhuabasename = os.path.basename(zipfile_gerenhua)
+                        if ProductOrderNo_value in zipfile_gerenhuabasename:
+                            temp_pos1 = zipfile_gerenhuabasename.find('(')
+                            temp_pos2 = zipfile_gerenhuabasename.find('（')
+                            temp_pos3 = max(temp_pos1,temp_pos2)
+                            temp_pos1 = zipfile_gerenhuabasename.find(')')
+                            temp_pos2 = zipfile_gerenhuabasename.find('）')
+                            temp_pos1 = max(temp_pos1,temp_pos2)
+                            if temp_pos1 > temp_pos3:
+                                temp_str = zipfile_gerenhuabasename[temp_pos3+1:temp_pos1]
+                                temp_str = temp_str.strip()
+                                logger.info(temp_str)
+                                logger.info(strSortedNumber)
+                                if strSortedNumber == temp_str:
+                                    self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号相符','Pass'), tags = ('G'))
                                 else:
                                     self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
                             else:
                                 self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        else:
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 打包文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        self.list_treeview.update()
 
-                            checkzippwd =  check_zip_pwd(zipfile_gerenhua,self.dxhppwd_list[1])
-                            if checkzippwd == 0:                        
-                                self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对印刷文件密码是否正确: 正确','Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对印刷文件密码是否正确: 错误' ,'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        checkzippwd =  check_zip_pwd(zipfile_gerenhua,self.dxhppwd_list[1])
+                        if checkzippwd == 0:                        
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对印刷文件密码是否正确: 正确','Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(zipfile_gerenhua)+' 核对印刷文件密码是否正确: 错误' ,'错误'), tags = ('R'))
+                        self.list_treeview.update()
 
-                            comparevalue1 =  check_sortingfile_yinshua_zip_content(zipfile_gerenhua,xiafashuliang,tempdir,self.dxhppwd_list[1],mdb_wurenxiang_count)
-                            logger.info(comparevalue1)
-                            if '正常返回' in comparevalue1:                        
-                                self.list_treeview.insert('', END, values=('-',comparevalue1,'Pass'), tags = ('G'))
-                            else:
-                                self.list_treeview.insert('', END, values=('-','印刷zip压缩包检查异常：' + str(comparevalue1),'错误'), tags = ('R'))
-                            self.list_treeview.update()
+                        comparevalue1 =  check_sortingfile_yinshua_zip_content(zipfile_gerenhua,xiafashuliang,tempdir,self.dxhppwd_list[1],mdb_wurenxiang_count)
+                        logger.info(comparevalue1)
+                        if '正常返回' in comparevalue1:                        
+                            self.list_treeview.insert('', END, values=('-',comparevalue1,'Pass'), tags = ('G'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-','印刷zip压缩包检查异常：' + str(comparevalue1),'错误'), tags = ('R'))
+                        self.list_treeview.update()
 
-                            #检查 数据单文件名 与 单号 是否相符
-                            checkfilename = catchfilefullnameindir(sourcedir,'数据单','分发')
-                            logger.info('检查 数据单文件名 与 单号 是否相符')
-                            logger.info(checkfilename)
-                            geted_checkfilename = os.path.basename(checkfilename)
-                            if ProductOrderNo_value in geted_checkfilename:
-                                temp_pos1 = geted_checkfilename.find('(')
-                                temp_pos2 = geted_checkfilename.find('（')
-                                temp_pos3 = max(temp_pos1,temp_pos2)
-                                temp_pos1 = geted_checkfilename.find(')')
-                                temp_pos2 = geted_checkfilename.find('）')
-                                temp_pos1 = max(temp_pos1,temp_pos2)
-                                if temp_pos1 > temp_pos3:
-                                    temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
-                                    temp_str = temp_str.strip()
-                                    logger.info(temp_str)
-                                    logger.info(strSortedNumber)
-                                    if strSortedNumber == temp_str:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号相符','Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        #检查 数据单文件名 与 单号 是否相符
+                        checkfilename = catchfilefullnameindir(sourcedir,'数据单','分发')
+                        logger.info('检查 数据单文件名 与 单号 是否相符')
+                        logger.info(checkfilename)
+                        geted_checkfilename = os.path.basename(checkfilename)
+                        if ProductOrderNo_value in geted_checkfilename:
+                            temp_pos1 = geted_checkfilename.find('(')
+                            temp_pos2 = geted_checkfilename.find('（')
+                            temp_pos3 = max(temp_pos1,temp_pos2)
+                            temp_pos1 = geted_checkfilename.find(')')
+                            temp_pos2 = geted_checkfilename.find('）')
+                            temp_pos1 = max(temp_pos1,temp_pos2)
+                            if temp_pos1 > temp_pos3:
+                                temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
+                                temp_str = temp_str.strip()
+                                logger.info(temp_str)
+                                logger.info(strSortedNumber)
+                                if strSortedNumber == temp_str:
+                                    self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号相符','Pass'), tags = ('G'))
                                 else:
                                     self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
                             else:
                                 self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
 
-                            #检查 打印清单 文件名 与 单号 是否相符
-                            checkfilename = catchfilefullnameindir(sourcedir,'打印清单','分发')
-                            logger.info('检查 打印清单 文件名 与 单号 是否相符')
-                            logger.info(checkfilename)
-                            geted_checkfilename = os.path.basename(checkfilename)
-                            if ProductOrderNo_value in geted_checkfilename:
-                                temp_pos1 = geted_checkfilename.find('(')
-                                temp_pos2 = geted_checkfilename.find('（')
-                                temp_pos3 = max(temp_pos1,temp_pos2)
-                                temp_pos1 = geted_checkfilename.find(')')
-                                temp_pos2 = geted_checkfilename.find('）')
-                                temp_pos1 = max(temp_pos1,temp_pos2)
-                                if temp_pos1 > temp_pos3:
-                                    temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
-                                    temp_str = temp_str.strip()
-                                    logger.info(temp_str)
-                                    logger.info(strSortedNumber)
-                                    if strSortedNumber == temp_str:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号相符','Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        #检查 打印清单 文件名 与 单号 是否相符
+                        checkfilename = catchfilefullnameindir(sourcedir,'打印清单','分发')
+                        logger.info('检查 打印清单 文件名 与 单号 是否相符')
+                        logger.info(checkfilename)
+                        geted_checkfilename = os.path.basename(checkfilename)
+                        if ProductOrderNo_value in geted_checkfilename:
+                            temp_pos1 = geted_checkfilename.find('(')
+                            temp_pos2 = geted_checkfilename.find('（')
+                            temp_pos3 = max(temp_pos1,temp_pos2)
+                            temp_pos1 = geted_checkfilename.find(')')
+                            temp_pos2 = geted_checkfilename.find('）')
+                            temp_pos1 = max(temp_pos1,temp_pos2)
+                            if temp_pos1 > temp_pos3:
+                                temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
+                                temp_str = temp_str.strip()
+                                logger.info(temp_str)
+                                logger.info(strSortedNumber)
+                                if strSortedNumber == temp_str:
+                                    self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号相符','Pass'), tags = ('G'))
                                 else:
                                     self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
                             else:
                                 self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
+                        else:
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 文件名与分单单号不相符: 错误' ,'错误'), tags = ('R'))
 
-                            
-                            logger.info('检查 data_form_list[7] 数据单内部订单号是否相符')
-                            checkfilename = data_form_list[7]
-                            logger.info(checkfilename)
-                            geted_checkfilename = os.path.basename(checkfilename)
-                            if ProductOrderNo_value in geted_checkfilename:
-                                temp_pos1 = geted_checkfilename.find('(')
-                                temp_pos2 = geted_checkfilename.find('（')
-                                temp_pos3 = max(temp_pos1,temp_pos2)
-                                temp_pos1 = geted_checkfilename.find(')')
-                                temp_pos2 = geted_checkfilename.find('）')
-                                temp_pos1 = max(temp_pos1,temp_pos2)
-                                if temp_pos1 > temp_pos3:
-                                    temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
-                                    temp_str = temp_str.strip()
-                                    logger.info(temp_str)
-                                    logger.info(strSortedNumber)
-                                    if strSortedNumber == temp_str:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号相符','Pass'), tags = ('G'))
-                                    else:
-                                        self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号不相符: 错误' ,'错误'), tags = ('R'))
+                        
+                        logger.info('检查 data_form_list[7] 数据单内部订单号是否相符')
+                        checkfilename = data_form_list[7]
+                        logger.info(checkfilename)
+                        geted_checkfilename = os.path.basename(checkfilename)
+                        if ProductOrderNo_value in geted_checkfilename:
+                            temp_pos1 = geted_checkfilename.find('(')
+                            temp_pos2 = geted_checkfilename.find('（')
+                            temp_pos3 = max(temp_pos1,temp_pos2)
+                            temp_pos1 = geted_checkfilename.find(')')
+                            temp_pos2 = geted_checkfilename.find('）')
+                            temp_pos1 = max(temp_pos1,temp_pos2)
+                            if temp_pos1 > temp_pos3:
+                                temp_str = geted_checkfilename[temp_pos3+1:temp_pos1]
+                                temp_str = temp_str.strip()
+                                logger.info(temp_str)
+                                logger.info(strSortedNumber)
+                                if strSortedNumber == temp_str:
+                                    self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号相符','Pass'), tags = ('G'))
                                 else:
                                     self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号不相符: 错误' ,'错误'), tags = ('R'))
                             else:
                                 self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号不相符: 错误' ,'错误'), tags = ('R'))
-
                         else:
-                            self.list_treeview.insert('', END, values=('0','无此命令: ','Pass'), tags = ('G'))
+                            self.list_treeview.insert('', END, values=('-',os.path.basename(geted_checkfilename)+' 数据单内部订单号不相符: 错误' ,'错误'), tags = ('R'))
+
+                    else:
+                        self.list_treeview.insert('', END, values=('0','无此命令: ','Pass'), tags = ('G'))
 
             run_main_fresh_finish_time = datetime.datetime.now()
             run_time = run_main_fresh_finish_time - run_main_fresh_begin_time
@@ -1965,7 +1986,7 @@ if __name__ == '__main__':
     #os.environ['TZ'] = 'Asia/Shanghai'
     set_logging(base_dir)
     main_window = Tk()
-    jver = '三代社保数据文件检验工具 - Eastcompeace Ver.20210922'
+    jver = '三代社保数据文件检验工具 - Eastcompeace Ver.20220211'
     main_window.title(jver)
 
     # 设定窗口的大小(长 * 宽)，显示窗体居中，winfo_xxx获取系统屏幕分辨率。
